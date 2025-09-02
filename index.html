@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    />
+    <title>VideoTalker - 视频播放器</title>
+    
+    <!-- Video.js CSS -->
+    <link href="./node_modules/video.js/dist/video-js.css" rel="stylesheet">
+    
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: #000;
+        color: white;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+      }
+      
+      .video-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+      
+      #video-player {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      /* 右侧侧边栏 */
+      .overlay-ui {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 350px;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid rgba(255,255,255,0.1);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        padding: 30px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        z-index: 10001;
+      }
+      
+      .overlay-ui.show {
+        transform: translateX(0);
+      }
+      
+      /* 侧边栏头部 */
+      .sidebar-header {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .app-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: white;
+        margin: 0 0 10px 0;
+      }
+      
+      .app-subtitle {
+        font-size: 14px;
+        color: rgba(255,255,255,0.6);
+        margin: 0;
+      }
+      
+      /* 控制区域 */
+      .control-section {
+        margin-bottom: 30px;
+      }
+      
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .btn {
+        padding: 14px 20px;
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .btn:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.4);
+      }
+      
+      .btn.primary {
+        background: rgba(0,123,255,0.8);
+        border-color: rgba(0,123,255,1);
+      }
+      
+      .btn.primary:hover {
+        background: rgba(0,123,255,1);
+      }
+      
+      /* 信息面板 */
+      .info-section {
+        margin-bottom: 30px;
+      }
+      
+      .panel-item {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      .panel-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      
+      .panel-label {
+        font-size: 12px;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .panel-value {
+        font-size: 14px;
+        color: white;
+        font-weight: 500;
+      }
+      
+      /* 展开/收起按钮 */
+      .expand-button {
+        position: fixed;
+        right: 10px;
+        top: 50%;
+        transform: translate(0%,-50%);
+        width: 50px;
+        height: 50px;
+        background: rgba(0,0,0,0.8);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        opacity: 0.4;
+        z-index: 10002;
+      }
+      
+      /* 当侧边栏展开时，按钮移动到左边缘 */
+      .expand-button.sidebar-open {
+        right: 360px; /* 350px 侧边栏宽度 - 20px 偏移 */
+      }
+      
+      .expand-button:hover {
+        background: rgba(0,0,0,0.9);
+        border-color: rgba(255,255,255,0.5);
+        transform: translate(0%,-50%) scale(1.1);
+        opacity: 1;
+      }
+      
+      .expand-button.sidebar-open:hover {
+        transform: translate(0%,-50%) scale(1.1);
+      }
+      
+      .expand-button.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      /* 隐藏未加载视频时的元素 */
+      .hide-when-no-video {
+        display: none;
+      }
+      
+      /* 左下角播放/暂停按钮 */
+      .floating-play-button {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(0,0,0,0.8);
+        border: 2px solid rgba(255,255,255,0.8);
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .floating-play-button.show {
+        opacity: 0.3;
+        pointer-events: auto;
+      }
+      
+      .floating-play-button:hover {
+        background: rgba(0,0,0,0.9);
+        border-color: rgba(255,255,255,1);
+        transform: scale(1.1);
+        opacity: 1;
+      }
+      
+      /* 播放图标 */
+      .floating-play-button .play-icon {
+        width: 0;
+        height: 0;
+        border-left: 16px solid white;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        margin-left: 4px;
+      }
+      
+      /* 暂停图标 */
+      .floating-play-button .pause-icon {
+        display: flex;
+        gap: 4px;
+      }
+      
+      .floating-play-button .pause-icon::before,
+      .floating-play-button .pause-icon::after {
+        content: '';
+        width: 6px;
+        height: 20px;
+        background: white;
+        border-radius: 1px;
+      }
+      
+      /* Video.js 样式覆盖 */
+      .video-js {
+        background-color: transparent;
+      }
+      
+      .video-js .vjs-big-play-button {
+        font-size: 4em;
+        line-height: 1.5em;
+        height: 1.5em;
+        width: 3em;
+        border-radius: 50%;
+        background-color: rgba(255,255,255,0.15);
+        border: 3px solid rgba(255,255,255,0.8);
+        margin-left: -1.5em;
+        margin-top: -0.75em;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+      }
+      
+      .video-js .vjs-big-play-button:hover {
+        background-color: rgba(255,255,255,0.25);
+        transform: scale(1.1);
+      }
+      
+      /* 隐藏默认的video.js控制栏，使用自定义控制 */
+      .video-js .vjs-control-bar {
+        display: none;
+      }
+      
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .top-bar, .bottom-bar {
+          padding: 15px 20px;
+        }
+        
+        .controls {
+          gap: 10px;
+        }
+        
+        .btn {
+          padding: 10px 16px;
+          font-size: 13px;
+        }
+        
+        .side-panel {
+          right: 15px;
+          min-width: 150px;
+        }
+        
+        .app-title {
+          font-size: 16px;
+        }
+      }
+      
+      /* 视频进度条 */
+      .progress-container {
+        position: fixed;
+        box-sizing: border-box;
+        bottom: 0;
+        left: 80px;
+        right: 80px;
+        height:  48px;
+        cursor: pointer;
+        transition: all 0.5s ease;
+        border-radius: 9999px;
+        z-index: 15;
+        user-select: none;
+      }
+
+      .progress-container::before {
+        content: "";
+        position: absolute;
+        height:  4px;
+        left: 0;
+        right: 0;
+        bottom: 0%;
+        transform: translate(0,-20%);
+        cursor: pointer;
+        border-radius: 999px;
+        background: rgba(0,0,0,0.4);
+        transition: all 0.5s ease;
+        z-index: 1;
+      }
+      .progress-container:hover::before {
+        left: -20px;
+        right: -20px;
+        height: 100%;
+        transform: translate(0,0%);
+        background: rgba(0,0,0,0.8);
+      }
+      .progress-container::after {
+        content: "";
+        position: absolute;
+        height:  4px;
+        left: 0;
+        right: 0;
+        bottom: 0%;
+        transform: translate(0,-20%);
+        cursor: pointer;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.4);
+        transition: all 0.5s ease;
+        z-index: 1;
+        opacity: 0;
+      }
+      .progress-container:hover::after {
+        left: -2px;
+        right: -2px;
+        bottom: 50%;
+        transform: translate(0,50%);
+        opacity: 1;
+      }
+      
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        transition: all 0.5s ease;
+        z-index: 2;
+      }
+      
+      /* 已播放进度的蓝色细线 */
+      .progress-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0%;
+        height: 2px;
+        background: #007bff;
+        transform: translateY(-100%);
+        border-radius: 1px;
+        transition: all 0.5s ease;
+      }
+      .progress-container:hover .progress-line{
+        bottom: 50%;
+        transform: translateY(50%);
+      }
+      
+      /* 当前播放位置的蓝色竖线 */
+      .progress-handle {
+        position: absolute;
+        right: -1px;
+        top: 50%;
+        width: 2px;
+        height: 16px;
+        transform: translate(0, -50%);
+        border-radius: 1px;
+        transition: all 0.2s ease;
+      }
+      
+      .progress-container:hover .progress-handle {
+        opacity: 1;
+        height: 30px;
+        /* background: #007bff; */
+      }
+      
+      /* 当前播放时间显示 */
+      .current-time-display {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        opacity: .4;
+        transition: all 0.5s ease;
+        /* gap: 6px; */
+      }
+      .progress-container:hover .current-time-display {
+        opacity: 1;
+        /* transform: translate(50%, 0px); */
+      }
+      .current-time-display .time-text{
+        display: block;
+        background: rgba(0,0,0,.6);
+        border-radius: 50px;
+        color: white;
+        padding: 2px 4px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        margin-top: 24px;
+      }
+      .progress-container:hover .current-time-display .time-text{
+        margin-top: 29px;
+        font-size: 10px;
+      }
+      
+      /* 添加打点按钮 */
+      .add-annotation-btn {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        opacity: 0;
+
+        background: rgba(0,0,0,0.5);
+        border: 2px solid white;
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+      .add-annotation-btn::before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        left: 50%;
+        top: -90%;
+        transform: translate(-50%,0%);
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid white;
+        transition: all 0.2s ease;
+      }
+      
+      .add-annotation-btn:hover {
+        background: rgba(255,255,255,0);
+        color: black;
+        /* border: 2px solid #007bff; */
+      }
+      .add-annotation-btn:hover::before {
+        border-top-color: #007bff;
+      }
+
+      .add-annotation-btn::after {
+        content: '';
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        background-color: #007bff;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+      .progress-container:hover .add-annotation-btn {
+        opacity: 1;
+      }
+      
+      
+      
+      /* 进度提示容器 */
+      .progress-tooltip {
+        position: absolute;
+        bottom: 0;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      
+      /* 竖线刻度（保持固定位置） */
+      .tooltip-line {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 60px;
+        background: rgba(0,0,0,0.8);
+        border-radius: 1px;
+      }
+      
+      /* 数字提示（可动态偏移） */
+      .tooltip-text {
+        position: absolute;
+        bottom: 60px;
+        left: 50%;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        transform: translateX(-50%);
+      }
+      
+      .progress-container:hover .progress-tooltip {
+        opacity: 1;
+      }
+      
+      /* 文件信息显示 */
+      .file-info-overlay {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 15;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .file-info-overlay.show {
+        opacity: 1;
+      }
+
+      /* 打点输入模态框样式 */
+      .annotation-input-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .annotation-input-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(3px);
+      }
+
+      .annotation-input-content {
+        position: relative;
+        background: rgba(20,20,20,0.95);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.2);
+        min-width: 400px;
+        max-width: 500px;
+        backdrop-filter: blur(20px);
+        padding: 24px;
+      }
+
+      .annotation-input-header {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .annotation-input-header h3 {
+        margin: 0;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .annotation-input-close {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.6);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+
+      .annotation-input-close:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+      }
+
+      .annotation-input-body {
+        margin-bottom: 20px;
+      }
+
+      .annotation-input-field {
+        margin-bottom: 16px;
+      }
+
+      .annotation-input-field:last-child {
+        margin-bottom: 0;
+      }
+
+      .annotation-input-label {
+        display: block;
+        color: rgba(255,255,255,0.8);
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+
+      .annotation-input-field-input {
+        width: 100%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: white;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+
+      .annotation-input-field-input:focus {
+        outline: none;
+        border-color: #28a745;
+        background: rgba(255,255,255,0.15);
+      }
+
+      .annotation-input-field-input::placeholder {
+        color: rgba(255,255,255,0.4);
+      }
+
+      .annotation-input-textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: white;
+        padding: 12px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 80px;
+        box-sizing: border-box;
+      }
+
+      .annotation-input-textarea:focus {
+        outline: none;
+        border-color: #28a745;
+        background: rgba(255,255,255,0.15);
+      }
+
+      .annotation-input-textarea::placeholder {
+        color: rgba(255,255,255,0.4);
+      }
+
+      .annotation-input-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .annotation-input-btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .annotation-input-btn-cancel {
+        background: rgba(255,255,255,0.1);
+        color: white;
+      }
+
+      .annotation-input-btn-cancel:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      .annotation-input-btn-save {
+        background: #28a745;
+        color: white;
+      }
+
+      .annotation-input-btn-save:hover {
+        background: #218838;
+      }
+
+      .annotation-input-btn-save:disabled {
+        background: rgba(40,167,69,0.5);
+        cursor: not-allowed;
+      }
+
+      /* 打点标记位置控制 */
+      .annotation-container {
+        transition: all 0.5s ease;
+        /* 固定垂直居中位置 */
+        top: 50%;
+        transform: translateY(-50%) translateX(-50%);
+      }
+
+      /* 鼠标悬停进度条时，保持居中位置不变 */
+      .progress-container:hover .annotation-container {
+        top: 50%;
+        transform: translateY(-50%) translateX(-50%);
+      }
+
+      /* 默认圆点样式（灰色） */
+      .annotation-dot {
+        background-color: #6c757d;
+        border: 2px solid rgba(108, 117, 125, 0.8);
+      }
+
+      /* 默认标题样式（灰色） */
+      .annotation-title {
+        background: rgba(108, 117, 125, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transform: translateX(-50%) translateY(-100%); /* 默认高度 */
+      }
+
+      /* 打点颜色系统 */
+      .annotation-container.color-red .annotation-dot {
+        background-color: #dc3545;
+        border-color: rgba(220, 53, 69, 0.8);
+      }
+      .annotation-container.color-red .annotation-title {
+        background: rgba(220, 53, 69, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .annotation-container.color-orange .annotation-dot {
+        background-color: #fd7e14;
+        border-color: rgba(253, 126, 20, 0.8);
+      }
+      .annotation-container.color-orange .annotation-title {
+        background: rgba(253, 126, 20, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .annotation-container.color-yellow .annotation-dot {
+        background-color: #ffc107;
+        border-color: rgba(255, 193, 7, 0.8);
+      }
+      .annotation-container.color-yellow .annotation-title {
+        background: rgba(255, 193, 7, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #000;
+      }
+
+      .annotation-container.color-green .annotation-dot {
+        background-color: #28a745;
+        border-color: rgba(40, 167, 69, 0.8);
+      }
+      .annotation-container.color-green .annotation-title {
+        background: rgba(40, 167, 69, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .annotation-container.color-blue .annotation-dot {
+        background-color: #007bff;
+        border-color: rgba(0, 123, 255, 0.8);
+      }
+      .annotation-container.color-blue .annotation-title {
+        background: rgba(0, 123, 255, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .annotation-container.color-purple .annotation-dot {
+        background-color: #6f42c1;
+        border-color: rgba(111, 66, 193, 0.8);
+      }
+      .annotation-container.color-purple .annotation-title {
+        background: rgba(111, 66, 193, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+
+
+      /* 打点级别高度系统 - 使用translateY控制标题高度 */
+      .annotation-container.level-1 .annotation-title {
+        transform: translateX(-50%) translateY(-400%); /* 高 - 最高位置 */
+      }
+      .annotation-container.level-2 .annotation-title {
+        transform: translateX(-50%) translateY(-300%); /* 中 - 中等位置 */
+      }
+      .annotation-container.level-3 .annotation-title {
+        transform: translateX(-50%) translateY(-200%); /* 低 - 较低位置 */
+      }
+      /* level null 使用默认translateY(-100%)（在 annotations.js 中设置） */
+
+      /* 选择器样式 */
+      .annotation-input-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .annotation-input-field-half {
+        flex: 1;
+        margin-bottom: 0 !important;
+      }
+
+      .annotation-input-select {
+        width: 100%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: white;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        box-sizing: border-box;
+        cursor: pointer;
+      }
+
+      .annotation-input-select:focus {
+        outline: none;
+        border-color: #28a745;
+        background: rgba(255,255,255,0.15);
+      }
+
+      .annotation-input-select option {
+        background: #2a2a2a;
+        color: white;
+      }
+
+      .annotation-input-btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .annotation-input-btn-danger:hover {
+        background: #c82333;
+      }
+
+      /* 颜色选择器样式 */
+      .annotation-color-group {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .annotation-color-group input[type="radio"] {
+        display: none;
+      }
+
+      .color-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .color-button:hover {
+        transform: scale(1.1);
+        border-color: rgba(255,255,255,0.3);
+      }
+
+      .annotation-color-group input[type="radio"]:checked + .color-button {
+        border-color: #fff;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+        transform: scale(1.1);
+      }
+
+      .annotation-color-group input[type="radio"]:checked + .color-button::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+        text-shadow: 0 0 2px rgba(0,0,0,0.8);
+      }
+
+      .color-button.color-red { background: #dc3545; }
+      .color-button.color-orange { background: #fd7e14; }
+      .color-button.color-yellow { background: #ffc107; }
+      .color-button.color-green { background: #28a745; }
+      .color-button.color-blue { background: #007bff; }
+      .color-button.color-purple { background: #6f42c1; }
+
+      /* 级别选择器样式 */
+      .annotation-level-group {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .annotation-level-group input[type="radio"] {
+        display: none;
+      }
+
+      .level-button {
+        padding: 8px 16px;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.1);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .level-button:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.5);
+      }
+
+      .annotation-level-group input[type="radio"]:checked + .level-button {
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+      }
+
+      /* 打点popup样式 */
+      .annotation-popup {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        background: rgba(0,0,0,0.3);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        min-width: 150px; /* 设置最小宽度 */
+        max-width: 250px;
+        border: 1px solid rgba(255,255,255,0.3);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(1px);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      .annotation-popup:hover {
+        background: rgba(0,0,0,0.4);
+      }
+
+      /* 鼠标悬停容器时显示popup */
+      .annotation-container:hover .annotation-popup {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* 鼠标悬停标题时显示popup */
+      .annotation-title:hover .annotation-popup {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* popup内容样式 */
+      .annotation-popup-content .annotation-time {
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+
+      .annotation-popup-content .annotation-popup-title {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      .annotation-popup-content .annotation-text {
+        margin-bottom: 8px;
+        line-height: 1.4;
+        color: rgba(255,255,255,0.9);
+      }
+
+      .annotation-popup-content .annotation-empty {
+        margin-bottom: 8px;
+        line-height: 1.4;
+        color: rgba(255,255,255,0.6);
+        font-style: italic;
+        font-size: 12px;
+      }
+
+      .annotation-popup-content .popup-btn {
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: background 0.2s ease;
+      }
+
+      .annotation-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .popup-icon-btn {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .popup-icon-btn:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.1);
+      }
+
+      .popup-icon-btn.delete-btn {
+        background: rgba(220,53,69,0.8);
+      }
+
+      .popup-icon-btn.delete-btn:hover {
+        background: rgba(220,53,69,1);
+        transform: scale(1.1);
+      }
+
+      .popup-icon-btn svg {
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 全屏视频容器 -->
+    <div class="video-container">
+      <video
+        id="video-player"
+        class="video-js vjs-default-skin"
+        preload="auto"
+        data-setup="{}"
+      >
+        <p class="vjs-no-js">
+          要查看此视频，请启用 JavaScript，并考虑升级到
+          <a href="https://videojs.com/html5-video-support/" target="_blank">
+            支持HTML5视频的网络浏览器
+          </a>。
+        </p>
+      </video>
+    </div>
+
+    <!-- 文件信息浮层 -->
+    <div class="file-info-overlay" id="file-info-overlay">
+      请选择一个视频文件开始播放
+    </div>
+
+    <!-- 视频进度条 -->
+    <div class="progress-container" id="progress-container">
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-line"></div>
+        <div class="progress-handle">
+          <div class="current-time-display" id="current-time-display">
+            <span class="time-text">00:00</span>
+            <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+          </div>
+        </div>
+      </div>
+      <div class="progress-tooltip" id="progress-tooltip">
+        <div class="tooltip-line"></div>
+        <div class="tooltip-text" id="tooltip-text">00:00</div>
+      </div>
+    </div>
+
+    <!-- 展开按钮 -->
+    <button class="expand-button" id="expand-button">›</button>
+
+    <!-- 左下角播放/暂停按钮 -->
+    <button class="floating-play-button" id="floating-play-button">
+      <div class="play-icon" id="play-icon"></div>
+      <div class="pause-icon" id="pause-icon" style="display: none;"></div>
+    </button>
+
+    <!-- 右侧侧边栏 -->
+    <div class="overlay-ui" id="overlay-ui">
+      <!-- 侧边栏头部 -->
+      <div class="sidebar-header">
+        <h1 class="app-title">VideoTalker</h1>
+        <p class="app-subtitle">视频播放器</p>
+      </div>
+
+      <!-- 控制区域 -->
+      <div class="control-section">
+        <div class="section-title">文件操作</div>
+        <div class="controls">
+          <button class="btn primary" id="open-file">
+            <span>选择视频文件</span>
+            <span>📁</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 播放控制区域 (仅在有视频时显示) -->
+      <div class="control-section hide-when-no-video" id="playback-controls">
+        <div class="section-title">播放控制</div>
+        <div class="controls">
+          <button class="btn" id="fullscreen">
+            <span>全屏播放</span>
+            <span>⛶</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 播放信息 (仅在有视频时显示) -->
+      <div class="info-section hide-when-no-video" id="video-info">
+        <div class="section-title">播放信息</div>
+        <div class="panel-item">
+          <div class="panel-label">文件名</div>
+          <div class="panel-value" id="panel-filename">未选择文件</div>
+        </div>
+        <div class="panel-item">
+          <div class="panel-label">时长</div>
+          <div class="panel-value" id="panel-duration">--:--</div>
+        </div>
+        <div class="panel-item">
+          <div class="panel-label">当前时间</div>
+          <div class="panel-value" id="panel-current-time">--:--</div>
+        </div>
+        <div class="panel-item">
+          <div class="panel-label">音量</div>
+          <div class="panel-value" id="panel-volume">100%</div>
+        </div>
+        <div class="panel-item">
+          <div class="panel-label">播放速度</div>
+          <div class="panel-value" id="panel-playback-rate">1.0x</div>
+        </div>
+      </div>
+
+      <!-- 高级功能 -->
+      <div class="control-section">
+        <div class="section-title">高级功能</div>
+        <div class="controls">
+          <button class="btn" id="check-support">
+            <span>检查格式支持</span>
+            <span>🔍</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video.js JavaScript -->
+    <script src="./node_modules/video.js/dist/video.min.js"></script>
+    <script src="annotations.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>
