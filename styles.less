@@ -514,6 +514,20 @@ body {
       // z-index: 1;
     }
 
+
+    // div.progress-bar-track (总时间轨道)
+    .progress-bar-track {
+      position: absolute;
+      left: -2px;
+      right: -2px;
+      bottom: 0;
+      height: 4px;
+      background: #ff8c00; // 橙色
+      border-radius: 1.5px;
+      opacity: 0.8;
+      z-index: 1; // 在背景之上，进度条之下
+      transform: translateY(1px);
+    }
     // div.progress-bar
     .progress-bar {
       height: 100%;
@@ -532,7 +546,7 @@ body {
         bottom: 0%;
         height: 2px;
         background: @primary-blue;
-        transform: translateY(-100%);
+        transform: translateY(0px);
         border-radius: 1px;
       }
 
@@ -644,11 +658,15 @@ body {
       outline: 1px solid rgba(255, 255, 255, .1);
     }
 
+
+    // div.progress-bar-track (总时间轨道)
+    .progress-bar-track {
+      bottom: 50%;
+    }
     // 悬停状态下的进度条和句柄样式
     .progress-bar{
       .progress-line {
         bottom: 50%;
-        transform: translateY(50%);
       }
 
       .progress-handle {

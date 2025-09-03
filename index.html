@@ -62,17 +62,19 @@
         </div>
       </div>
       
-      <!-- 视频进度条 -->
-      <div class="progress-container" id="progress-container">
-        <div class="progress-bar" id="progress-bar">
-          <div class="progress-line"></div>
-          <div class="progress-handle">
-            <div class="current-time-display" id="current-time-display">
-              <span class="time-text">00:00</span>
-              <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+              <!-- 视频进度条 -->
+        <div class="progress-container" id="progress-container">
+          <!-- 总时间轨道（橙色） -->
+          <div class="progress-bar-track" id="progress-bar-track"></div>
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-line"></div>
+            <div class="progress-handle">
+              <div class="current-time-display" id="current-time-display">
+                <span class="time-text">00:00</span>
+                <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+              </div>
             </div>
           </div>
-        </div>
         <div class="progress-tooltip" id="progress-tooltip">
           <div class="tooltip-line"></div>
           <div class="tooltip-text" id="tooltip-text">00:00</div>
