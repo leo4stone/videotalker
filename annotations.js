@@ -642,23 +642,23 @@ class AnnotationManager {
                     <div class="annotation-input-row">
                         <div class="annotation-input-field">
                             <label class="annotation-input-label">颜色</label>
-                            <div class="annotation-color-group">
-                                <input type="radio" id="color-blue" name="annotation-color" value="blue" ${defaultColor === 'blue' || defaultColor === 'gray' || !defaultColor ? 'checked' : ''}>
+                            <div class="annotation-color-group" tabindex="0" role="radiogroup" aria-label="选择颜色">
+                                <input type="radio" id="color-blue" name="annotation-color" value="blue" ${defaultColor === 'blue' || defaultColor === 'gray' || !defaultColor ? 'checked' : ''} tabindex="-1">
                                 <label for="color-blue" class="color-button color-blue" title="蓝色（默认）"></label>
                                 
-                                <input type="radio" id="color-red" name="annotation-color" value="red" ${defaultColor === 'red' ? 'checked' : ''}>
+                                <input type="radio" id="color-red" name="annotation-color" value="red" ${defaultColor === 'red' ? 'checked' : ''} tabindex="-1">
                                 <label for="color-red" class="color-button color-red" title="红色"></label>
                                 
-                                <input type="radio" id="color-orange" name="annotation-color" value="orange" ${defaultColor === 'orange' ? 'checked' : ''}>
+                                <input type="radio" id="color-orange" name="annotation-color" value="orange" ${defaultColor === 'orange' ? 'checked' : ''} tabindex="-1">
                                 <label for="color-orange" class="color-button color-orange" title="橙色"></label>
                                 
-                                <input type="radio" id="color-yellow" name="annotation-color" value="yellow" ${defaultColor === 'yellow' ? 'checked' : ''}>
+                                <input type="radio" id="color-yellow" name="annotation-color" value="yellow" ${defaultColor === 'yellow' ? 'checked' : ''} tabindex="-1">
                                 <label for="color-yellow" class="color-button color-yellow" title="黄色"></label>
                                 
-                                <input type="radio" id="color-green" name="annotation-color" value="green" ${defaultColor === 'green' ? 'checked' : ''}>
+                                <input type="radio" id="color-green" name="annotation-color" value="green" ${defaultColor === 'green' ? 'checked' : ''} tabindex="-1">
                                 <label for="color-green" class="color-button color-green" title="绿色"></label>
                                 
-                                <input type="radio" id="color-purple" name="annotation-color" value="purple" ${defaultColor === 'purple' ? 'checked' : ''}>
+                                <input type="radio" id="color-purple" name="annotation-color" value="purple" ${defaultColor === 'purple' ? 'checked' : ''} tabindex="-1">
                                 <label for="color-purple" class="color-button color-purple" title="紫色"></label>
                             </div>
                         </div>
@@ -666,17 +666,17 @@ class AnnotationManager {
                     <div class="annotation-input-row">
                         <div class="annotation-input-field">
                             <label class="annotation-input-label">级别</label>
-                            <div class="annotation-level-group">
-                                <input type="radio" id="level-default" name="annotation-level" value="" ${defaultLevel === '' ? 'checked' : ''}>
+                            <div class="annotation-level-group" tabindex="0" role="radiogroup" aria-label="选择级别">
+                                <input type="radio" id="level-default" name="annotation-level" value="" ${defaultLevel === '' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-default" class="level-button">默认</label>
                                 
-                                <input type="radio" id="level-high" name="annotation-level" value="1" ${defaultLevel === '1' ? 'checked' : ''}>
+                                <input type="radio" id="level-high" name="annotation-level" value="1" ${defaultLevel === '1' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-high" class="level-button">高</label>
                                 
-                                <input type="radio" id="level-medium" name="annotation-level" value="2" ${defaultLevel === '2' ? 'checked' : ''}>
+                                <input type="radio" id="level-medium" name="annotation-level" value="2" ${defaultLevel === '2' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-medium" class="level-button">中</label>
                                 
-                                <input type="radio" id="level-low" name="annotation-level" value="3" ${defaultLevel === '3' ? 'checked' : ''}>
+                                <input type="radio" id="level-low" name="annotation-level" value="3" ${defaultLevel === '3' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-low" class="level-button">低</label>
                             </div>
                         </div>
@@ -757,6 +757,9 @@ class AnnotationManager {
         titleInput.addEventListener('keydown', handleKeyboardSave);
         textArea.addEventListener('keydown', handleKeyboardSave);
         durationInput.addEventListener('keydown', handleKeyboardSave);
+
+        // 添加键盘导航支持
+        this.setupRadioGroupNavigation(modal);
 
         document.body.appendChild(modal);
         
@@ -1086,6 +1089,62 @@ class AnnotationManager {
             purple: { primary: '#6f42c1', rgba: '111, 66, 193' }
         };
         return colors[color] || colors.blue;
+    }
+
+    // 设置radio group的键盘导航
+    setupRadioGroupNavigation(modal) {
+        const colorGroup = modal.querySelector('.annotation-color-group');
+        const levelGroup = modal.querySelector('.annotation-level-group');
+
+        [colorGroup, levelGroup].forEach(group => {
+            if (!group) return;
+
+            const radios = group.querySelectorAll('input[type="radio"]');
+            
+            // 键盘事件监听
+            group.addEventListener('keydown', (e) => {
+                const currentChecked = group.querySelector('input[type="radio"]:checked');
+                const radioArray = Array.from(radios);
+                const currentIndex = currentChecked ? radioArray.indexOf(currentChecked) : 0;
+                
+                let newIndex = currentIndex;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        newIndex = currentIndex > 0 ? currentIndex - 1 : radioArray.length - 1;
+                        break;
+                    case 'ArrowRight':
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        newIndex = currentIndex < radioArray.length - 1 ? currentIndex + 1 : 0;
+                        break;
+                    case ' ':
+                    case 'Enter':
+                        e.preventDefault();
+                        if (currentChecked) {
+                            currentChecked.click();
+                        }
+                        return;
+                    default:
+                        return;
+                }
+                
+                // 选中新的radio按钮
+                radioArray[newIndex].checked = true;
+                radioArray[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            // 聚焦时高亮当前选中项
+            group.addEventListener('focus', () => {
+                group.classList.add('focused');
+            });
+
+            group.addEventListener('blur', () => {
+                group.classList.remove('focused');
+            });
+        });
     }
 }
 

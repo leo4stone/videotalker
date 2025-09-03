@@ -571,7 +571,7 @@ body {
         z-index: 1;
       }
       &::after{
-        // background-color: rgba(255,255,255,1) !important;
+        background-color: rgba(255,255,255,0.8);
       }
     }
     &:active .annotation-dot{
@@ -1228,6 +1228,18 @@ body {
         display: flex;
         gap: 8px;
         margin-top: 8px;
+        padding: 4px;
+        border-radius: 6px;
+        transition: @transition-fast;
+
+        &:focus {
+          outline: 2px solid @primary-blue;
+          outline-offset: 2px;
+        }
+
+        &.focused {
+          background: rgba(0,123,255,0.1);
+        }
 
         // input[type="radio"]
         input[type="radio"] {
@@ -1281,6 +1293,18 @@ body {
         display: flex;
         gap: 8px;
         margin-top: 8px;
+        padding: 4px;
+        border-radius: 6px;
+        transition: @transition-fast;
+
+        &:focus {
+          outline: 2px solid @primary-blue;
+          outline-offset: 2px;
+        }
+
+        &.focused {
+          background: rgba(0,123,255,0.1);
+        }
 
         // input[type="radio"]
         input[type="radio"] {

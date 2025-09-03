@@ -233,6 +233,21 @@ function setupEventListeners() {
                 e.preventDefault();
                 player.muted(!player.muted());
                 break;
+            case 'Enter':
+                // 检查是否有模态框打开，如果有则不处理
+                const hasModal = document.querySelector('.annotation-input-modal') || 
+                                document.querySelector('.annotation-modal');
+                if (hasModal) {
+                    return; // 不阻止默认行为，让模态框内的Enter键正常工作
+                }
+                
+                e.preventDefault();
+                // 只有在有视频加载且打点管理器可用时才打开添加打点窗口
+                if (hasVideoLoaded && window.annotationManager && player) {
+                    const currentTime = player.currentTime();
+                    window.annotationManager.showAddAnnotationModal(currentTime);
+                }
+                break;
         }
     });
 }
