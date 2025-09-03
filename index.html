@@ -42,24 +42,42 @@
       请选择一个视频文件开始播放
     </div>
 
-    <!-- 视频进度条 -->
-    <div class="progress-container" id="progress-container">
-      <div class="progress-bar" id="progress-bar">
-        <div class="progress-line"></div>
-        <div class="progress-handle">
-          <div class="current-time-display" id="current-time-display">
-            <span class="time-text">00:00</span>
-            <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+    <!-- 视频进度条容器 -->
+    <div class="progress-wrapper" id="progress-wrapper">
+      <!-- 进度条缩放控制 -->
+      <div class="progress-zoom-control" id="progress-zoom-control">
+        <div class="pan-section">
+          <div class="custom-pan-slider" id="custom-pan-slider">
+            <div class="pan-track"></div>
+            <div class="pan-thumb" id="pan-thumb">
+              <div class="resize-handle left-handle" id="left-handle"></div>
+              <div class="resize-handle right-handle" id="right-handle"></div>
+              <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
+              <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="progress-tooltip" id="progress-tooltip">
-        <div class="tooltip-line"></div>
-        <div class="tooltip-text" id="tooltip-text">00:00</div>
-      </div>
-      <!-- 视频总时长显示 -->
-      <div class="video-duration-display" id="video-duration-display">
-        <span class="duration-text">00:00</span>
+      
+      <!-- 视频进度条 -->
+      <div class="progress-container" id="progress-container">
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-line"></div>
+          <div class="progress-handle">
+            <div class="current-time-display" id="current-time-display">
+              <span class="time-text">00:00</span>
+              <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+            </div>
+          </div>
+        </div>
+        <div class="progress-tooltip" id="progress-tooltip">
+          <div class="tooltip-line"></div>
+          <div class="tooltip-text" id="tooltip-text">00:00</div>
+        </div>
+        <!-- 视频总时长显示 -->
+        <div class="video-duration-display" id="video-duration-display">
+          <span class="duration-text">00:00</span>
+        </div>
       </div>
     </div>
 

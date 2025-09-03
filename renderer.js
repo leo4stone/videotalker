@@ -12,6 +12,8 @@ let hasVideoLoaded = false;
 let isDragging = false;
 let playButtonTimeout = null;
 let historyData = null;
+let progressZoom = 1; // 进度条缩放倍数（通过宽度实现）
+let progressPan = 0;  // 进度条平移位置 (0-100)
 
 // 当 DOM 加载完成时初始化播放器
 document.addEventListener('DOMContentLoaded', function() {
@@ -51,6 +53,13 @@ document.addEventListener('DOMContentLoaded', function() {
             updateFileInfo(`视频时长: ${durationText}`);
             updateSidePanel();
             updateDurationDisplay();
+            
+            // 更新基于视频时长的最小滑块宽度
+            updateMinThumbWidthCSS();
+            // 重新计算滑块显示
+            updateCustomPanSlider();
+            // 初始化时间显示
+            updateThumbTimeDisplay();
         });
 
         player.on('error', function(error) {
@@ -101,6 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化历史记录功能
     initializeHistory();
+    
+    // 初始化进度条缩放功能
+    initializeProgressZoom();
 });
 
 // 设置事件监听器
@@ -956,4 +968,353 @@ function updateLastFilePathDisplay() {
         // 隐藏文件路径显示
         pathContainer.style.display = 'none';
     }
+}
+
+// 进度条缩放相关功能
+
+// 初始化进度条缩放功能
+function initializeProgressZoom() {
+    const customPanSlider = document.getElementById('custom-pan-slider');
+    const panThumb = document.getElementById('pan-thumb');
+    const progressWrapper = document.getElementById('progress-wrapper');
+
+    // 自定义平移滑块事件
+    setupCustomPanSlider(customPanSlider, panThumb);
+
+
+
+    // 鼠标悬停显示缩放控制
+    progressWrapper?.addEventListener('mouseenter', () => {
+        if (hasVideoLoaded) {
+            const zoomControl = document.getElementById('progress-zoom-control');
+            zoomControl?.classList.add('show');
+        }
+    });
+
+    progressWrapper?.addEventListener('mouseleave', () => {
+        const zoomControl = document.getElementById('progress-zoom-control');
+        zoomControl?.classList.remove('show');
+    });
+
+    // 初始化自定义滑块显示
+    updateCustomPanSlider();
+}
+
+
+
+
+
+// 重置进度条缩放
+function resetProgressZoom() {
+    progressZoom = 1;
+    progressPan = 0;
+    updateProgressTransform();
+    updatePanControls();
+}
+
+
+
+// 更新进度条变换（使用宽度而不是scale）
+function updateProgressTransform() {
+    const progressContainer = document.getElementById('progress-container');
+    if (!progressContainer) return;
+
+    // 设置宽度百分比
+    const width = progressZoom * 100;
+    progressContainer.style.width = `${width}%`;
+    
+    // 计算left位置：将0-100转换为实际的left值
+    // 当缩放后，0表示完全左对齐，100表示完全右对齐
+    const maxLeft = progressZoom - 1; // 缩放后可移动的最大距离（比例）
+    const leftPercent = -(progressPan / 100) * maxLeft * 100; // 转换为百分比
+    progressContainer.style.left = `${leftPercent}%`;
+}
+
+// 更新平移控件状态
+function updatePanControls() {
+    // 更新自定义滑块
+    updateCustomPanSlider();
+}
+
+// 设置自定义平移滑块的交互
+function setupCustomPanSlider(sliderElement, thumbElement) {
+    if (!sliderElement || !thumbElement) return;
+    
+    let isDragging = false;
+    let isResizing = false;
+    let resizeType = null; // 'left' 或 'right'
+    let startX = 0;
+    let startPan = 0;
+    let startZoom = 0;
+    
+    // 滑块主体拖拽事件
+    function handleThumbMouseDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isDragging = true;
+        startX = e.clientX;
+        startPan = progressPan;
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'grabbing';
+    }
+    
+    // 拖拽手柄事件
+    function handleResizeMouseDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isResizing = true;
+        resizeType = e.target.classList.contains('left-handle') ? 'left' : 'right';
+        startX = e.clientX;
+        startPan = progressPan;
+        startZoom = progressZoom;
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'ew-resize';
+    }
+    
+    // 鼠标移动事件
+    function handleMouseMove(e) {
+        if (!isDragging && !isResizing) return;
+        
+        const sliderRect = sliderElement.getBoundingClientRect();
+        const deltaX = e.clientX - startX;
+        
+        if (isDragging) {
+            // 滑块主体拖拽 - 移动位置
+            const thumbRect = thumbElement.getBoundingClientRect();
+            const thumbWidth = thumbRect.width;
+            const sliderWidth = sliderRect.width;
+            const maxMovablePixels = sliderWidth - thumbWidth;
+            
+            if (maxMovablePixels <= 0) {
+                progressPan = 0;
+                updateProgressTransform();
+                updateCustomPanSlider();
+                return;
+            }
+            
+            const currentThumbPixelPosition = (startPan / 100) * maxMovablePixels;
+            const newThumbPixelPosition = currentThumbPixelPosition + deltaX;
+            const clampedPixelPosition = Math.max(0, Math.min(maxMovablePixels, newThumbPixelPosition));
+            
+            progressPan = (clampedPixelPosition / maxMovablePixels) * 100;
+            
+            updateProgressTransform();
+            updateCustomPanSlider();
+            
+        } else if (isResizing) {
+            // 拖拽手柄 - 调整缩放
+            const sliderWidth = sliderRect.width;
+            const sensitivity = 5; // 缩放敏感度
+            
+            // 计算宽度变化
+            const deltaPercent = (deltaX / sliderWidth) * 100;
+            
+            if (resizeType === 'right') {
+                // 右侧手柄：向右拖拽增加宽度（减少缩放），保持左边界固定
+                const minWidth = getMinThumbWidth();
+                const currentThumbWidth = Math.max(minWidth, (1 / startZoom) * 100);
+                const newThumbWidth = Math.max(minWidth, Math.min(100, currentThumbWidth + deltaPercent));
+                const newZoom = Math.max(1, 100 / newThumbWidth);
+                
+                if (newZoom !== progressZoom) {
+                    // 计算位置调整以保持左边界固定
+                    const oldThumbWidth = Math.max(minWidth, (1 / progressZoom) * 100);
+                    
+                    // 计算当前左边界位置
+                    const maxOldPosition = 100 - oldThumbWidth;
+                    const currentPosition = (progressPan / 100) * maxOldPosition;
+                    const leftBoundary = currentPosition;
+                    
+                    // 根据新宽度计算新位置，保持左边界不变
+                    const maxNewPosition = 100 - newThumbWidth;
+                    
+                    progressZoom = newZoom;
+                    progressPan = maxNewPosition > 0 ? Math.max(0, Math.min(100, (leftBoundary / maxNewPosition) * 100)) : 0;
+                    
+                    updateProgressTransform();
+                    updatePanControls();
+                }
+                
+            } else if (resizeType === 'left') {
+                // 左侧手柄：向左拖拽增加宽度（减少缩放），同时调整位置保持右边界固定
+                const minWidth = getMinThumbWidth();
+                const currentThumbWidth = Math.max(minWidth, (1 / startZoom) * 100);
+                const newThumbWidth = Math.max(minWidth, Math.min(100, currentThumbWidth - deltaPercent));
+                const newZoom = Math.max(1, 100 / newThumbWidth);
+                
+                if (newZoom !== progressZoom) {
+                    // 计算位置调整以保持右边界固定
+                    const oldThumbWidth = Math.max(minWidth, (1 / progressZoom) * 100);
+                    const widthChange = newThumbWidth - oldThumbWidth;
+                    
+                    // 计算当前右边界位置
+                    const maxOldPosition = 100 - oldThumbWidth;
+                    const currentPosition = (progressPan / 100) * maxOldPosition;
+                    const rightBoundary = currentPosition + oldThumbWidth;
+                    
+                    // 根据新宽度计算新位置，保持右边界不变
+                    const newPosition = rightBoundary - newThumbWidth;
+                    const maxNewPosition = 100 - newThumbWidth;
+                    
+                    progressZoom = newZoom;
+                    progressPan = maxNewPosition > 0 ? Math.max(0, Math.min(100, (newPosition / maxNewPosition) * 100)) : 0;
+                    
+                    updateProgressTransform();
+                    updatePanControls();
+                }
+            }
+        }
+    }
+    
+    // 鼠标松开事件
+    function handleMouseUp() {
+        isDragging = false;
+        isResizing = false;
+        resizeType = null;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'default';
+    }
+    
+    // 点击滑轨直接跳转
+    function handleSliderClick(e) {
+        // 如果点击的是滑块本身、手柄或时间显示，不处理
+        if (e.target === thumbElement || 
+            e.target.classList.contains('resize-handle') ||
+            e.target.classList.contains('thumb-time-display')) return;
+        
+        const sliderRect = sliderElement.getBoundingClientRect();
+        const thumbRect = thumbElement.getBoundingClientRect();
+        
+        // 计算点击位置相对于滑轨的像素位置
+        const clickPixelPosition = e.clientX - sliderRect.left;
+        
+        // 获取滑块和滑轨的尺寸
+        const thumbWidth = thumbRect.width;
+        const sliderWidth = sliderRect.width;
+        
+        // 计算滑块可移动的范围（像素）
+        const maxMovablePixels = sliderWidth - thumbWidth;
+        
+        if (maxMovablePixels <= 0) {
+            progressPan = 0;
+            updateProgressTransform();
+            updateCustomPanSlider();
+            return;
+        }
+        
+        // 计算滑块左边缘的目标位置（点击位置 - 滑块宽度的一半，让滑块中心对准点击位置）
+        const targetThumbPosition = clickPixelPosition - (thumbWidth / 2);
+        
+        // 限制在可移动范围内
+        const clampedPosition = Math.max(0, Math.min(maxMovablePixels, targetThumbPosition));
+        
+        // 转换为progressPan值（0-100）
+        progressPan = (clampedPosition / maxMovablePixels) * 100;
+        
+        updateProgressTransform();
+        updateCustomPanSlider();
+    }
+    
+    // 绑定事件
+    // 滑块主体拖拽（排除手柄区域）
+    thumbElement.addEventListener('mousedown', handleThumbMouseDown);
+    
+    // 拖拽手柄
+    const leftHandle = document.getElementById('left-handle');
+    const rightHandle = document.getElementById('right-handle');
+    
+    if (leftHandle) {
+        leftHandle.addEventListener('mousedown', handleResizeMouseDown);
+    }
+    if (rightHandle) {
+        rightHandle.addEventListener('mousedown', handleResizeMouseDown);
+    }
+    
+    // 点击滑轨跳转
+    sliderElement.addEventListener('click', handleSliderClick);
+}
+
+// 计算滑块对应的时间范围
+function calculateThumbTimeRange() {
+    if (!player || !hasVideoLoaded) {
+        return { startTime: 0, endTime: 0 };
+    }
+    
+    const videoDuration = player.duration();
+    const minWidth = getMinThumbWidth();
+    const thumbWidthPercent = Math.max(minWidth, (1 / progressZoom) * 100);
+    const maxPosition = 100 - thumbWidthPercent;
+    const thumbPosition = (progressPan / 100) * maxPosition;
+    
+    // 计算滑块在视频时间轴上的开始和结束位置
+    const startPercent = thumbPosition / 100;
+    const endPercent = (thumbPosition + thumbWidthPercent) / 100;
+    
+    const startTime = startPercent * videoDuration;
+    const endTime = endPercent * videoDuration;
+    
+    return { startTime, endTime };
+}
+
+// 更新滑块时间显示
+function updateThumbTimeDisplay() {
+    const startTimeElement = document.getElementById('thumb-start-time');
+    const endTimeElement = document.getElementById('thumb-end-time');
+    
+    if (!startTimeElement || !endTimeElement) return;
+    
+    const { startTime, endTime } = calculateThumbTimeRange();
+    
+    startTimeElement.textContent = formatTime(startTime);
+    endTimeElement.textContent = formatTime(endTime);
+}
+
+// 计算基于视频时长的最小滑块宽度
+function getMinThumbWidth() {
+    if (!player || !hasVideoLoaded) {
+        return 8; // 如果没有视频，返回默认8%
+    }
+    
+    const videoDurationMinutes = player.duration() / 60; // 视频总分钟数
+    const minWidthPercent = 100 / videoDurationMinutes; // 1分钟对应的百分比
+    
+    // 最小宽度不能小于0.5%（确保可见性），不能大于50%（避免过大）
+    return Math.max(0.5, Math.min(50, minWidthPercent));
+}
+
+// 更新CSS中的最小宽度变量
+function updateMinThumbWidthCSS() {
+    const minWidth = getMinThumbWidth();
+    const panThumb = document.getElementById('pan-thumb');
+    if (panThumb) {
+        panThumb.style.setProperty('--min-thumb-width', `${minWidth}%`);
+    }
+}
+
+// 更新自定义平移滑块的显示
+function updateCustomPanSlider() {
+    const panThumb = document.getElementById('pan-thumb');
+    if (!panThumb) return;
+    
+    const minWidth = getMinThumbWidth();
+    // 计算矩形宽度：1/缩放倍数 * 滑轨总宽度
+    const thumbWidthPercent = Math.max(minWidth, (1 / progressZoom) * 100);
+    
+    // 计算矩形位置：根据当前pan值和矩形宽度
+    const maxPosition = 100 - thumbWidthPercent; // 矩形可移动的最大位置百分比
+    const thumbPosition = (progressPan / 100) * maxPosition;
+    
+    // 设置矩形样式
+    panThumb.style.width = `${thumbWidthPercent}%`;
+    panThumb.style.left = `${thumbPosition}%`;
+    
+    // 更新时间显示
+    updateThumbTimeDisplay();
 }
