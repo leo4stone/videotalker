@@ -761,6 +761,9 @@ class AnnotationManager {
         // 添加键盘导航支持
         this.setupRadioGroupNavigation(modal);
 
+        // 阻止模态框内的按键事件冒泡到视频界面
+        this.setupModalKeyboardIsolation(modal);
+
         document.body.appendChild(modal);
         
         // 自动聚焦到标题输入框
@@ -1144,6 +1147,55 @@ class AnnotationManager {
             group.addEventListener('blur', () => {
                 group.classList.remove('focused');
             });
+        });
+    }
+
+    // 设置模态框的键盘事件隔离
+    setupModalKeyboardIsolation(modal) {
+        // 需要阻止冒泡的按键列表（对应视频播放器的快捷键）
+        const videoShortcutKeys = [
+            'Space',           // 播放/暂停
+            'ArrowLeft',       // 快退
+            'ArrowRight',      // 快进
+            'ArrowUp',         // 音量+
+            'ArrowDown',       // 音量-
+            'KeyF',            // 全屏
+            'KeyM',            // 静音
+            'Enter'            // 添加打点（避免重复触发）
+        ];
+
+        // 在模态框上添加keydown事件监听器来阻止冒泡
+        modal.addEventListener('keydown', (e) => {
+            // 如果是视频快捷键，阻止事件冒泡
+            if (videoShortcutKeys.includes(e.code)) {
+                e.stopPropagation();
+                
+                // 对于某些特殊键，还需要阻止默认行为
+                if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+                    // 但是要允许在文本框中的正常使用
+                    const target = e.target;
+                    const isInInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+                    
+                    if (!isInInputField) {
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
+
+        // 同时阻止keyup事件冒泡（某些快捷键可能在keyup时触发）
+        modal.addEventListener('keyup', (e) => {
+            if (videoShortcutKeys.includes(e.code)) {
+                e.stopPropagation();
+            }
+        });
+
+        // 阻止keypress事件冒泡
+        modal.addEventListener('keypress', (e) => {
+            // 对于字符键，检查是否是快捷键相关的
+            if (e.key === ' ' || e.key === 'f' || e.key === 'm') {
+                e.stopPropagation();
+            }
         });
     }
 }
