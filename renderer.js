@@ -60,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCustomPanSlider();
             // 初始化时间显示
             updateThumbTimeDisplay();
+            // 初始化播放进度指示器
+            updatePlaybackIndicator();
         });
 
         player.on('error', function(error) {
@@ -757,6 +759,9 @@ function setupProgressBar() {
         if (duration > 0) {
             const progress = (currentTime / duration) * 100;
             updateProgressDisplay(progress, currentTime);
+            
+            // 更新播放进度指示器
+            updatePlaybackIndicator();
         }
     }
     
@@ -980,6 +985,9 @@ function initializeProgressZoom() {
 
     // 自定义平移滑块事件
     setupCustomPanSlider(customPanSlider, panThumb);
+    
+    // 播放进度指示器事件
+    setupPlaybackIndicator();
 
 
 
@@ -1184,10 +1192,11 @@ function setupCustomPanSlider(sliderElement, thumbElement) {
     
     // 点击滑轨直接跳转
     function handleSliderClick(e) {
-        // 如果点击的是滑块本身、手柄或时间显示，不处理
+        // 如果点击的是滑块本身、手柄、时间显示或播放指示器，不处理
         if (e.target === thumbElement || 
             e.target.classList.contains('resize-handle') ||
-            e.target.classList.contains('thumb-time-display')) return;
+            e.target.classList.contains('thumb-time-display') ||
+            e.target.classList.contains('playback-indicator')) return;
         
         const sliderRect = sliderElement.getBoundingClientRect();
         const thumbRect = thumbElement.getBoundingClientRect();
@@ -1317,4 +1326,77 @@ function updateCustomPanSlider() {
     
     // 更新时间显示
     updateThumbTimeDisplay();
+}
+
+// 设置播放进度指示器
+function setupPlaybackIndicator() {
+    const playbackIndicator = document.getElementById('playback-indicator');
+    if (!playbackIndicator) return;
+    
+    let isDraggingPlayback = false;
+    let startX = 0;
+    
+    // 鼠标按下事件
+    function handlePlaybackMouseDown(e) {
+        if (!player || !hasVideoLoaded) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isDraggingPlayback = true;
+        startX = e.clientX;
+        
+        document.addEventListener('mousemove', handlePlaybackMouseMove);
+        document.addEventListener('mouseup', handlePlaybackMouseUp);
+        document.body.style.cursor = 'grabbing';
+    }
+    
+    // 鼠标移动事件
+    function handlePlaybackMouseMove(e) {
+        if (!isDraggingPlayback || !player || !hasVideoLoaded) return;
+        
+        const customPanSlider = document.getElementById('custom-pan-slider');
+        const sliderRect = customPanSlider.getBoundingClientRect();
+        
+        // 计算鼠标在滑块中的相对位置
+        const mouseX = e.clientX - sliderRect.left;
+        const sliderWidth = sliderRect.width;
+        
+        // 转换为视频时间轴上的百分比（0-100）
+        const progressPercent = Math.max(0, Math.min(100, (mouseX / sliderWidth) * 100));
+        
+        // 转换为视频时间
+        const videoDuration = player.duration();
+        const targetTime = (progressPercent / 100) * videoDuration;
+        
+        // 设置播放器时间
+        player.currentTime(targetTime);
+        
+        // 更新指示器位置
+        updatePlaybackIndicator();
+    }
+    
+    // 鼠标松开事件
+    function handlePlaybackMouseUp() {
+        isDraggingPlayback = false;
+        document.removeEventListener('mousemove', handlePlaybackMouseMove);
+        document.removeEventListener('mouseup', handlePlaybackMouseUp);
+        document.body.style.cursor = 'default';
+    }
+    
+    // 绑定事件
+    playbackIndicator.addEventListener('mousedown', handlePlaybackMouseDown);
+}
+
+// 更新播放进度指示器位置
+function updatePlaybackIndicator() {
+    const playbackIndicator = document.getElementById('playback-indicator');
+    if (!playbackIndicator || !player || !hasVideoLoaded) return;
+    
+    const currentTime = player.currentTime();
+    const duration = player.duration();
+    const progressPercent = (currentTime / duration) * 100;
+    
+    // 设置指示器位置
+    playbackIndicator.style.left = `${progressPercent}%`;
 }
