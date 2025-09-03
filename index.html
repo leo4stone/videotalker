@@ -460,6 +460,7 @@
         font-weight: 500;
         white-space: nowrap;
         margin-top: 24px;
+        transition: all 0.5s ease;
       }
       .progress-container:hover .current-time-display .time-text{
         margin-top: 29px;
@@ -570,6 +571,51 @@
       
       .progress-container:hover .progress-tooltip {
         opacity: 1;
+      }
+
+      /* 视频总时长显示 */
+      .video-duration-display {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+        z-index: 17;
+        opacity: 0;
+        transition: all 0.5s ease;
+        pointer-events: none;
+        padding-bottom: 4px; /* 默认位于底部时的偏移 */
+      }
+
+      .video-duration-display.show {
+        opacity: 0.4;
+      }
+
+      .progress-container:hover .video-duration-display {
+        opacity: 1;
+      }
+
+      .video-duration-display .duration-text {
+        display: block;
+        background: rgba(0,0,0,0.6);
+        border-radius: 4px;
+        color: white;
+        padding: 2px 4px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        border: 1px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transform: translate(110%,0%);
+        transition: all 0.5s ease;
+      }
+
+      .progress-container:hover .video-duration-display .duration-text {
+        background: rgba(0,0,0,0.8);
+        border-color: rgba(255,255,255,0.3);
+        transform: translate(110%,-50%);
       }
       
       /* 文件信息显示 */
@@ -1152,6 +1198,10 @@
       <div class="progress-tooltip" id="progress-tooltip">
         <div class="tooltip-line"></div>
         <div class="tooltip-text" id="tooltip-text">00:00</div>
+      </div>
+      <!-- 视频总时长显示 -->
+      <div class="video-duration-display" id="video-duration-display">
+        <span class="duration-text">00:00</span>
       </div>
     </div>
 

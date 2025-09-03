@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const durationText = formatTime(duration);
             updateFileInfo(`视频时长: ${durationText}`);
             updateSidePanel();
+            updateDurationDisplay();
         });
 
         player.on('error', function(error) {
@@ -546,6 +547,12 @@ function showVideoRelatedElements() {
     elements.forEach(element => {
         element.style.display = 'block';
     });
+    
+    // 显示总时长显示
+    const durationDisplay = document.getElementById('video-duration-display');
+    if (durationDisplay) {
+        durationDisplay.classList.add('show');
+    }
 }
 
 // 隐藏视频相关的UI元素
@@ -554,6 +561,12 @@ function hideVideoRelatedElements() {
     elements.forEach(element => {
         element.style.display = 'none';
     });
+    
+    // 隐藏总时长显示
+    const durationDisplay = document.getElementById('video-duration-display');
+    if (durationDisplay) {
+        durationDisplay.classList.remove('show');
+    }
 }
 
 // 更新浮动播放按钮
@@ -601,6 +614,19 @@ function resetFloatingPlayButtonTimer() {
             hideFloatingPlayButton();
         }
     }, 2000); // 2秒后隐藏
+}
+
+// 更新总时长显示
+function updateDurationDisplay() {
+    if (!player || !hasVideoLoaded) return;
+    
+    const duration = player.duration();
+    const durationDisplay = document.getElementById('video-duration-display');
+    const durationText = durationDisplay?.querySelector('.duration-text');
+    
+    if (durationText && duration && !isNaN(duration)) {
+        durationText.textContent = formatTime(duration);
+    }
 }
 
 // 设置进度条
