@@ -200,10 +200,8 @@ body {
           right: 0;
           bottom: 0;
           height: 100%;
-          background: #ffffff; // 橙色线
           border-radius: 1.5px;
-          opacity: 0.8;
-          pointer-events: none;
+          opacity: 0;
 
         }
         // div.pan-thumb (视窗)
@@ -218,6 +216,11 @@ body {
           // border-radius: 99px;
           opacity: 0;
           transform: translateY(-50%);
+          cursor: grab;
+          
+          &:active {
+            cursor: grabbing;
+          }
           
           // 视窗内部效果
           &::before {
@@ -281,17 +284,21 @@ body {
             }
           }
 
-          // 拖拽手柄 (视窗边框控制)
-          .resize-handle {
-            position: absolute;
-            top: 0px;
-            height: 100%;
-            width: 8px;
-            cursor: ew-resize;
-            background: rgba(255,255,255,1);
-            transition: all 0.2s ease;
-            z-index: 2;
-            opacity: 0;
+                     // 拖拽手柄 (视窗边框控制)
+           .resize-handle {
+             position: absolute;
+             top: 0px;
+             height: 100%;
+             width: 8px;
+             cursor: ew-resize;
+             background: rgba(255,255,255,1);
+             transition: all 0.2s ease;
+             z-index: 2;
+             opacity: 0;
+             
+             &:active {
+               cursor: ew-resize;
+             }
   
             &:hover {
               background: rgba(64,150,255,1);
@@ -324,29 +331,29 @@ body {
           height: 100%;
           background: @primary-blue; // 蓝色线
           border-radius: 1.5px;
-          transition: width 0.1s ease;
+          pointer-events: none;
+        }
+
+        // 独立的播放进度标记
+        .playback-handle {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          width: 6px;
+          height: 6px;
+          background: @primary-blue;
+          border: 2px solid #fff;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          box-shadow: 0 0 4px rgba(0,0,0,0.3);
+          opacity: 0.8;
           cursor: pointer;
           pointer-events: auto;
+          z-index: 3;
 
-          // 蓝色小圆点
-          &::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: -3px;
-            width: 6px;
-            height: 6px;
-            background: @primary-blue;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            transform: translateY(-50%);
-            box-shadow: 0 0 4px rgba(0,0,0,0.3);
-            opacity: .8;
-            transition: opacity 0.2s ease;
-          }
-
-          &:hover::before {
+          &:hover {
             opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
           }
         }
         // 禁用状态

@@ -1330,8 +1330,9 @@ function updateCustomPanSlider() {
 
 // 设置播放进度指示器
 function setupPlaybackIndicator() {
-    const playbackIndicator = document.getElementById('playback-indicator');
-    if (!playbackIndicator) return;
+    const playbackProgress = document.getElementById('playback-progress');
+    const playbackHandle = document.getElementById('playback-handle');
+    if (!playbackProgress || !playbackHandle) return;
     
     let isDraggingPlayback = false;
     let startX = 0;
@@ -1384,14 +1385,16 @@ function setupPlaybackIndicator() {
         document.body.style.cursor = 'default';
     }
     
-    // 绑定事件
-    playbackIndicator.addEventListener('mousedown', handlePlaybackMouseDown);
+    // 绑定事件到playback-progress和playback-handle
+    playbackProgress.addEventListener('mousedown', handlePlaybackMouseDown);
+    playbackHandle.addEventListener('mousedown', handlePlaybackMouseDown);
 }
 
 // 更新播放进度指示器位置
 function updatePlaybackIndicator() {
     const playbackIndicator = document.getElementById('playback-indicator');
-    if (!playbackIndicator || !player || !hasVideoLoaded) return;
+    const playbackHandle = document.getElementById('playback-handle');
+    if (!playbackIndicator || !playbackHandle || !player || !hasVideoLoaded) return;
     
     const currentTime = player.currentTime();
     const duration = player.duration();
@@ -1399,4 +1402,7 @@ function updatePlaybackIndicator() {
     
     // 设置指示器宽度
     playbackIndicator.style.width = `${progressPercent}%`;
+    
+    // 设置播放标记位置
+    playbackHandle.style.left = `${progressPercent}%`;
 }
