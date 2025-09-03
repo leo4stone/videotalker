@@ -274,23 +274,7 @@ class AnnotationManager {
         // 创建标题容器（用于定位popup，不设置overflow限制）
         const title = document.createElement('div');
         title.className = 'annotation-title';
-        title.style.position = 'absolute';
-        title.style.bottom = '12px';
-        title.style.cursor = 'pointer';
-        title.style.overflow = 'visible'; // 允许popup显示
-        title.style.borderRadius = '3px';
-        title.style.backdropFilter = 'blur(3px)';
         
-        // 根据是否有时长来调整标题位置
-        if (annotation.duration && annotation.duration > 0) {
-            // 有时长：标题显示在条形的左侧
-            title.style.left = '0';
-            title.style.transform = 'translateX(0%)';
-        } else {
-            // 无时长：标题居中显示
-            title.style.left = '50%';
-            title.style.transform = 'translateX(-50%)';
-        }
         
         // 应用动态高度
         if (levelHeightMap) {
@@ -303,19 +287,10 @@ class AnnotationManager {
             
             const heightPercent = levelHeightMap[levelKey] || 100;
             
-            // 根据是否有时长来调整transform
-            if (annotation.duration && annotation.duration > 0) {
-                title.style.transform = `translateX(0%) translateY(-${heightPercent}%)`;
-            } else {
-                title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
-            }
+            title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
         } else {
             // 默认转换（向后兼容）
-            if (annotation.duration && annotation.duration > 0) {
-                title.style.transform = 'translateX(0%) translateY(-100%)';
-            } else {
-                title.style.transform = 'translateX(-50%) translateY(-100%)';
-            }
+            title.style.transform = 'translateX(-50%) translateY(-100%)';
         }
         
         // 创建标题文本容器（处理文本溢出）

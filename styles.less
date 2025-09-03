@@ -48,1256 +48,1255 @@ body {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+}
 
-  // ===============================
-  // 视频容器 - body > div.video-container
-  // ===============================
-  .video-container {
-    position: fixed;
-    top: 0;
-    left: 0;
+// ===============================
+// 视频容器 - body > div.video-container
+// ===============================
+.video-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+
+  // video#video-player.video-js.vjs-default-skin
+  #video-player {
     width: 100%;
     height: 100%;
-    z-index: 1;
+    object-fit: cover;
 
-    // video#video-player.video-js.vjs-default-skin
-    #video-player {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    // Video.js 样式覆盖
+    &.video-js {
+      background-color: transparent;
 
-      // Video.js 样式覆盖
-      &.video-js {
-        background-color: transparent;
-
-        // p.vjs-no-js > a
-        .vjs-no-js {
-          a {
-            color: inherit;
-            text-decoration: underline;
-          }
+      // p.vjs-no-js > a
+      .vjs-no-js {
+        a {
+          color: inherit;
+          text-decoration: underline;
         }
+      }
 
-        // Video.js 大播放按钮
-        .vjs-big-play-button {
-          font-size: 4em;
-          line-height: 1.5em;
-          height: 1.5em;
-          width: 3em;
-          border-radius: 50%;
-          background-color: rgba(255,255,255,0.15);
-          border: 3px solid rgba(255,255,255,0.8);
-          margin-left: -1.5em;
-          margin-top: -0.75em;
-          backdrop-filter: @blur-small;
-          -webkit-backdrop-filter: @blur-small;
-          transition: @transition-medium;
+      // Video.js 大播放按钮
+      .vjs-big-play-button {
+        font-size: 4em;
+        line-height: 1.5em;
+        height: 1.5em;
+        width: 3em;
+        border-radius: 50%;
+        background-color: rgba(255,255,255,0.15);
+        border: 3px solid rgba(255,255,255,0.8);
+        margin-left: -1.5em;
+        margin-top: -0.75em;
+        backdrop-filter: @blur-small;
+        -webkit-backdrop-filter: @blur-small;
+        transition: @transition-medium;
 
-          &:hover {
-            background-color: rgba(255,255,255,0.25);
-            transform: scale(1.1);
-          }
+        &:hover {
+          background-color: rgba(255,255,255,0.25);
+          transform: scale(1.1);
         }
+      }
 
-        // 隐藏默认控制栏
-        .vjs-control-bar {
-          display: none;
-        }
+      // 隐藏默认控制栏
+      .vjs-control-bar {
+        display: none;
       }
     }
   }
+}
 
-  // ===============================
-  // 文件信息浮层 - body > div.file-info-overlay
-  // ===============================
-  .file-info-overlay {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: @overlay-bg;
-    color: @primary-text;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 15;
-    backdrop-filter: @blur-small;
-    -webkit-backdrop-filter: @blur-small;
-    border: 1px solid @border-light;
+// ===============================
+// 文件信息浮层 - body > div.file-info-overlay
+// ===============================
+.file-info-overlay {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: @overlay-bg;
+  color: @primary-text;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 15;
+  backdrop-filter: @blur-small;
+  -webkit-backdrop-filter: @blur-small;
+  border: 1px solid @border-light;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &.show {
+    opacity: 1;
+  }
+}
+
+// ===============================
+// 视频进度条容器 - body > div.progress-container
+// ===============================
+.progress-container {
+  position: fixed;
+  box-sizing: border-box;
+  bottom: 0;
+  left: 200px;
+  right: 200px;
+  height: @progress-height;
+  cursor: pointer;
+  border-radius: 9999px;
+  z-index: 15;
+  user-select: none;
+
+  &,
+  &::before,
+  &::after,
+  *,
+  *::before,
+  *::after {
+    transition: @transition-fast;
+  }
+
+  // 进度条背景轨道
+  &::before {
+    content: "";
+    position: absolute;
+    height: 4px;
+    left: 0;
+    right: 0;
+    bottom: 0%;
+    transform: translate(0,-20%);
+    cursor: pointer;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.4);
+    z-index: 1;
+  }
+  // 进度条悬停背景
+  &::after {
+    content: "";
+    position: absolute;
+    height: 4px;
+    left: 0;
+    right: 0;
+    bottom: 0%;
+    transform: translate(0,-20%);
+    cursor: pointer;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.4);
+    z-index: 1;
     opacity: 0;
-    transition: opacity 0.3s ease;
-
-    &.show {
+  }
+  // 悬停状态下的进度条和句柄样式
+  &:hover {
+    &::before {
+      left: -20px;
+      right: -20px;
+      height: 100%;
+      transform: translate(0,0%);
+      background: @overlay-bg;
+    }
+    &::after {
+      left: -2px;
+      right: -2px;
+      bottom: 50%;
+      transform: translate(0,50%);
       opacity: 1;
     }
   }
 
-  // ===============================
-  // 视频进度条容器 - body > div.progress-container
-  // ===============================
-  .progress-container {
-    position: fixed;
-    box-sizing: border-box;
-    bottom: 0;
-    left: 80px;
-    right: 80px;
-    height: @progress-height;
-    cursor: pointer;
-    border-radius: 9999px;
-    z-index: 15;
-    user-select: none;
+  // div.progress-bar
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+    transform: none;
 
-    &,
-    &::before,
-    &::after,
-    *,
-    *::before,
-    *::after {
-      transition: @transition-fast;
-    }
-
-    // 进度条背景轨道
-    &::before {
-      content: "";
+    // div.progress-line
+    .progress-line {
       position: absolute;
-      height: 4px;
       left: 0;
       right: 0;
       bottom: 0%;
-      transform: translate(0,-20%);
-      cursor: pointer;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.4);
-      z-index: 1;
+      height: 2px;
+      background: @primary-blue;
+      transform: translateY(-100%);
+      border-radius: 1px;
     }
 
-
-    // 进度条悬停背景
-    &::after {
-      content: "";
+    // 当前时间指示器 & 打点添加按钮
+    .progress-handle {
       position: absolute;
-      height: 4px;
-      left: 0;
-      right: 0;
-      bottom: 0%;
-      transform: translate(0,-20%);
-      cursor: pointer;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.4);
-      z-index: 1;
-      opacity: 0;
-    }
+      right: -1px;
+      top: 50%;
+      width: 2px;
+      height: 16px;
+      transform: translate(0, -50%);
+      border-radius: 1px;
 
-    // div.progress-bar
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      position: relative;
-      display: flex;
-      align-items: center;
-      z-index: 2;
-
-      // div.progress-line
-      .progress-line {
+      // div.current-time-display
+      .current-time-display {
         position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0%;
-        height: 2px;
-        background: @primary-blue;
-        transform: translateY(-100%);
-        border-radius: 1px;
-      }
-
-      // div.progress-handle
-      .progress-handle {
-        position: absolute;
-        right: -1px;
+        left: 50%;
         top: 50%;
-        width: 2px;
-        height: 16px;
-        transform: translate(0, -50%);
-        border-radius: 1px;
+        transform: translate(-50%,-50%);
+        opacity: .4;
 
-        // div.current-time-display
-        .current-time-display {
+        // 当前时间
+        .time-text {
+          display: block;
+          background: rgba(0,0,0,.6);
+          border-radius: 50px;
+          color: @primary-text;
+          padding: 2px 4px;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          margin-top: 24px;
+        }
+
+        // 添加打点
+        .add-annotation-btn {
           position: absolute;
+          width: 16px;
+          height: 16px;
           left: 50%;
           top: 50%;
           transform: translate(-50%,-50%);
-          opacity: .4;
-
-          // span.time-text
-          .time-text {
-            display: block;
-            background: rgba(0,0,0,.6);
-            border-radius: 50px;
-            color: @primary-text;
-            padding: 2px 4px;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            margin-top: 24px;
+          opacity: 0;
+          background: rgba(0,0,0,0.5);
+          border: 2px solid @primary-text;
+          color: @primary-text;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          //箭头
+          &::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            left: 50%;
+            top: -90%;
+            transform: translate(-50%,0%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid @primary-text;
           }
 
-          // button.add-annotation-btn
-          .add-annotation-btn {
+          &:hover {
+            background: rgba(255,255,255,0);
+            color: black;
+
+            &::before {
+              border-top-color: @primary-blue;
+            }
+          }
+
+          &::after {
+            content: '';
             position: absolute;
-            width: 16px;
-            height: 16px;
+            width: 6px;
+            height: 6px;
             left: 50%;
             top: 50%;
             transform: translate(-50%,-50%);
-            opacity: 0;
-            background: rgba(0,0,0,0.5);
-            border: 2px solid @primary-text;
-            color: @primary-text;
+            background-color: @primary-blue;
             border-radius: 50%;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-
-            &::before {
-              content: '';
-              position: absolute;
-              width: 0;
-              height: 0;
-              left: 50%;
-              top: -90%;
-              transform: translate(-50%,0%);
-              border-left: 6px solid transparent;
-              border-right: 6px solid transparent;
-              border-top: 8px solid @primary-text;
-            }
-
-            &:hover {
-              background: rgba(255,255,255,0);
-              color: black;
-
-              &::before {
-                border-top-color: @primary-blue;
-              }
-            }
-
-            &::after {
-              content: '';
-              position: absolute;
-              width: 6px;
-              height: 6px;
-              left: 50%;
-              top: 50%;
-              transform: translate(-50%,-50%);
-              background-color: @primary-blue;
-              border-radius: 50%;
-            }
           }
         }
       }
     }
+  }
 
-    // 悬停状态下的进度条和句柄样式
-    &:hover {
+  // 悬停状态下的进度条和句柄样式
+  &:hover .progress-bar{
+    .progress-line {
+      bottom: 50%;
+      transform: translateY(50%);
+    }
 
-      &::before {
-        left: -20px;
-        right: -20px;
-        height: 100%;
-        transform: translate(0,0%);
-        background: @overlay-bg;
-      }
-      &::after {
-        left: -2px;
-        right: -2px;
-        bottom: 50%;
-        transform: translate(0,50%);
+    .progress-handle {
+      opacity: 1;
+      height: 30px;
+      .current-time-display {
         opacity: 1;
-      }
 
-      .progress-line {
-        bottom: 50%;
-        transform: translateY(50%);
-      }
-
-      .progress-handle {
-        opacity: 1;
-        height: 30px;
-        .current-time-display {
+        .time-text {
+          margin-top: 29px;
+          font-size: 10px;
+        }
+        .add-annotation-btn {
           opacity: 1;
-  
-          .time-text {
-            margin-top: 29px;
-            font-size: 10px;
-          }
-          .add-annotation-btn {
-            opacity: 1;
-          }
         }
       }
-
-
     }
+  }
 
-    // div.progress-tooltip
-    .progress-tooltip {
+  // 鼠标时间指示器
+  .progress-tooltip {
+    position: absolute;
+    bottom: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    // div.tooltip-line
+    .tooltip-line {
       position: absolute;
       bottom: 0;
-      pointer-events: none;
-      opacity: 0;
-
-      // div.tooltip-line
-      .tooltip-line {
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 2px;
-        height: 60px;
-        background: @overlay-bg;
-        border-radius: 1px;
-      }
-
-      // div.tooltip-text
-      .tooltip-text {
-        position: absolute;
-        bottom: 60px;
-        left: 50%;
-        background: @overlay-bg;
-        color: @primary-text;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        white-space: nowrap;
-        font-weight: 500;
-        backdrop-filter: @blur-small;
-        -webkit-backdrop-filter: @blur-small;
-        border: 1px solid @border-light;
-        transform: translateX(-50%);
-      }
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 60px;
+      background: @overlay-bg;
+      border-radius: 1px;
     }
 
-    &:hover .progress-tooltip {
-      opacity: 1;
-    }
-
-    // div.video-duration-display
-    .video-duration-display {
+    // div.tooltip-text
+    .tooltip-text {
       position: absolute;
-      right: 0;
-      bottom: 0;
-      height: 100%;
-      display: flex;
-      align-items: flex-end;
-      z-index: 17;
-      opacity: 0;
-      pointer-events: none;
-      padding-bottom: 4px;
+      bottom: 60px;
+      left: 50%;
+      background: @overlay-bg;
+      color: @primary-text;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      font-weight: 500;
+      backdrop-filter: @blur-small;
+      -webkit-backdrop-filter: @blur-small;
+      border: 1px solid @border-light;
+      transform: translateX(-50%);
+    }
+  }
 
-      &.show {
-        opacity: 0.4;
+  &:hover .progress-tooltip {
+    opacity: 1;
+  }
+
+  // 视频总时长
+  .video-duration-display {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    z-index: 17;
+    opacity: 0;
+    pointer-events: none;
+    padding-bottom: 4px;
+
+    &.show {
+      opacity: 0.4;
+    }
+
+    // span.duration-text
+    .duration-text {
+      display: block;
+      background: rgba(0,0,0,0.6);
+      border-radius: 4px;
+      color: @primary-text;
+      padding: 2px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      border: 1px solid @border-medium;
+      backdrop-filter: @blur-small;
+      -webkit-backdrop-filter: @blur-small;
+      transform: translate(110%,0%);
+    }
+  }
+
+  &:hover .video-duration-display {
+    opacity: 1;
+
+    .duration-text {
+      background: @overlay-bg;
+      border-color: @border-strong;
+      transform: translate(110%,-50%);
+    }
+  }
+
+  // ===============================
+  // 打点容器 - 动态添加到 progress-container 内
+  // ===============================
+  .annotation-container {
+    height: 8px;
+    top: 50%;
+    transform: translateY(-50%) translateX(0%);
+
+    // div.annotation-title
+    .annotation-title {
+      position: absolute;
+      left: 0%;
+      bottom: 12px;
+      cursor: pointer;
+      overflow: visible;
+      border-radius: 3px;
+      background: #f00;
+      // border: 1px solid @border-strong;
+      transform: translateX(-50%) translateY(-100%);
+      &::before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        left: 50%;
+        top: 100%;
+        transform: translate(-50%,0px);
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid @primary-text;
       }
 
-      // span.duration-text
-      .duration-text {
-        display: block;
-        background: rgba(0,0,0,0.6);
-        border-radius: 4px;
+      // div.annotation-popup
+      .annotation-popup {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        background: @glass-bg;
         color: @primary-text;
-        padding: 2px 4px;
+        padding: 12px;
+        border-radius: 8px;
         font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-        border: 1px solid @border-medium;
-        backdrop-filter: @blur-small;
-        -webkit-backdrop-filter: @blur-small;
-        transform: translate(110%,0%);
-      }
-    }
-
-    &:hover .video-duration-display {
-      opacity: 1;
-
-      .duration-text {
-        background: @overlay-bg;
-        border-color: @border-strong;
-        transform: translate(110%,-50%);
-      }
-    }
-
-    // ===============================
-    // 打点容器 - 动态添加到 progress-container 内
-    // ===============================
-    .annotation-container {
-      transition: @transition-slow;
-      top: 50%;
-      transform: translateY(-50%) translateX(0%);
-
-      // div.annotation-title
-      .annotation-title {
-        background: rgba(108, 117, 125, 0.9);
+        min-width: 150px;
+        max-width: 250px;
         border: 1px solid @border-strong;
-        transform: translateX(-50%) translateY(-100%);
+        backdrop-filter: @blur-medium;
+        -webkit-backdrop-filter: blur(1px);
+        opacity: 0;
+        visibility: hidden;
+        z-index: 1000;
+        pointer-events: auto;
+        cursor: pointer;
 
-        // div.annotation-popup
-        .annotation-popup {
-          position: absolute;
-          bottom: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          margin-bottom: 8px;
-          background: @glass-bg;
-          color: @primary-text;
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 12px;
-          min-width: 150px;
-          max-width: 250px;
-          border: 1px solid @border-strong;
-          backdrop-filter: @blur-medium;
-          -webkit-backdrop-filter: blur(1px);
-          opacity: 0;
-          visibility: hidden;
-          transition: @transition-medium;
-          z-index: 1000;
-          pointer-events: auto;
-          cursor: pointer;
+        &:hover {
+          background: rgba(0,0,0,0.4);
+        }
 
-          &:hover {
-            background: rgba(0,0,0,0.4);
+        // div.annotation-popup-content
+        .annotation-popup-content {
+          // div.annotation-time
+          .annotation-time {
+            font-weight: bold;
+            margin-bottom: 6px;
           }
 
-          // div.annotation-popup-content
-          .annotation-popup-content {
-            // div.annotation-time
-            .annotation-time {
-              font-weight: bold;
-              margin-bottom: 6px;
-            }
+          // div.annotation-popup-title
+          .annotation-popup-title {
+            color: @primary-text;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 13px;
+          }
 
-            // div.annotation-popup-title
-            .annotation-popup-title {
-              color: @primary-text;
-              font-weight: 600;
-              margin-bottom: 6px;
-              font-size: 13px;
-            }
+          // div.annotation-text
+          .annotation-text {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: rgba(255,255,255,0.9);
+          }
 
-            // div.annotation-text
-            .annotation-text {
-              margin-bottom: 8px;
-              line-height: 1.4;
-              color: rgba(255,255,255,0.9);
-            }
+          // div.annotation-empty
+          .annotation-empty {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: @secondary-text;
+            font-style: italic;
+            font-size: 12px;
+          }
 
-            // div.annotation-empty
-            .annotation-empty {
-              margin-bottom: 8px;
-              line-height: 1.4;
-              color: @secondary-text;
-              font-style: italic;
-              font-size: 12px;
-            }
+          // div.popup-btn
+          .popup-btn {
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+          }
 
-            // div.popup-btn
-            .popup-btn {
+          // div.annotation-actions
+          .annotation-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            margin-top: 8px;
+
+            // button.popup-icon-btn
+            .popup-icon-btn {
+              width: 24px;
+              height: 24px;
               border: none;
-              padding: 4px 8px;
               border-radius: 4px;
+              background: rgba(255,255,255,0.2);
+              color: @primary-text;
               cursor: pointer;
-              font-size: 11px;
-              transition: background 0.2s ease;
-            }
-
-            // div.annotation-actions
-            .annotation-actions {
               display: flex;
-              justify-content: flex-end;
-              gap: 4px;
-              margin-top: 8px;
+              align-items: center;
+              justify-content: center;
 
-              // button.popup-icon-btn
-              .popup-icon-btn {
-                width: 24px;
-                height: 24px;
-                border: none;
-                border-radius: 4px;
-                background: rgba(255,255,255,0.2);
-                color: @primary-text;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: @transition-fast;
+              &:hover {
+                background: rgba(255,255,255,0.3);
+                transform: scale(1.1);
+              }
+
+              &.delete-btn {
+                background: rgba(220,53,69,0.8);
 
                 &:hover {
-                  background: rgba(255,255,255,0.3);
+                  background: @danger-red;
                   transform: scale(1.1);
                 }
+              }
 
-                &.delete-btn {
-                  background: rgba(220,53,69,0.8);
-
-                  &:hover {
-                    background: @danger-red;
-                    transform: scale(1.1);
-                  }
-                }
-
-                svg {
-                  pointer-events: none;
-                }
+              svg {
+                pointer-events: none;
               }
             }
           }
         }
-
-        // 悬停时显示popup
-        &:hover .annotation-popup {
-          opacity: 1;
-          visibility: visible;
-        }
       }
 
-      // div.annotation-dot
-      .annotation-dot {
-        background-color: #6c757d;
-        border: 2px solid rgba(108, 117, 125, 0.8);
-      }
-
-      // 悬停容器时显示popup
+      // 悬停时显示popup
       &:hover .annotation-popup {
         opacity: 1;
         visibility: visible;
       }
-
-      // 打点颜色系统
-      &.color-red {
-        .annotation-dot {
-          background-color: @danger-red;
-          border-color: rgba(220, 53, 69, 0.8);
-        }
-        .annotation-title {
-          background: rgba(220, 53, 69, 0.9);
-          border-color: @border-strong;
-        }
-      }
-
-      &.color-orange {
-        .annotation-dot {
-          background-color: @warning-orange;
-          border-color: rgba(253, 126, 20, 0.8);
-        }
-        .annotation-title {
-          background: rgba(253, 126, 20, 0.9);
-          border-color: @border-strong;
-        }
-      }
-
-      &.color-yellow {
-        .annotation-dot {
-          background-color: @warning-yellow;
-          border-color: rgba(255, 193, 7, 0.8);
-        }
-        .annotation-title {
-          background: rgba(255, 193, 7, 0.9);
-          border-color: @border-strong;
-          color: #000;
-        }
-      }
-
-      &.color-green {
-        .annotation-dot {
-          background-color: @success-green;
-          border-color: rgba(40, 167, 69, 0.8);
-        }
-        .annotation-title {
-          background: rgba(40, 167, 69, 0.9);
-          border-color: @border-strong;
-        }
-      }
-
-      &.color-blue {
-        .annotation-dot {
-          background-color: @primary-blue;
-          border-color: rgba(0, 123, 255, 0.8);
-        }
-        .annotation-title {
-          background: rgba(0, 123, 255, 0.9);
-          border-color: @border-strong;
-        }
-      }
-
-      &.color-purple {
-        .annotation-dot {
-          background-color: @info-purple;
-          border-color: rgba(111, 66, 193, 0.8);
-        }
-        .annotation-title {
-          background: rgba(111, 66, 193, 0.9);
-          border-color: @border-strong;
-        }
-      }
-
-      // 有时长的打点，条形样式
-      &.has-duration .annotation-dot {
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      // 打点级别高度系统
-      &.level-1 .annotation-title {
-        transform: translateX(-50%) translateY(-400%);
-      }
-      &.level-2 .annotation-title {
-        transform: translateX(-50%) translateY(-300%);
-      }
-      &.level-3 .annotation-title {
-        transform: translateX(-50%) translateY(-200%);
-      }
     }
-
-    // 进度条悬停时保持打点居中位置
-    &:hover .annotation-container {
-      top: 50%;
-      transform: translateY(-50%) translateX(0%);
-    }
-  }
-
-  // ===============================
-  // 展开按钮 - body > button.expand-button
-  // ===============================
-  .expand-button {
-    position: fixed;
-    right: 10px;
-    top: 50%;
-    transform: translate(0%,-50%);
-    width: 50px;
-    height: 50px;
-    background: @overlay-bg;
-    border: 1px solid @border-strong;
-    border-radius: 50%;
-    color: @primary-text;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: @transition-medium;
-    backdrop-filter: @blur-small;
-    -webkit-backdrop-filter: @blur-small;
-    opacity: 0.4;
-    z-index: 10002;
-
-
-    &:hover {
-      background: rgba(0,0,0,0.9);
-      border-color: rgba(255,255,255,0.5);
-      transform: translate(0%,-50%) scale(1.1);
+    // 悬停容器时显示popup
+    &:hover .annotation-title .annotation-popup {
       opacity: 1;
+      visibility: visible;
     }
 
-    &.sidebar-open {
-      right: @sidebar-width + 10px;
-      &:hover {
-        transform: translate(0%,-50%) scale(1.1);
+    // div.annotation-dot
+    .annotation-dot {
+      width: 100% ;
+      height: 100% ;
+      position: relative;
+      background-color: #6c757d;
+      // border: 2px solid rgba(108, 117, 125, 0.8);
+      &::before,
+      &::after{
+        content:"";
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background-color: #f00;
+        left: 0;
+        top: 50%;
+        transform: translate(-50%,-50%);
+        border-radius: 50%;
+        border: 2px solid transparent;
+      }
+      &::after{
+        background-color: #f00;
+        left: 100%;
       }
     }
 
-    &.hidden {
-      opacity: 0;
-      pointer-events: none;
+    &:hover .annotation-dot{
+      &::before{
+        width: 8px;
+        height: 8px;
+        background-color: #fff !important;
+        z-index: 1;
+      }
+      &::after{
+        background-color: rgba(255,255,255,.5) !important;
+      }
+    }
+
+    // 打点颜色系统 - 使用 Less mixin
+    .annotation-color(@color, @title-text-color: white) {
+      .annotation-dot {
+        background-color: @color;
+        &::before,
+        &::after{
+          background-color: @color;
+          border: 2px solid @color;
+        }
+
+      }
+      .annotation-title {
+        background: fade(@color, 90%);
+        color: @title-text-color;
+        &::before{
+          border-top-color:fade(@color, 90%);
+        }
+      }
+    }
+
+    &.color-red { .annotation-color(@danger-red); }
+    &.color-orange { .annotation-color(@warning-orange); }
+    &.color-yellow { .annotation-color(@warning-yellow, #000); }
+    &.color-green { .annotation-color(@success-green); }
+    &.color-blue { .annotation-color(@primary-blue); }
+    &.color-purple { .annotation-color(@info-purple); }
+
+    // 有时长的打点，条形样式
+    // &.has-duration .annotation-dot {
+    //   width: 100% ;
+    //   height: 100% ;
+    // }
+
+    // 打点级别高度系统
+    &.level-1 .annotation-title {
+      transform: translateX(-50%) translateY(-400%);
+    }
+    &.level-2 .annotation-title {
+      transform: translateX(-50%) translateY(-300%);
+    }
+    &.level-3 .annotation-title {
+      transform: translateX(-50%) translateY(-200%);
     }
   }
 
-  // ===============================
-  // 浮动播放按钮 - body > button.floating-play-button
-  // ===============================
-  .floating-play-button {
-    position: fixed;
-    bottom: 30px;
-    left: 30px;
-    width: 60px;
-    height: 60px;
-    background: @overlay-bg;
-    border: 2px solid rgba(255,255,255,0.8);
-    border-radius: 50%;
-    color: @primary-text;
-    cursor: pointer;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: @transition-medium;
-    backdrop-filter: @blur-small;
-    -webkit-backdrop-filter: @blur-small;
+}
+
+// ===============================
+// 展开按钮 - body > button.expand-button
+// ===============================
+.expand-button {
+  position: fixed;
+  right: 10px;
+  top: 50%;
+  transform: translate(0%,-50%);
+  width: 50px;
+  height: 50px;
+  background: @overlay-bg;
+  border: 1px solid @border-strong;
+  border-radius: 50%;
+  color: @primary-text;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: @transition-medium;
+  backdrop-filter: @blur-small;
+  -webkit-backdrop-filter: @blur-small;
+  opacity: 0.4;
+  z-index: 10002;
+
+
+  &:hover {
+    background: rgba(0,0,0,0.9);
+    border-color: rgba(255,255,255,0.5);
+    transform: translate(0%,-50%) scale(1.1);
+    opacity: 1;
+  }
+
+  &.sidebar-open {
+    right: @sidebar-width + 10px;
+    &:hover {
+      transform: translate(0%,-50%) scale(1.1);
+    }
+  }
+
+  &.hidden {
     opacity: 0;
     pointer-events: none;
+  }
+}
 
-    &.show {
-      opacity: 0.3;
-      pointer-events: auto;
+// ===============================
+// 浮动播放按钮 - body > button.floating-play-button
+// ===============================
+.floating-play-button {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  width: 60px;
+  height: 60px;
+  background: @overlay-bg;
+  border: 2px solid rgba(255,255,255,0.8);
+  border-radius: 50%;
+  color: @primary-text;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: @transition-medium;
+  backdrop-filter: @blur-small;
+  -webkit-backdrop-filter: @blur-small;
+  opacity: 0;
+  pointer-events: none;
+
+  &.show {
+    opacity: 0.3;
+    pointer-events: auto;
+  }
+
+  &:hover {
+    background: rgba(0,0,0,0.9);
+    border-color: rgba(255,255,255,1);
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  // div.play-icon
+  .play-icon {
+    width: 0;
+    height: 0;
+    border-left: 16px solid @primary-text;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    margin-left: 4px;
+  }
+
+  // div.pause-icon
+  .pause-icon {
+    display: flex;
+    gap: 4px;
+
+    &::before,
+    &::after {
+      content: '';
+      width: 6px;
+      height: 20px;
+      background: @primary-text;
+      border-radius: 1px;
+    }
+  }
+}
+
+// ===============================
+// 右侧侧边栏 - body > div.overlay-ui
+// ===============================
+.overlay-ui {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: @sidebar-width;
+  height: 100%;
+  background: @secondary-bg;
+  backdrop-filter: @blur-large;
+  -webkit-backdrop-filter: @blur-large;
+  border-left: 1px solid @border-light;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  padding: 30px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  z-index: 10001;
+
+  &.show {
+    transform: translateX(0);
+  }
+
+  // div.sidebar-header
+  .sidebar-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid @border-light;
+
+    // h1.app-title
+    .app-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: @primary-text;
+      margin: 0 0 10px 0;
     }
 
-    &:hover {
-      background: rgba(0,0,0,0.9);
-      border-color: rgba(255,255,255,1);
-      transform: scale(1.1);
-      opacity: 1;
-    }
-
-    // div.play-icon
-    .play-icon {
-      width: 0;
-      height: 0;
-      border-left: 16px solid @primary-text;
-      border-top: 10px solid transparent;
-      border-bottom: 10px solid transparent;
-      margin-left: 4px;
-    }
-
-    // div.pause-icon
-    .pause-icon {
-      display: flex;
-      gap: 4px;
-
-      &::before,
-      &::after {
-        content: '';
-        width: 6px;
-        height: 20px;
-        background: @primary-text;
-        border-radius: 1px;
-      }
+    // p.app-subtitle
+    .app-subtitle {
+      font-size: 14px;
+      color: @secondary-text;
+      margin: 0;
     }
   }
 
-  // ===============================
-  // 右侧侧边栏 - body > div.overlay-ui
-  // ===============================
-  .overlay-ui {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: @sidebar-width;
-    height: 100%;
-    background: @secondary-bg;
-    backdrop-filter: @blur-large;
-    -webkit-backdrop-filter: @blur-large;
-    border-left: 1px solid @border-light;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    padding: 30px;
-    box-sizing: border-box;
-    overflow-y: auto;
-    z-index: 10001;
+  // div.control-section
+  .control-section {
+    margin-bottom: 30px;
 
-    &.show {
-      transform: translateX(0);
-    }
-
-    // div.sidebar-header
-    .sidebar-header {
-      margin-bottom: 30px;
-      padding-bottom: 20px;
+    // div.section-title
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: @primary-text;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
       border-bottom: 1px solid @border-light;
-
-      // h1.app-title
-      .app-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: @primary-text;
-        margin: 0 0 10px 0;
-      }
-
-      // p.app-subtitle
-      .app-subtitle {
-        font-size: 14px;
-        color: @secondary-text;
-        margin: 0;
-      }
     }
 
-    // div.control-section
-    .control-section {
-      margin-bottom: 30px;
+    // div.controls
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
 
-      // div.section-title
-      .section-title {
-        font-size: 16px;
-        font-weight: 600;
+      // button.btn
+      .btn {
+        padding: 14px 20px;
+        background: rgba(255,255,255,0.1);
         color: @primary-text;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid @border-light;
-      }
-
-      // div.controls
-      .controls {
+        border: 1px solid @border-medium;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: @transition-fast;
+        text-align: left;
         display: flex;
-        flex-direction: column;
-        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
 
-        // button.btn
-        .btn {
-          padding: 14px 20px;
-          background: rgba(255,255,255,0.1);
-          color: @primary-text;
-          border: 1px solid @border-medium;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: @transition-fast;
-          text-align: left;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+        &:hover {
+          background: rgba(255,255,255,0.2);
+          border-color: rgba(255,255,255,0.4);
+        }
+
+        &.primary {
+          background: rgba(0,123,255,0.8);
+          border-color: @primary-blue;
 
           &:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.4);
-          }
-
-          &.primary {
-            background: rgba(0,123,255,0.8);
-            border-color: @primary-blue;
-
-            &:hover {
-              background: @primary-blue;
-            }
-          }
-
-          // span (按钮内的文本和图标)
-          span {
-            pointer-events: none;
+            background: @primary-blue;
           }
         }
-      }
 
-      // 特殊状态：隐藏元素
-      &.hide-when-no-video {
-        display: none;
+        // span (按钮内的文本和图标)
+        span {
+          pointer-events: none;
+        }
       }
     }
 
-    // div.info-section
-    .info-section {
-      margin-bottom: 30px;
-
-      // div.section-title
-      .section-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: @primary-text;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid @border-light;
-      }
-
-      // div.panel-item
-      .panel-item {
-        margin-bottom: 15px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid @border-light;
-
-        &:last-child {
-          margin-bottom: 0;
-          padding-bottom: 0;
-          border-bottom: none;
-        }
-
-        // div.panel-label
-        .panel-label {
-          font-size: 12px;
-          color: @secondary-text;
-          margin-bottom: 5px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        // div.panel-value
-        .panel-value {
-          font-size: 14px;
-          color: @primary-text;
-          font-weight: 500;
-        }
-      }
-
-      // 特殊状态：隐藏元素
-      &.hide-when-no-video {
-        display: none;
-      }
+    // 特殊状态：隐藏元素
+    &.hide-when-no-video {
+      display: none;
     }
   }
 
-  // ===============================
-  // 打点输入模态框 - 动态添加到 body
-  // ===============================
-  .annotation-input-modal {
-    position: fixed;
+  // div.info-section
+  .info-section {
+    margin-bottom: 30px;
+
+    // div.section-title
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: @primary-text;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid @border-light;
+    }
+
+    // div.panel-item
+    .panel-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid @border-light;
+
+      &:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      // div.panel-label
+      .panel-label {
+        font-size: 12px;
+        color: @secondary-text;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      // div.panel-value
+      .panel-value {
+        font-size: 14px;
+        color: @primary-text;
+        font-weight: 500;
+      }
+    }
+
+    // 特殊状态：隐藏元素
+    &.hide-when-no-video {
+      display: none;
+    }
+  }
+}
+
+// ===============================
+// 打点输入模态框 - 动态添加到 body
+// ===============================
+.annotation-input-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // div.annotation-input-overlay
+  .annotation-input-overlay {
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+  }
 
-    // div.annotation-input-overlay
-    .annotation-input-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(3px);
+  // div.annotation-input-content
+  .annotation-input-content {
+    position: relative;
+    background: rgba(20,20,20,0.95);
+    border-radius: 12px;
+    border: 1px solid @border-medium;
+    min-width: 400px;
+    max-width: 500px;
+    backdrop-filter: @blur-large;
+    padding: 24px;
+
+    // div.annotation-input-header
+    .annotation-input-header {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      // h3
+      h3 {
+        margin: 0;
+        color: @primary-text;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      // button.annotation-input-close
+      .annotation-input-close {
+        background: none;
+        border: none;
+        color: @secondary-text;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: @transition-fast;
+
+        &:hover {
+          background: rgba(255,255,255,0.1);
+          color: @primary-text;
+        }
+      }
     }
 
-    // div.annotation-input-content
-    .annotation-input-content {
-      position: relative;
-      background: rgba(20,20,20,0.95);
-      border-radius: 12px;
-      border: 1px solid @border-medium;
-      min-width: 400px;
-      max-width: 500px;
-      backdrop-filter: @blur-large;
-      padding: 24px;
+    // div.annotation-input-body
+    .annotation-input-body {
+      margin-bottom: 20px;
 
-      // div.annotation-input-header
-      .annotation-input-header {
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      // div.annotation-input-field
+      .annotation-input-field {
+        margin-bottom: 16px;
 
-        // h3
-        h3 {
-          margin: 0;
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        // label.annotation-input-label
+        .annotation-input-label {
+          display: block;
+          color: rgba(255,255,255,0.8);
+          font-size: 12px;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
+        }
+
+        // input.annotation-input-field-input
+        .annotation-input-field-input {
+          width: 100%;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid @border-medium;
+          border-radius: 6px;
           color: @primary-text;
-          font-size: 16px;
-          font-weight: 600;
+          padding: 10px 12px;
+          font-size: 14px;
+          font-family: inherit;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: @success-green;
+            background: rgba(255,255,255,0.15);
+          }
+
+          &::placeholder {
+            color: @muted-text;
+          }
         }
 
-        // button.annotation-input-close
-        .annotation-input-close {
-          background: none;
-          border: none;
-          color: @secondary-text;
-          font-size: 20px;
+        // textarea.annotation-input-textarea
+        .annotation-input-textarea {
+          width: 100%;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid @border-medium;
+          border-radius: 6px;
+          color: @primary-text;
+          padding: 12px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: vertical;
+          min-height: 80px;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: @success-green;
+            background: rgba(255,255,255,0.15);
+          }
+
+          &::placeholder {
+            color: @muted-text;
+          }
+        }
+
+        // select.annotation-input-select
+        .annotation-input-select {
+          width: 100%;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid @border-medium;
+          border-radius: 6px;
+          color: @primary-text;
+          padding: 10px 12px;
+          font-size: 14px;
+          font-family: inherit;
+          box-sizing: border-box;
           cursor: pointer;
-          padding: 0;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: @transition-fast;
 
-          &:hover {
-            background: rgba(255,255,255,0.1);
+          &:focus {
+            outline: none;
+            border-color: @success-green;
+            background: rgba(255,255,255,0.15);
+          }
+
+          option {
+            background: #2a2a2a;
             color: @primary-text;
           }
+        }
+
+        // small (提示文本)
+        small {
+          display: block;
+          margin-top: 4px;
         }
       }
 
-      // div.annotation-input-body
-      .annotation-input-body {
-        margin-bottom: 20px;
-
-        // div.annotation-input-field
-        .annotation-input-field {
-          margin-bottom: 16px;
-
-          &:last-child {
-            margin-bottom: 0;
-          }
-
-          // label.annotation-input-label
-          .annotation-input-label {
-            display: block;
-            color: rgba(255,255,255,0.8);
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-          }
-
-          // input.annotation-input-field-input
-          .annotation-input-field-input {
-            width: 100%;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid @border-medium;
-            border-radius: 6px;
-            color: @primary-text;
-            padding: 10px 12px;
-            font-size: 14px;
-            font-family: inherit;
-            box-sizing: border-box;
-
-            &:focus {
-              outline: none;
-              border-color: @success-green;
-              background: rgba(255,255,255,0.15);
-            }
-
-            &::placeholder {
-              color: @muted-text;
-            }
-          }
-
-          // textarea.annotation-input-textarea
-          .annotation-input-textarea {
-            width: 100%;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid @border-medium;
-            border-radius: 6px;
-            color: @primary-text;
-            padding: 12px;
-            font-size: 14px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-            box-sizing: border-box;
-
-            &:focus {
-              outline: none;
-              border-color: @success-green;
-              background: rgba(255,255,255,0.15);
-            }
-
-            &::placeholder {
-              color: @muted-text;
-            }
-          }
-
-          // select.annotation-input-select
-          .annotation-input-select {
-            width: 100%;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid @border-medium;
-            border-radius: 6px;
-            color: @primary-text;
-            padding: 10px 12px;
-            font-size: 14px;
-            font-family: inherit;
-            box-sizing: border-box;
-            cursor: pointer;
-
-            &:focus {
-              outline: none;
-              border-color: @success-green;
-              background: rgba(255,255,255,0.15);
-            }
-
-            option {
-              background: #2a2a2a;
-              color: @primary-text;
-            }
-          }
-
-          // small (提示文本)
-          small {
-            display: block;
-            margin-top: 4px;
-          }
-        }
-
-        // div.annotation-input-row
-        .annotation-input-row {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 16px;
-
-          // div.annotation-input-field-half
-          .annotation-input-field-half {
-            flex: 1;
-            margin-bottom: 0 !important;
-
-          }
-        }
-        // div.annotation-color-group
-        .annotation-color-group {
-          display: flex;
-          gap: 8px;
-          margin-top: 8px;
-
-          // input[type="radio"]
-          input[type="radio"] {
-            display: none;
-
-            &:checked + .color-button {
-              border-color: #fff;
-              box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
-              transform: scale(1.1);
-
-              &::after {
-                content: '✓';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: @primary-text;
-                font-weight: bold;
-                font-size: 16px;
-                text-shadow: 0 0 2px rgba(0,0,0,0.8);
-              }
-            }
-          }
-
-          // label.color-button
-          .color-button {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: @transition-fast;
-            position: relative;
-
-            &:hover {
-              transform: scale(1.1);
-              border-color: @border-strong;
-            }
-
-            &.color-red { background: @danger-red; }
-            &.color-orange { background: @warning-orange; }
-            &.color-yellow { background: @warning-yellow; }
-            &.color-green { background: @success-green; }
-            &.color-blue { background: @primary-blue; }
-            &.color-purple { background: @info-purple; }
-          }
-        }
-
-        // div.annotation-level-group
-        .annotation-level-group {
-          display: flex;
-          gap: 8px;
-          margin-top: 8px;
-
-          // input[type="radio"]
-          input[type="radio"] {
-            display: none;
-
-            &:checked + .level-button {
-              background: @primary-blue;
-              border-color: @primary-blue;
-              color: @primary-text;
-            }
-          }
-
-          // label.level-button
-          .level-button {
-            padding: 8px 16px;
-            border: 1px solid @border-strong;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.1);
-            color: @primary-text;
-            cursor: pointer;
-            transition: @transition-fast;
-            font-size: 12px;
-            font-weight: 500;
-
-            &:hover {
-              background: rgba(255,255,255,0.2);
-              border-color: rgba(255,255,255,0.5);
-            }
-          }
-        }
-      }
-
-      // div.annotation-input-footer
-      .annotation-input-footer {
+      // div.annotation-input-row
+      .annotation-input-row {
         display: flex;
         gap: 12px;
-        justify-content: flex-end;
+        margin-bottom: 16px;
 
-        // button.annotation-input-btn
-        .annotation-input-btn {
-          padding: 10px 16px;
-          border: none;
+        // div.annotation-input-field-half
+        .annotation-input-field-half {
+          flex: 1;
+          margin-bottom: 0 !important;
+
+        }
+      }
+      // div.annotation-color-group
+      .annotation-color-group {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+
+        // input[type="radio"]
+        input[type="radio"] {
+          display: none;
+
+          &:checked + .color-button {
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+            transform: scale(1.1);
+
+            &::after {
+              content: '✓';
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              color: @primary-text;
+              font-weight: bold;
+              font-size: 16px;
+              text-shadow: 0 0 2px rgba(0,0,0,0.8);
+            }
+          }
+        }
+
+        // label.color-button
+        .color-button {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid transparent;
+          transition: @transition-fast;
+          position: relative;
+
+          &:hover {
+            transform: scale(1.1);
+            border-color: @border-strong;
+          }
+
+          &.color-red { background: @danger-red; }
+          &.color-orange { background: @warning-orange; }
+          &.color-yellow { background: @warning-yellow; }
+          &.color-green { background: @success-green; }
+          &.color-blue { background: @primary-blue; }
+          &.color-purple { background: @info-purple; }
+        }
+      }
+
+      // div.annotation-level-group
+      .annotation-level-group {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+
+        // input[type="radio"]
+        input[type="radio"] {
+          display: none;
+
+          &:checked + .level-button {
+            background: @primary-blue;
+            border-color: @primary-blue;
+            color: @primary-text;
+          }
+        }
+
+        // label.level-button
+        .level-button {
+          padding: 8px 16px;
+          border: 1px solid @border-strong;
           border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
+          background: rgba(255,255,255,0.1);
+          color: @primary-text;
           cursor: pointer;
           transition: @transition-fast;
+          font-size: 12px;
+          font-weight: 500;
 
-          &.annotation-input-btn-cancel {
-            background: rgba(255,255,255,0.1);
-            color: @primary-text;
+          &:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+          }
+        }
+      }
+    }
 
-            &:hover {
-              background: rgba(255,255,255,0.2);
-            }
+    // div.annotation-input-footer
+    .annotation-input-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+
+      // button.annotation-input-btn
+      .annotation-input-btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: @transition-fast;
+
+        &.annotation-input-btn-cancel {
+          background: rgba(255,255,255,0.1);
+          color: @primary-text;
+
+          &:hover {
+            background: rgba(255,255,255,0.2);
+          }
+        }
+
+        &.annotation-input-btn-save {
+          background: @success-green;
+          color: @primary-text;
+
+          &:hover {
+            background: #218838;
           }
 
-          &.annotation-input-btn-save {
-            background: @success-green;
-            color: @primary-text;
-
-            &:hover {
-              background: #218838;
-            }
-
-            &:disabled {
-              background: rgba(40,167,69,0.5);
-              cursor: not-allowed;
-            }
+          &:disabled {
+            background: rgba(40,167,69,0.5);
+            cursor: not-allowed;
           }
+        }
 
-          &.annotation-input-btn-danger {
-            background: @danger-red;
-            color: @primary-text;
+        &.annotation-input-btn-danger {
+          background: @danger-red;
+          color: @primary-text;
 
-            &:hover {
-              background: #c82333;
-            }
+          &:hover {
+            background: #c82333;
           }
         }
       }
     }
   }
+}
 
-  // ===============================
-  // 通用工具类
-  // ===============================
-  .hide-when-no-video {
-    display: none;
+// ===============================
+// 通用工具类
+// ===============================
+.hide-when-no-video {
+  display: none;
+}
+
+// ===============================
+// 响应式设计
+// ===============================
+@media (max-width: 768px) {
+  .overlay-ui {
+    .control-section,
+    .info-section {
+      .controls {
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+    }
+
+    .sidebar-header {
+      .app-title {
+        font-size: 16px;
+      }
+    }
   }
 
-  // ===============================
-  // 响应式设计
-  // ===============================
-  @media (max-width: 768px) {
-    .overlay-ui {
-      .control-section,
-      .info-section {
-        .controls {
-          gap: 10px;
-        }
-
-        .btn {
-          padding: 10px 16px;
-          font-size: 13px;
-        }
-      }
-
-      .sidebar-header {
-        .app-title {
-          font-size: 16px;
-        }
-      }
-    }
-
-    .progress-container {
-      left: 15px;
-      right: 15px;
-    }
+  .progress-container {
+    left: 150px;
+    right: 150px;
   }
 }
