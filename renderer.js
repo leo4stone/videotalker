@@ -207,11 +207,25 @@ function setupEventListeners() {
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
-                player.currentTime(Math.max(0, player.currentTime() - 10));
+                // 根据修饰键确定跳转时间
+                let leftSeekTime = 5; // 默认5秒
+                if (e.shiftKey) {
+                    leftSeekTime = 30; // Shift + 左箭头 = 30秒
+                } else if (e.metaKey || e.ctrlKey) {
+                    leftSeekTime = 60; // Cmd/Ctrl + 左箭头 = 60秒
+                }
+                player.currentTime(Math.max(0, player.currentTime() - leftSeekTime));
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                player.currentTime(Math.min(player.duration(), player.currentTime() + 10));
+                // 根据修饰键确定跳转时间
+                let rightSeekTime = 5; // 默认5秒
+                if (e.shiftKey) {
+                    rightSeekTime = 30; // Shift + 右箭头 = 30秒
+                } else if (e.metaKey || e.ctrlKey) {
+                    rightSeekTime = 60; // Cmd/Ctrl + 右箭头 = 60秒
+                }
+                player.currentTime(Math.min(player.duration(), player.currentTime() + rightSeekTime));
                 break;
             case 'ArrowUp':
                 e.preventDefault();
