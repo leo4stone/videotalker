@@ -151,23 +151,22 @@ body {
   // div.progress-zoom-control
   .progress-zoom-control {
     position: absolute;
-    bottom: 0px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    border: 1px solid @border-medium;
-    border-radius: 8px;
-    padding: 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
+    bottom: 10px;
+    left: -20px;
+    right: -20px;
+    // background: rgba(0,0,0,0.8);
+    // border: 1px solid @border-medium;
+    // border-radius: 8px;
+    // padding: 12px 16px;
+    // display: flex;
+    // flex-direction: column;
+    // gap: 12px;
     opacity: 1;
     pointer-events: none;
-    transition: @transition-medium;
-    backdrop-filter: @blur-medium;
+    // transition: @transition-medium;
+    // backdrop-filter: @blur-medium;
     font-size: 12px;
-    white-space: nowrap;
+    // white-space: nowrap;
     z-index: 1;
 
     &.show {
@@ -182,101 +181,210 @@ body {
       // div.custom-pan-slider
       .custom-pan-slider {
         position: relative;
-        width: 100%;
-        height: 8px;
+        // width: 100%;
+        margin-left: 60px;
+        margin-right: 60px;
+        width: calc(100% - 120px);
+        height: 10px;
         cursor: pointer;
         user-select: none;
 
-        // div.pan-track (滑轨)
+        // div.pan-track (胶片带)
         .pan-track {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background: rgba(255,255,255,0.2);
-          border-radius: 4px;
+          background: linear-gradient(90deg, 
+            #2a2a2a 0%, 
+            #3a3a3a 10%, 
+            #2a2a2a 20%, 
+            #3a3a3a 30%, 
+            #2a2a2a 40%, 
+            #3a3a3a 50%, 
+            #2a2a2a 60%, 
+            #3a3a3a 70%, 
+            #2a2a2a 80%, 
+            #3a3a3a 90%, 
+            #2a2a2a 100%);
+          border-radius: 2px;
+          border: 1px solid #1a1a1a;
+          
+          // 胶片穿孔效果
+          &::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: repeating-linear-gradient(90deg,
+              transparent 0px,
+              transparent 8px,
+              #1a1a1a 8px,
+              #1a1a1a 10px);
+            transform: translateY(-50%);
+          }
+          
+          &::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            bottom: 1px;
+            left: 0;
+            right: 0;
+            background: repeating-linear-gradient(90deg,
+              transparent 0px,
+              transparent 15px,
+              rgba(0,0,0,0.3) 15px,
+              rgba(0,0,0,0.3) 17px);
+          }
         }
 
-        // div.pan-thumb (矩形滑块)
+        // div.pan-thumb (视窗)
         .pan-thumb {
           position: absolute;
-          top: 0;
+          top: 0px;
           height: 100%;
-          background: @primary-blue;
-          border-radius: 4px;
+          background: rgba(255,255,255,0.4);
+          border: 2px solid #fff;
+          border-radius: 3px;
           cursor: grab;
-          transition: background 0.2s ease;
-          border: 1px solid rgba(255,255,255,0.3);
           min-width: var(--min-thumb-width, 8%); // 动态最小宽度，默认8%
+          box-shadow: 
+            0 0 0 1px rgba(0,0,0,0.3),
+            inset 0 1px 2px rgba(255,255,255,0.2),
+            0 2px 4px rgba(0,0,0,0.2);
+          backdrop-filter: blur(1px);
+          
+          // 视窗内部效果
+          &::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: rgba(64,150,255,0.1);
+            border-radius: 1px;
+            border: 1px solid rgba(64,150,255,0.3);
+          }
 
           &:hover {
-            background: #1e7ed8;
+            border-color: rgba(64,150,255,0.8);
+            box-shadow: 
+              0 0 0 1px rgba(0,0,0,0.4),
+              inset 0 1px 2px rgba(255,255,255,0.3),
+              0 2px 6px rgba(0,0,0,0.3),
+              0 0 8px rgba(64,150,255,0.3);
+            
+            &::before {
+              background: rgba(64,150,255,0.15);
+              border-color: rgba(64,150,255,0.5);
+            }
           }
 
           &:active {
             cursor: grabbing;
-            background: #1a6ec2;
+            border-color: rgba(64,150,255,1);
+            box-shadow: 
+              0 0 0 1px rgba(0,0,0,0.5),
+              inset 0 1px 2px rgba(255,255,255,0.4),
+              0 1px 3px rgba(0,0,0,0.4),
+              0 0 12px rgba(64,150,255,0.5);
+              
+            &::before {
+              background: rgba(64,150,255,0.2);
+              border-color: rgba(64,150,255,0.7);
+            }
           }
         }
 
-        // 拖拽手柄
+        // 拖拽手柄 (视窗边框控制)
         .resize-handle {
           position: absolute;
-          top: 0;
+          top: 0px;
           height: 100%;
-          width: 4px;
+          width: 6px;
           cursor: ew-resize;
-          background: rgba(255,255,255,0.6);
-          transition: background 0.2s ease;
-          z-index: 1;
+          background: rgba(255,255,255,0.9);
+          transition: all 0.2s ease;
+          z-index: 2;
 
           &:hover {
-            background: rgba(255,255,255,0.8);
+            background: rgba(64,150,255,0.8);
+            border-color: rgba(64,150,255,0.8);
+            box-shadow: 0 0 4px rgba(64,150,255,0.4);
           }
 
           &:active {
-            background: rgba(255,255,255,1);
+            background: rgba(64,150,255,1);
+            border-color: rgba(64,150,255,1);
+            box-shadow: 0 0 8px rgba(64,150,255,0.6);
           }
 
           // 左侧手柄
           &.left-handle {
-            left: 0;
-            border-radius: 4px 0 0 4px;
+            left: -2px;
+            border-radius: 3px 0 0 3px;
+            border-right: none;
           }
 
           // 右侧手柄
           &.right-handle {
-            right: 0;
-            border-radius: 0 4px 4px 0;
+            right: -2px;
+            border-radius: 0 3px 3px 0;
+            border-left: none;
           }
         }
 
-        // 时间显示
+        // 时间显示 (胶片标签风格)
         .thumb-time-display {
           position: absolute;
-          top: -25px;
-          font-size: 10px;
-          color: @primary-text;
-          background: rgba(0,0,0,0.8);
-          padding: 2px 4px;
-          border-radius: 3px;
+          top: 50%;
+          font-size: 9px;
+          color: #fff;
+          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+          padding: 3px 6px;
+          border-radius: 2px;
           white-space: nowrap;
           pointer-events: none; // 避免误触
-          z-index: 2;
-          border: 1px solid @border-medium;
-          backdrop-filter: @blur-small;
+          z-index: 3;
+          border: 1px solid #333;
+          box-shadow: 
+            0 1px 3px rgba(0,0,0,0.4),
+            inset 0 1px 1px rgba(255,255,255,0.1);
+          font-family: 'Courier New', monospace;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+
+          // 胶片标签的小箭头
+          &::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #1a1a1a;
+          }
 
           // 左侧时间
           &.left-time {
             left: 0;
-            transform: translateX(-50%);
+            margin-left: -10px;
+            transform: translate(-100%,-50%);
           }
 
           // 右侧时间
           &.right-time {
             right: 0;
-            transform: translateX(50%);
+            margin-right: -10px;
+            transform: translate(100%,-50%);
           }
         }
 
