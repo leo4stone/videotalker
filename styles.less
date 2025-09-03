@@ -874,6 +874,98 @@ body {
           pointer-events: none;
         }
       }
+
+      // div.checkbox-container
+      .checkbox-container {
+        margin-top: 8px;
+
+        // label.checkbox-label
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          font-size: 13px;
+          color: @secondary-text;
+          transition: @transition-fast;
+
+          &:hover {
+            color: @primary-text;
+
+            .checkmark {
+              border-color: rgba(255,255,255,0.4);
+            }
+          }
+
+          // input[type="checkbox"]
+          input[type="checkbox"] {
+            display: none;
+
+            &:checked + .checkmark {
+              background: rgba(0,123,255,0.8);
+              border-color: @primary-blue;
+
+              &::after {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(45deg) scale(1);
+              }
+            }
+          }
+
+          // span.checkmark
+          .checkmark {
+            position: relative;
+            width: 16px;
+            height: 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid @border-medium;
+            border-radius: 3px;
+            margin-right: 8px;
+            transition: @transition-fast;
+
+            &::after {
+              content: '';
+              position: absolute;
+              left: 50%;
+              top: 50%;
+              width: 4px;
+              height: 8px;
+              border: solid white;
+              border-width: 0 2px 2px 0;
+              transform: translate(-50%, -50%) rotate(45deg) scale(0);
+              opacity: 0;
+              transition: @transition-fast;
+            }
+          }
+
+          // span.checkbox-text
+          .checkbox-text {
+            user-select: none;
+          }
+        }
+
+        // div.last-file-path
+        .last-file-path {
+          margin-top: 8px;
+          margin-left: 24px;
+          font-size: 11px;
+          color: @muted-text;
+          line-height: 1.4;
+
+          // span.path-label
+          .path-label {
+            color: @secondary-text;
+            font-weight: 500;
+          }
+
+          // span.path-text
+          .path-text {
+            color: @primary-text;
+            word-break: break-all;
+            opacity: 0.8;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+          }
+        }
+      }
     }
 
     // 特殊状态：隐藏元素

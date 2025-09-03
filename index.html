@@ -5,7 +5,7 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' 'unsafe-eval'; font-src 'self' data:; connect-src 'self'"
     />
     <title>VideoTalker - 视频播放器</title>
     
@@ -88,6 +88,17 @@
             <span>选择视频文件</span>
             <span>📁</span>
           </button>
+          <div class="checkbox-container">
+            <label class="checkbox-label">
+              <input type="checkbox" id="remember-last-file" />
+              <span class="checkmark"></span>
+              <span class="checkbox-text">记住上次打开的文件</span>
+            </label>
+            <div class="last-file-path" id="last-file-path" style="display: none;">
+              <span class="path-label">上次文件：</span>
+              <span class="path-text" id="path-text"></span>
+            </div>
+          </div>
         </div>
       </div>
 

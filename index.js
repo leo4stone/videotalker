@@ -103,6 +103,54 @@ ipcMain.handle('write-annotation-file', async (event, filePath, data) => {
   }
 })
 
+// 获取程序根目录路径
+function getAppRootPath() {
+  return __dirname
+}
+
+// 获取历史记录文件路径
+function getHistoryFilePath() {
+  return path.join(getAppRootPath(), 'recent-files.json')
+}
+
+// 读取历史记录文件
+ipcMain.handle('read-history-file', async () => {
+  try {
+    const historyPath = getHistoryFilePath()
+    const data = await fs.readFile(historyPath, 'utf-8')
+    return JSON.parse(data)
+  } catch (error) {
+    // 文件不存在或读取失败，返回默认结构
+    return {
+      lastOpenedFile: null,
+      rememberLastFile: false,
+      recentFiles: []
+    }
+  }
+})
+
+// 写入历史记录文件
+ipcMain.handle('write-history-file', async (event, data) => {
+  try {
+    const historyPath = getHistoryFilePath()
+    await fs.writeFile(historyPath, JSON.stringify(data, null, 2), 'utf-8')
+    return true
+  } catch (error) {
+    console.error('写入历史记录文件失败:', error)
+    throw error
+  }
+})
+
+// 检查文件是否存在
+ipcMain.handle('check-file-exists', async (event, filePath) => {
+  try {
+    await fs.access(filePath)
+    return true
+  } catch (error) {
+    return false
+  }
+})
+
 // 创建应用程序菜单
 const createMenu = () => {
   const template = [

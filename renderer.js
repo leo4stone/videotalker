@@ -11,6 +11,7 @@ let sidePanelOpen = false;
 let hasVideoLoaded = false;
 let isDragging = false;
 let playButtonTimeout = null;
+let historyData = null;
 
 // 当 DOM 加载完成时初始化播放器
 document.addEventListener('DOMContentLoaded', function() {
@@ -97,20 +98,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化UI状态
     initializeUI();
+    
+    // 初始化历史记录功能
+    initializeHistory();
 });
 
 // 设置事件监听器
 function setupEventListeners() {
     // 选择文件按钮
     document.getElementById('open-file').addEventListener('click', function() {
-        // 使用 Electron 的 dialog API 选择文件
-        ipcRenderer.invoke('open-file-dialog').then(filePath => {
-            if (filePath) {
-                loadVideo(filePath);
-            }
-        }).catch(err => {
-            console.error('选择文件时出错:', err);
-        });
+        openFileDialog();
+    });
+    
+    // 记住上次文件的checkbox
+    document.getElementById('remember-last-file').addEventListener('change', function() {
+        const isChecked = this.checked;
+        updateHistoryData({ rememberLastFile: isChecked });
+        
+        if (!isChecked) {
+            // 如果取消勾选，清除上次打开的文件记录
+            updateHistoryData({ lastOpenedFile: null });
+        }
+        
+        // 更新文件路径显示
+        updateLastFilePathDisplay();
     });
 
 
@@ -274,6 +285,13 @@ function loadVideo(filePath) {
         updateFloatingPlayButton();
 
         console.log('加载视频:', filePath);
+        
+        // 更新历史记录
+        if (historyData && historyData.rememberLastFile) {
+            updateHistoryData({ lastOpenedFile: filePath });
+            // 更新文件路径显示
+            updateLastFilePathDisplay();
+        }
         
         // 监听加载失败事件
         player.one('error', function() {
@@ -802,3 +820,111 @@ function setupProgressBar() {
 window.addEventListener('load', function() {
     setTimeout(checkCodecSupport, 1000);
 });
+
+// 历史记录相关功能
+
+// 初始化历史记录功能
+async function initializeHistory() {
+    try {
+        // 读取历史记录数据
+        historyData = await ipcRenderer.invoke('read-history-file');
+        
+        // 设置checkbox状态
+        const checkbox = document.getElementById('remember-last-file');
+        if (checkbox && historyData) {
+            checkbox.checked = historyData.rememberLastFile || false;
+        }
+        
+        // 初始化文件路径显示
+        updateLastFilePathDisplay();
+        
+        // 如果启用了记住上次文件且有上次打开的文件，自动打开
+        if (historyData && historyData.rememberLastFile && historyData.lastOpenedFile) {
+            // 检查文件是否存在
+            const fileExists = await ipcRenderer.invoke('check-file-exists', historyData.lastOpenedFile);
+            
+            if (fileExists) {
+                setTimeout(() => {
+                    loadVideo(historyData.lastOpenedFile);
+                    updateFileInfo('已自动打开上次的视频文件');
+                }, 500);
+            } else {
+                console.log('上次打开的文件不存在，已清除记录');
+                // 文件不存在，清除记录
+                updateHistoryData({ lastOpenedFile: null });
+                // 更新文件路径显示
+                updateLastFilePathDisplay();
+            }
+        }
+        
+    } catch (error) {
+        console.log('初始化历史记录时出错:', error);
+        // 创建默认的历史记录数据
+        historyData = {
+            lastOpenedFile: null,
+            rememberLastFile: false,
+            recentFiles: []
+        };
+    }
+}
+
+// 更新历史记录数据
+async function updateHistoryData(updates) {
+    if (!historyData) {
+        historyData = {
+            lastOpenedFile: null,
+            rememberLastFile: false,
+            recentFiles: []
+        };
+    }
+    
+    // 更新数据
+    Object.assign(historyData, updates);
+    
+    try {
+        // 保存到文件
+        await ipcRenderer.invoke('write-history-file', historyData);
+        console.log('历史记录已更新:', updates);
+    } catch (error) {
+        console.error('保存历史记录失败:', error);
+    }
+}
+
+// 文件选择对话框（从事件监听器中提取出来）
+function openFileDialog() {
+    // 使用 Electron 的 dialog API 选择文件
+    ipcRenderer.invoke('open-file-dialog').then(filePath => {
+        if (filePath) {
+            loadVideo(filePath);
+        }
+    }).catch(err => {
+        console.error('选择文件时出错:', err);
+    });
+}
+
+// 更新上次文件路径显示
+function updateLastFilePathDisplay() {
+    const pathContainer = document.getElementById('last-file-path');
+    const pathText = document.getElementById('path-text');
+    const checkbox = document.getElementById('remember-last-file');
+    
+    if (!pathContainer || !pathText || !checkbox) return;
+    
+    const isRememberEnabled = checkbox.checked;
+    const lastFilePath = historyData?.lastOpenedFile;
+    
+    if (isRememberEnabled && lastFilePath) {
+        // 显示文件路径，只显示文件名和最后一级目录
+        const fileName = lastFilePath.split('/').pop() || lastFilePath.split('\\').pop();
+        const pathParts = lastFilePath.split('/').length > 1 ? lastFilePath.split('/') : lastFilePath.split('\\');
+        const parentDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';
+        
+        const displayPath = parentDir ? `.../${parentDir}/${fileName}` : fileName;
+        pathText.textContent = displayPath;
+        pathText.title = lastFilePath; // 完整路径作为tooltip
+        pathContainer.style.display = 'block';
+    } else {
+        // 隐藏文件路径显示
+        pathContainer.style.display = 'none';
+    }
+}
