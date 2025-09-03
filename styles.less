@@ -142,8 +142,8 @@ body {
 .progress-wrapper {
   position: fixed;
   bottom: 0;
-  left: 120px;
-  right: 120px;
+  left: 160px;
+  right: 160px;
   height: 148px;
   z-index: 15;
   // overflow: hidden; // 确保缩放后的内容不会溢出
@@ -152,21 +152,11 @@ body {
   .progress-zoom-control {
     position: absolute;
     bottom: 10px;
-    left: -20px;
-    right: -20px;
-    // background: rgba(0,0,0,0.8);
-    // border: 1px solid @border-medium;
-    // border-radius: 8px;
-    // padding: 12px 16px;
-    // display: flex;
-    // flex-direction: column;
-    // gap: 12px;
+    left: -60px;
+    right: -60px;
     opacity: 1;
     pointer-events: none;
-    // transition: @transition-medium;
-    // backdrop-filter: @blur-medium;
     font-size: 12px;
-    // white-space: nowrap;
     z-index: 1;
 
     &.show {
@@ -185,7 +175,7 @@ body {
         margin-left: 60px;
         margin-right: 60px;
         width: calc(100% - 120px);
-        height: 10px;
+        height: 6px;
         cursor: pointer;
         user-select: none;
 
@@ -197,70 +187,37 @@ body {
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(90deg, 
-            #2a2a2a 0%, 
-            #3a3a3a 10%, 
-            #2a2a2a 20%, 
-            #3a3a3a 30%, 
-            #2a2a2a 40%, 
-            #3a3a3a 50%, 
-            #2a2a2a 60%, 
-            #3a3a3a 70%, 
-            #2a2a2a 80%, 
-            #3a3a3a 90%, 
-            #2a2a2a 100%);
+          background: white;
           border-radius: 2px;
           border: 1px solid #1a1a1a;
           
-          // 胶片穿孔效果
-          &::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: repeating-linear-gradient(90deg,
-              transparent 0px,
-              transparent 8px,
-              #1a1a1a 8px,
-              #1a1a1a 10px);
-            transform: translateY(-50%);
-          }
-          
-          &::after {
-            content: '';
-            position: absolute;
-            top: 1px;
-            bottom: 1px;
-            left: 0;
-            right: 0;
-            background: repeating-linear-gradient(90deg,
-              transparent 0px,
-              transparent 15px,
-              rgba(0,0,0,0.3) 15px,
-              rgba(0,0,0,0.3) 17px);
-          }
         }
 
+        // 播放进度指示器
+        .playback-progress {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 100%;
+          background: #ffffff; // 橙色线
+          border-radius: 1.5px;
+          opacity: 0.8;
+          pointer-events: none;
+
+        }
         // div.pan-thumb (视窗)
         .pan-thumb {
           position: absolute;
-          top: 0px;
-          height: 100%;
-          background: rgba(255,255,255,0.4);
-          border: 2px solid #fff;
-          border-left-width: 8px;
-          border-right-width: 8px;
-          // border-radius: 3px;
-          cursor: grab;
-          min-width: var(--min-thumb-width, 8%); // 动态最小宽度，默认8%
-          box-shadow: 
-            0 0 0 1px rgba(0,0,0,0.3),
-            inset 0 1px 2px rgba(255,255,255,0.2),
-            0 2px 4px rgba(0,0,0,0.2);
-          backdrop-filter: blur(1px);
-          opacity: .7;
+          left: 0;
+          right: 0;
+          top: 50%;
+          height: 300%;
+          // background: #fff;
+          border: 1px solid #fff;
+          // border-radius: 99px;
+          opacity: 0;
+          transform: translateY(-50%);
           
           // 视窗内部效果
           &::before {
@@ -275,169 +232,123 @@ body {
             border: 1px solid rgba(64,150,255,0.3);
           }
 
-          &:hover {
-            box-shadow: 
-              0 0 0 1px rgba(0,0,0,0.4),
-              inset 0 1px 2px rgba(255,255,255,0.3),
-              0 2px 6px rgba(0,0,0,0.3),
-              0 0 8px rgba(64,150,255,0.3);
-            
-            opacity: 1;
-          }
-
-        }
-
-        // 拖拽手柄 (视窗边框控制)
-        .resize-handle {
-          position: absolute;
-          top: 0px;
-          height: 100%;
-          width: 6px;
-          cursor: ew-resize;
-          background: rgba(255,255,255,0.9);
-          transition: all 0.2s ease;
-          z-index: 2;
-          opacity: 0;
-
-          &:hover {
-            background: rgba(64,150,255,1);
-            border-color: rgba(64,150,255,1);
-            box-shadow: 0 0 8px rgba(64,150,255,0.6);
-            opacity: 1;
-          }
-
-
-          // 左侧手柄
-          &.left-handle {
-            left: -8px;
-            // border-radius: 3px 0 0 3px;
-            border-right: none;
-          }
-
-          // 右侧手柄
-          &.right-handle {
-            right: -8px;
-            // border-radius: 0 3px 3px 0;
-            border-left: none;
-          }
-        }
-
-        // 时间显示 (胶片标签风格)
-        .thumb-time-display {
-          position: absolute;
-          top: 50%;
-          font-size: 9px;
-          color: #fff;
-          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-          padding: 3px 6px;
-          border-radius: 2px;
-          white-space: nowrap;
-          pointer-events: none; // 避免误触
-          z-index: 3;
-          border: 1px solid #333;
-          box-shadow: 
-            0 1px 3px rgba(0,0,0,0.4),
-            inset 0 1px 1px rgba(255,255,255,0.1);
-          font-family: 'Courier New', monospace;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-
-          // 胶片标签的小箭头
-          &::after {
-            content: '';
+          // 时间显示 (胶片标签风格)
+          .thumb-time-display {
             position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-top: 4px solid #1a1a1a;
+            top: 50%;
+            font-size: 9px;
+            color: #fff;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 3px 6px;
+            border-radius: 2px;
+            white-space: nowrap;
+            pointer-events: none; // 避免误触
+            z-index: 3;
+            border: 1px solid #333;
+            box-shadow: 
+              0 1px 3px rgba(0,0,0,0.4),
+              inset 0 1px 1px rgba(255,255,255,0.1);
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+  
+            // 胶片标签的小箭头
+            &::after {
+              content: '';
+              position: absolute;
+              top: 100%;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 0;
+              height: 0;
+              border-left: 4px solid transparent;
+              border-right: 4px solid transparent;
+              border-top: 4px solid #1a1a1a;
+            }
+  
+            // 左侧时间
+            &.left-time {
+              left: 0;
+              margin-left: -10px;
+              transform: translate(-100%,-50%);
+            }
+  
+            // 右侧时间
+            &.right-time {
+              right: 0;
+              margin-right: -10px;
+              transform: translate(100%,-50%);
+            }
           }
 
-          // 左侧时间
-          &.left-time {
-            left: 0;
-            margin-left: -10px;
-            transform: translate(-100%,-50%);
-          }
-
-          // 右侧时间
-          &.right-time {
-            right: 0;
-            margin-right: -10px;
-            transform: translate(100%,-50%);
+          // 拖拽手柄 (视窗边框控制)
+          .resize-handle {
+            position: absolute;
+            top: 0px;
+            height: 100%;
+            width: 8px;
+            cursor: ew-resize;
+            background: rgba(255,255,255,1);
+            transition: all 0.2s ease;
+            z-index: 2;
+            opacity: 0;
+  
+            &:hover {
+              background: rgba(64,150,255,1);
+              border-color: rgba(64,150,255,1);
+              box-shadow: 0 0 8px rgba(64,150,255,0.6);
+              opacity: 0;
+            }
+  
+  
+            // 左侧手柄
+            &.left-handle {
+              left: -6px;
+              // border-radius: 3px 0 0 3px;
+              border-right: none;
+            }
+  
+            // 右侧手柄
+            &.right-handle {
+              right: -6px;
+              // border-radius: 0 3px 3px 0;
+              border-left: none;
+            }
           }
         }
-
-        // 播放进度指示器
-        .playback-progress {
+        .playback-indicator {
           position: absolute;
           top: 0;
           left: 0;
-          width: 100%;
+          width: 0%;
           height: 100%;
-          pointer-events: none;
-          z-index: 1;
+          background: @primary-blue; // 蓝色线
+          border-radius: 1.5px;
+          transition: width 0.1s ease;
+          cursor: pointer;
+          pointer-events: auto;
 
-          .playback-indicator {
+          // 蓝色小圆点
+          &::before {
+            content: '';
             position: absolute;
             top: 50%;
-            left: 0;
-            width: 2px;
-            height: 120%;
-            background: #ff4444;
+            right: -3px;
+            width: 6px;
+            height: 6px;
+            background: @primary-blue;
+            border: 2px solid #fff;
+            border-radius: 50%;
             transform: translateY(-50%);
-            border-radius: 1px;
-            box-shadow: 
-              0 0 2px rgba(255,68,68,0.8),
-              0 0 4px rgba(255,68,68,0.4);
-            transition: all 0.1s ease;
-            cursor: pointer;
-            pointer-events: auto;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+            opacity: .8;
+            transition: opacity 0.2s ease;
+          }
 
-            // 播放指示器的拖拽手柄
-            &::before {
-              content: '';
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 8px;
-              height: 8px;
-              background: #ff4444;
-              border: 2px solid #fff;
-              border-radius: 50%;
-              box-shadow: 0 0 4px rgba(0,0,0,0.3);
-              opacity: 0;
-              transition: opacity 0.2s ease;
-            }
-
-            &:hover {
-              width: 3px;
-              box-shadow: 
-                0 0 4px rgba(255,68,68,1),
-                0 0 8px rgba(255,68,68,0.6);
-
-              &::before {
-                opacity: 1;
-              }
-            }
-
-            &:active {
-              box-shadow: 
-                0 0 6px rgba(255,68,68,1),
-                0 0 12px rgba(255,68,68,0.8);
-
-              &::before {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1.2);
-              }
-            }
+          &:hover::before {
+            opacity: 1;
           }
         }
-
         // 禁用状态
         &.disabled {
           opacity: 0.3;
@@ -464,6 +375,16 @@ body {
         }
       }
     }
+  }
+  &:hover .progress-zoom-control{
+    .pan-section{
+      .custom-pan-slider{
+        .pan-thumb{
+          opacity: 1;
+        }
+      }
+    }
+
   }
   .progress-container {
     position: absolute;
@@ -511,6 +432,7 @@ body {
       border-radius: 999px;
       border: 2px solid rgba(0,0,0,0);
       background: rgba(0,0,0,0.4);
+      opacity: 0;
       // z-index: 1;
     }
 
@@ -518,36 +440,37 @@ body {
     // div.progress-bar-track (总时间轨道)
     .progress-bar-track {
       position: absolute;
-      left: -2px;
-      right: -2px;
-      bottom: 0;
+      left: 0px;
+      right: 0px;
+      top: 100%;
       height: 4px;
-      background: #ff8c00; // 橙色
-      border-radius: 1.5px;
-      opacity: 0.8;
+      background: #fff; // 橙色
+      border-radius: 99px;
+      opacity: 0;
       z-index: 1; // 在背景之上，进度条之下
-      transform: translateY(1px);
+      transform: translateY(-100%);
     }
     // div.progress-bar
     .progress-bar {
+      position: relative;
       height: 100%;
       width: 0%;
-      position: relative;
       display: flex;
       align-items: center;
       z-index: 2;
       transform: none;
+      opacity: 0;
 
       // div.progress-line
       .progress-line {
         position: absolute;
         left: 0;
         right: 0;
-        bottom: 0%;
-        height: 2px;
+        top: 100%;
+        height: 4px;
         background: @primary-blue;
-        transform: translateY(0px);
-        border-radius: 1px;
+        transform: translateY(-100%);
+        border-radius: 99px;
       }
 
       // 当前时间指示器 & 打点添加按钮
@@ -656,17 +579,22 @@ body {
       opacity: 1;
       backdrop-filter: blur(10px);
       outline: 1px solid rgba(255, 255, 255, .1);
+      opacity: 1;
     }
 
 
     // div.progress-bar-track (总时间轨道)
     .progress-bar-track {
-      bottom: 50%;
+      opacity: 1;
+      top: 50%;
+      transform: translateY(-50%);
     }
     // 悬停状态下的进度条和句柄样式
     .progress-bar{
+      opacity: 1;
       .progress-line {
-        bottom: 50%;
+        top: 50%;
+        transform: translateY(-50%);
       }
 
       .progress-handle {

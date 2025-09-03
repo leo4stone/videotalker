@@ -1397,6 +1397,6 @@ function updatePlaybackIndicator() {
     const duration = player.duration();
     const progressPercent = (currentTime / duration) * 100;
     
-    // 设置指示器位置
-    playbackIndicator.style.left = `${progressPercent}%`;
+    // 设置指示器宽度
+    playbackIndicator.style.width = `${progressPercent}%`;
 }
