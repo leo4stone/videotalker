@@ -40,7 +40,7 @@ class AnnotationManager {
     }
 
     // 添加打点
-    async addAnnotation(time, title = '', text = '', color = 'blue', level = null) {
+    async addAnnotation(time, title = '', text = '', color = 'blue', level = null, duration = null) {
         if (!this.currentVideoFile) {
             return false;
         }
@@ -52,6 +52,7 @@ class AnnotationManager {
             text: text.trim(),
             color: color,
             level: level,
+            duration: duration ? Math.round(duration * 100) / 100 : null, // 时长，保留2位小数
             createdAt: new Date().toISOString()
         };
 
@@ -80,13 +81,14 @@ class AnnotationManager {
     }
 
     // 编辑打点
-    async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = null) {
+    async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = null, newDuration = null) {
         const annotation = this.annotations.find(ann => ann.id === annotationId);
         if (annotation) {
             annotation.title = newTitle.trim();
             annotation.text = newText.trim();
             if (newColor !== null) annotation.color = newColor;
             if (newLevel !== null) annotation.level = newLevel;
+            if (newDuration !== null) annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
             annotation.updatedAt = new Date().toISOString();
             await this.saveAnnotationsToFile();
             this.updateProgressBarAnnotations();
@@ -245,18 +247,26 @@ class AnnotationManager {
         container.className = className;
         container.dataset.annotationId = annotation.id;
         
-        // 计算位置
+        // 计算位置和宽度
         const percentage = (annotation.time / duration) * 100;
         container.style.left = `${percentage}%`;
         container.style.position = 'absolute';
         container.style.zIndex = '16';
         
-        // 创建圆点
+        // 如果有时长，设置宽度；否则保持默认圆点样式
+        if (annotation.duration && annotation.duration > 0) {
+            const widthPercentage = (annotation.duration / duration) * 100;
+            container.style.width = `${widthPercentage}%`;
+            container.style.minWidth = '8px'; // 最小宽度确保可见性
+            container.classList.add('has-duration');
+        } else {
+            container.style.width = 'auto';
+            container.classList.remove('has-duration');
+        }
+        
+        // 创建圆点或条形
         const dot = document.createElement('div');
         dot.className = 'annotation-dot';
-        dot.style.width = '8px';
-        dot.style.height = '8px';
-        dot.style.borderRadius = '50%';
         dot.style.cursor = 'pointer';
         dot.style.transition = 'all 0.3s ease';
         dot.style.position = 'relative';
@@ -266,11 +276,21 @@ class AnnotationManager {
         title.className = 'annotation-title';
         title.style.position = 'absolute';
         title.style.bottom = '12px';
-        title.style.left = '50%';
         title.style.cursor = 'pointer';
         title.style.overflow = 'visible'; // 允许popup显示
         title.style.borderRadius = '3px';
         title.style.backdropFilter = 'blur(3px)';
+        
+        // 根据是否有时长来调整标题位置
+        if (annotation.duration && annotation.duration > 0) {
+            // 有时长：标题显示在条形的左侧
+            title.style.left = '0';
+            title.style.transform = 'translateX(0%)';
+        } else {
+            // 无时长：标题居中显示
+            title.style.left = '50%';
+            title.style.transform = 'translateX(-50%)';
+        }
         
         // 应用动态高度
         if (levelHeightMap) {
@@ -282,10 +302,20 @@ class AnnotationManager {
             else levelKey = 4; // 默认
             
             const heightPercent = levelHeightMap[levelKey] || 100;
-            title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
+            
+            // 根据是否有时长来调整transform
+            if (annotation.duration && annotation.duration > 0) {
+                title.style.transform = `translateX(0%) translateY(-${heightPercent}%)`;
+            } else {
+                title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
+            }
         } else {
             // 默认转换（向后兼容）
-            title.style.transform = 'translateX(-50%) translateY(-100%)';
+            if (annotation.duration && annotation.duration > 0) {
+                title.style.transform = 'translateX(0%) translateY(-100%)';
+            } else {
+                title.style.transform = 'translateX(-50%) translateY(-100%)';
+            }
         }
         
         // 创建标题文本容器（处理文本溢出）
@@ -321,12 +351,10 @@ class AnnotationManager {
         // 圆点缩放效果（通过CSS hover处理popup显示）
         container.addEventListener('mouseenter', (e) => {
             e.stopPropagation();
-            dot.style.transform = 'scale(1.5)';
         });
 
         container.addEventListener('mouseleave', (e) => {
             e.stopPropagation();
-            dot.style.transform = 'scale(1)';
         });
 
         // 点击跳转
@@ -347,9 +375,14 @@ class AnnotationManager {
         const colorConfig = this.getColorConfig(annotation.color);
         const textColor = annotation.color === 'yellow' ? '#000' : 'white';
         
+        // 生成时间信息（包含时长）
+        const timeInfo = annotation.duration && annotation.duration > 0 
+            ? `${this.formatTime(annotation.time)} ~ ${this.formatTime(annotation.time + annotation.duration)} (${this.formatTime(annotation.duration)})`
+            : this.formatTime(annotation.time);
+        
         popup.innerHTML = `
             <div class="annotation-popup-content">
-                <div class="annotation-time" style="color: ${colorConfig.primary};">${this.formatTime(annotation.time)}</div>
+                <div class="annotation-time" style="color: ${colorConfig.primary};">${timeInfo}</div>
                 ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
                 ${annotation.text ? `<div class="annotation-text">${this.escapeHtml(annotation.text)}</div>` : ''}
                 ${!annotation.title && !annotation.text ? `<div class="annotation-empty">空白打点</div>` : ''}
@@ -580,6 +613,7 @@ class AnnotationManager {
         const defaultText = isEdit ? annotation.text : '';
         const defaultColor = isEdit ? (annotation.color === 'gray' ? 'blue' : annotation.color || 'blue') : 'blue';
         const defaultLevel = isEdit ? annotation.level || '' : '';
+        const defaultDuration = isEdit ? annotation.duration || '' : '';
         
         // 创建模态框
         const modal = document.createElement('div');
@@ -611,6 +645,21 @@ class AnnotationManager {
                             placeholder="请输入打点内容..."
                             rows="4"
                         >${this.escapeHtml(defaultText)}</textarea>
+                    </div>
+                    <div class="annotation-input-field">
+                        <label class="annotation-input-label">时长（秒，可选）</label>
+                        <input 
+                            type="number" 
+                            id="annotation-input-duration" 
+                            class="annotation-input-field-input"
+                            placeholder="请输入时长（秒）..."
+                            min="0"
+                            step="0.1"
+                            value="${defaultDuration}"
+                        />
+                        <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
+                            设置时长后，打点会显示为时间段；不设置则显示为时间点
+                        </small>
                     </div>
                     <div class="annotation-input-row">
                         <div class="annotation-input-field">
@@ -669,6 +718,7 @@ class AnnotationManager {
         const deleteBtn = modal.querySelector('#annotation-delete-btn');
         const titleInput = modal.querySelector('#annotation-input-title');
         const textArea = modal.querySelector('#annotation-input-text');
+        const durationInput = modal.querySelector('#annotation-input-duration');
         const colorSelect = modal.querySelector('#annotation-input-color');
         const levelSelect = modal.querySelector('#annotation-input-level');
 
@@ -691,6 +741,7 @@ class AnnotationManager {
         saveBtn.addEventListener('click', async () => {
             const title = titleInput.value.trim();
             const text = textArea.value.trim();
+            const duration = durationInput.value ? parseFloat(durationInput.value) : null;
             const colorRadio = document.querySelector('input[name="annotation-color"]:checked');
             const levelRadio = document.querySelector('input[name="annotation-level"]:checked');
             const color = colorRadio ? colorRadio.value : 'blue';
@@ -698,10 +749,10 @@ class AnnotationManager {
             
             if (isEdit) {
                 // 编辑模式
-                await this.editAnnotation(annotation.id, title, text, color, level);
+                await this.editAnnotation(annotation.id, title, text, color, level, duration);
             } else {
                 // 新建模式
-                const newAnnotation = await this.addAnnotation(currentTime, title, text, color, level);
+                const newAnnotation = await this.addAnnotation(currentTime, title, text, color, level, duration);
                 if (newAnnotation) {
                     console.log('打点已添加:', newAnnotation);
                 }
@@ -727,6 +778,7 @@ class AnnotationManager {
         
         titleInput.addEventListener('keydown', handleKeyboardSave);
         textArea.addEventListener('keydown', handleKeyboardSave);
+        durationInput.addEventListener('keydown', handleKeyboardSave);
 
         document.body.appendChild(modal);
         

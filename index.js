@@ -9,7 +9,7 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webSecurity: false // 允许加载本地文件
+      webSecurity: true // 恢复web安全性，现在使用本地资源
     },
     show: false,
     titleBarStyle: 'default',
@@ -126,6 +126,42 @@ const createMenu = () => {
           click: () => {
             app.quit()
           }
+        }
+      ]
+    },
+    {
+      label: '编辑',
+      submenu: [
+        {
+          label: '撤销',
+          accelerator: 'CmdOrCtrl+Z',
+          role: 'undo'
+        },
+        {
+          label: '重做',
+          accelerator: 'Shift+CmdOrCtrl+Z',
+          role: 'redo'
+        },
+        { type: 'separator' },
+        {
+          label: '剪切',
+          accelerator: 'CmdOrCtrl+X',
+          role: 'cut'
+        },
+        {
+          label: '复制',
+          accelerator: 'CmdOrCtrl+C',
+          role: 'copy'
+        },
+        {
+          label: '粘贴',
+          accelerator: 'CmdOrCtrl+V',
+          role: 'paste'
+        },
+        {
+          label: '全选',
+          accelerator: 'CmdOrCtrl+A',
+          role: 'selectall'
         }
       ]
     },
