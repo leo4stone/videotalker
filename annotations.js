@@ -257,10 +257,10 @@ class AnnotationManager {
         if (annotation.duration && annotation.duration > 0) {
             const widthPercentage = (annotation.duration / duration) * 100;
             container.style.width = `${widthPercentage}%`;
-            container.style.minWidth = '8px'; // 最小宽度确保可见性
             container.classList.add('has-duration');
         } else {
-            container.style.width = 'auto';
+            const widthPercentage = 0;
+            container.style.width = `${widthPercentage}%`;
             container.classList.remove('has-duration');
         }
         
@@ -324,6 +324,9 @@ class AnnotationManager {
         container.appendChild(dot);
 
         // 圆点缩放效果（通过CSS hover处理popup显示）
+        container.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
         container.addEventListener('mouseenter', (e) => {
             e.stopPropagation();
         });
