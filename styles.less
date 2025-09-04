@@ -996,7 +996,7 @@ body {
       align-items: center;
       z-index: 2;
       transform: none;
-      opacity: 0;
+      opacity: 1;
 
       // div.progress-line
       .progress-line {
@@ -1008,13 +1008,14 @@ body {
         background: @primary-blue;
         transform: translateY(-100%);
         border-radius: 99px;
+        opacity: 0;
       }
 
       // 当前时间指示器 & 打点添加按钮
       .progress-handle {
         position: absolute;
         right: -1px;
-        top: 50%;
+        top: 15%;
         width: 2px;
         height: 16px;
         transform: translate(0, -50%);
@@ -1026,7 +1027,7 @@ body {
           left: 50%;
           top: 50%;
           transform: translate(-50%,-50%);
-          opacity: .4;
+          opacity: 1;
 
           // 当前时间
           .time-text {
@@ -1038,22 +1039,22 @@ body {
             font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
-            margin-top: 24px;
+            margin-top: 0px;
           }
 
           // 添加打点
           .add-annotation-btn {
             position: absolute;
-            width: 16px;
-            height: 16px;
+            width: 64px;
+            height: 24px;
             left: 50%;
             top: 50%;
             transform: translate(-50%,-50%);
-            opacity: 0;
+            opacity: 1;
             background: rgba(0,0,0,0.5);
             border: 2px solid @primary-text;
             color: @primary-text;
-            border-radius: 50%;
+            border-radius: 999px;
             cursor: pointer;
             font-size: 16px;
             display: flex;
@@ -1067,11 +1068,12 @@ body {
               width: 0;
               height: 0;
               left: 50%;
-              top: -80%;
+              top: -45%;
               transform: translate(-50%,0%);
               border-left: 4px solid transparent;
               border-right: 4px solid transparent;
-              border-top: 8px solid @primary-text;
+              border-top: 0px solid @primary-text;
+              border-bottom: 8px solid @primary-text;
             }
 
             &:hover {
@@ -1093,6 +1095,7 @@ body {
               transform: translate(-50%,-50%);
               background-color: @primary-blue;
               border-radius: 50%;
+              opacity: 0;
             }
           }
         }
@@ -1129,12 +1132,14 @@ body {
     .progress-bar{
       opacity: 1;
       .progress-line {
+        opacity: 1;
         top: 50%;
         transform: translateY(-50%);
       }
 
       .progress-handle {
         opacity: 1;
+        top: 50%;
         height: 30px;
         .current-time-display {
           opacity: 1;
@@ -1144,7 +1149,18 @@ body {
             font-size: 10px;
           }
           .add-annotation-btn {
+            width: 16px;
+            height: 16px;
             opacity: 1;
+            &::before{
+              top: -80%;
+              border-top: 8px solid @primary-text;
+              border-bottom: 0px solid @primary-text;
+            }
+            &::before,
+            &::after{
+              opacity: 1;
+            }
           }
         }
       }
