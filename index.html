@@ -1,29 +1,48 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <title>VideoTalker - 视频播放器</title>
-    
-    <!-- Video.js CSS -->
-    <link href="./node_modules/video.js/dist/video-js.css" rel="stylesheet">
-    
-    <!-- LESS 样式表 -->
-    <link rel="stylesheet/less" type="text/css" href="styles.less" />
-    
-    <!-- LESS 编译器 -->
-    <script src="./node_modules/less/dist/less.min.js"></script>
 
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8" />
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <title>VideoTalker - 视频播放器</title>
+
+  <!-- Video.js CSS -->
+  <link href="./node_modules/video.js/dist/video-js.css" rel="stylesheet">
+
+  <!-- LESS 样式表 -->
+  <link rel="stylesheet/less" type="text/css" href="styles.less" />
+
+  <!-- LESS 编译器 -->
+  <script src="./node_modules/less/dist/less.min.js"></script>
+
+</head>
+
+<body>
+  <!-- 左侧大纲切换按钮 -->
+  <button id="outline-toggle-btn" class="outline-toggle-btn" title="打点大纲">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+    </svg>
+  </button>
+
+  <!-- 左侧大纲视图面板 -->
+  <div id="outline-panel" class="outline-panel">
+    <div class="outline-panel-header">
+      <h3>打点大纲</h3>
+      <button id="outline-close-btn" class="outline-close-btn">&times;</button>
+    </div>
+    <div class="outline-panel-content">
+      <div id="outline-list" class="outline-list">
+        <!-- 打点列表将在这里动态生成 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区域 -->
+  <div class="main-content">
     <!-- 全屏视频容器 -->
     <div class="video-container">
-      <video
-        id="video-player"
-        class="video-js vjs-default-skin"
-        preload="auto"
-        data-setup="{}"
-      >
+      <video id="video-player" class="video-js vjs-default-skin" preload="auto" data-setup="{}">
         <p class="vjs-no-js">
           要查看此视频，请启用 JavaScript，并考虑升级到
           <a href="https://videojs.com/html5-video-support/" target="_blank">
@@ -37,79 +56,15 @@
     <div class="file-info-overlay" id="file-info-overlay">
       请选择一个视频文件开始播放
     </div>
-    
+
     <!-- 播放倍速提示 -->
     <div class="playback-rate-display" id="playback-rate-display">
       <span class="rate-text" id="rate-text">1.0x</span>
     </div>
 
-    <!-- 视频进度条容器 -->
-    <div class="progress-wrapper" id="progress-wrapper">
-      <!-- 进度条缩放控制 -->
-      <div class="progress-zoom-control" id="progress-zoom-control">
-        <div class="pan-section">
-          <div class="custom-pan-slider" id="custom-pan-slider">
-            <div class="pan-track"></div>
-            <div class="playback-indicator" id="playback-indicator"></div>
-            <div class="pan-thumb" id="pan-thumb">
-              <div class="resize-handle left-handle" id="left-handle"></div>
-              <div class="resize-handle right-handle" id="right-handle"></div>
-              <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
-              <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
-              <div class="pan-thumb-controls">
-                <input type="checkbox" id="pan-thumb-follow" class="pan-thumb-checkbox">
-                <label for="pan-thumb-follow" class="pan-thumb-checkbox-label">进度跟随</label>
-              </div>
-            </div>
-            <div class="playback-progress" id="playback-progress">
-              <div class="playback-tooltip" id="playback-tooltip">
-                <canvas class="playback-thumbnail-canvas" id="playback-thumbnail-canvas" width="160" height="90"></canvas>
-                <div class="playback-tooltip-line"></div>
-                <div class="playback-tooltip-text" id="playback-tooltip-text">00:00</div>
-              </div>
-            </div>
-            <div class="playback-handle" id="playback-handle">
-              <div class="playback-handle-time" id="playback-handle-time">00:00</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-              <!-- 视频进度条 -->
-        <div class="progress-container" id="progress-container">
-          <!-- 总时间轨道（橙色） -->
-          <div class="progress-bar-track" id="progress-bar-track"></div>
-          <div class="progress-bar" id="progress-bar">
-            <div class="progress-line"></div>
-            <div class="progress-handle">
-              <div class="current-time-display" id="current-time-display">
-                <span class="time-text">00:00</span>
-                <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
-              </div>
-            </div>
-          </div>
-                  <div class="progress-tooltip" id="progress-tooltip">
-            <canvas class="main-thumbnail-canvas" id="main-thumbnail-canvas" width="160" height="90"></canvas>
-            <div class="tooltip-line"></div>
-            <div class="tooltip-text" id="tooltip-text">00:00</div>
-          </div>
-      </div>
-    </div>
 
     <!-- 展开按钮 -->
     <button class="expand-button" id="expand-button">›</button>
-
-    <!-- 左下角播放/暂停按钮 -->
-    <button class="floating-play-button" id="floating-play-button">
-      <div class="play-icon" id="play-icon"></div>
-      <div class="pause-icon" id="pause-icon" style="display: none;"></div>
-    </button>
-    
-    <!-- 视频总时长显示 -->
-    <div class="video-duration-display" id="video-duration-display">
-      <span class="duration-text">00:00</span>
-    </div>
-
     <!-- 右侧侧边栏 -->
     <div class="overlay-ui" id="overlay-ui">
       <!-- 侧边栏头部 -->
@@ -187,10 +142,75 @@
         </div>
       </div>
     </div>
+  </div> <!-- 关闭 main-content -->
+  <!-- 视频进度条容器 -->
+  <div class="progress-wrapper" id="progress-wrapper">
+    <!-- 进度条缩放控制 -->
+    <div class="progress-zoom-control" id="progress-zoom-control">
+      <div class="pan-section">
+        <div class="custom-pan-slider" id="custom-pan-slider">
+          <div class="pan-track"></div>
+          <div class="playback-indicator" id="playback-indicator"></div>
+          <div class="pan-thumb" id="pan-thumb">
+            <div class="resize-handle left-handle" id="left-handle"></div>
+            <div class="resize-handle right-handle" id="right-handle"></div>
+            <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
+            <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
+            <div class="pan-thumb-controls">
+              <input type="checkbox" id="pan-thumb-follow" class="pan-thumb-checkbox">
+              <label for="pan-thumb-follow" class="pan-thumb-checkbox-label">进度跟随</label>
+            </div>
+          </div>
+          <div class="playback-progress" id="playback-progress">
+            <div class="playback-tooltip" id="playback-tooltip">
+              <canvas class="playback-thumbnail-canvas" id="playback-thumbnail-canvas" width="160"
+                height="90"></canvas>
+              <div class="playback-tooltip-line"></div>
+              <div class="playback-tooltip-text" id="playback-tooltip-text">00:00</div>
+            </div>
+          </div>
+          <div class="playback-handle" id="playback-handle">
+            <div class="playback-handle-time" id="playback-handle-time">00:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Video.js JavaScript -->
-    <script src="./node_modules/video.js/dist/video.min.js"></script>
-    <script src="annotations.js"></script>
-    <script src="renderer.js"></script>
-  </body>
+    <!-- 视频进度条 -->
+    <div class="progress-container" id="progress-container">
+      <!-- 总时间轨道（橙色） -->
+      <div class="progress-bar-track" id="progress-bar-track"></div>
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-line"></div>
+        <div class="progress-handle">
+          <div class="current-time-display" id="current-time-display">
+            <span class="time-text">00:00</span>
+            <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+          </div>
+        </div>
+      </div>
+      <div class="progress-tooltip" id="progress-tooltip">
+        <canvas class="main-thumbnail-canvas" id="main-thumbnail-canvas" width="160" height="90"></canvas>
+        <div class="tooltip-line"></div>
+        <div class="tooltip-text" id="tooltip-text">00:00</div>
+      </div>
+    </div>
+  </div>
+  <!-- 左下角播放/暂停按钮 -->
+  <button class="floating-play-button" id="floating-play-button">
+    <div class="play-icon" id="play-icon"></div>
+    <div class="pause-icon" id="pause-icon" style="display: none;"></div>
+  </button>
+
+  <!-- 视频总时长显示 -->
+  <div class="video-duration-display" id="video-duration-display">
+    <span class="duration-text">00:00</span>
+  </div>
+
+  <!-- Video.js JavaScript -->
+  <script src="./node_modules/video.js/dist/video.min.js"></script>
+  <script src="annotations.js"></script>
+  <script src="renderer.js"></script>
+</body>
+
 </html>

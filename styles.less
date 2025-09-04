@@ -51,10 +51,292 @@ body {
 }
 
 // ===============================
-// 视频容器 - body > div.video-container
+// 左侧大纲切换按钮 - body > button.outline-toggle-btn
+// ===============================
+.outline-toggle-btn {
+  position: fixed;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: @primary-text;
+  padding: 12px;
+  cursor: pointer;
+  backdrop-filter: @blur-medium;
+  -webkit-backdrop-filter: @blur-medium;
+  transition: @transition-fast;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+}
+
+// ===============================
+// 左侧大纲视图面板 - body > div.outline-panel
+// ===============================
+.outline-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: calc(100% - 90px);
+  background: rgba(10, 10, 10, 0.95);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: @blur-large;
+  -webkit-backdrop-filter: @blur-large;
+  z-index: 100;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  // div.outline-panel-header
+  .outline-panel-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+
+    h3 {
+      margin: 0;
+      color: @primary-text;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    // button.outline-close-btn
+    .outline-close-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: @transition-fast;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: @primary-text;
+      }
+    }
+  }
+
+  // div.outline-panel-content
+  .outline-panel-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    // div.outline-list
+    .outline-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      }
+
+      // 空状态提示
+      .outline-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: @secondary-text;
+        font-size: 14px;
+        font-style: italic;
+      }
+
+      // 打点条目
+      .outline-item {
+        padding: 12px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: @transition-fast;
+        position: relative;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        &:active {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        // 时间显示
+        .outline-time {
+          color: @primary-blue;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 4px;
+        }
+
+        // 标题
+        .outline-title {
+          color: @primary-text;
+          font-size: 14px;
+          font-weight: 500;
+          margin-bottom: 2px;
+          line-height: 1.3;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        // 内容预览
+        .outline-text {
+          color: @secondary-text;
+          font-size: 12px;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        // 颜色标识
+        .outline-color-indicator {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 3px;
+          border-radius: 0 2px 2px 0;
+
+          &.color-red {
+            background: @danger-red;
+          }
+
+          &.color-orange {
+            background: @warning-orange;
+          }
+
+          &.color-yellow {
+            background: @warning-yellow;
+          }
+
+          &.color-green {
+            background: @success-green;
+          }
+
+          &.color-blue {
+            background: @primary-blue;
+          }
+
+          &.color-purple {
+            background: @info-purple;
+          }
+        }
+
+        // 级别标识
+        .outline-level-indicator {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          opacity: 0.6;
+
+          &.level-high {
+            background: #ff4757;
+          }
+
+          &.level-medium {
+            background: #ffa502;
+          }
+
+          &.level-low {
+            background: #2ed573;
+          }
+
+          &.level-default {
+            background: rgba(255, 255, 255, 0.3);
+          }
+        }
+
+        // 时长标识
+        &.has-duration {
+          .outline-time::after {
+            content: ' 时长';
+            color: @secondary-text;
+            font-weight: normal;
+          }
+        }
+
+        // 空打点样式
+        &.empty-annotation {
+          .outline-title {
+            color: @secondary-text;
+            font-style: italic;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ===============================
+// 主内容区域 - body > div.main-content
+// ===============================
+.main-content {
+  transition: margin-left 0.3s ease;
+  height: 100vh;
+
+  &.outline-open {
+    margin-left: 320px;
+  }
+}
+
+// ===============================
+// 视频容器 - body > div.main-content > div.video-container
 // ===============================
 .video-container {
-  position: fixed;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
@@ -194,8 +476,7 @@ body {
   left: 160px;
   right: 160px;
   height: 148px;
-  z-index: 15;
-  // overflow: hidden; // 确保缩放后的内容不会溢出
+  z-index: 115;
 
   // div.progress-zoom-control
   .progress-zoom-control {

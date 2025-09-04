@@ -117,6 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化进度条缩放功能
     initializeProgressZoom();
+    
+    // 初始化大纲面板
+    initializeOutlinePanel();
 });
 
 // 设置事件监听器
@@ -1751,4 +1754,159 @@ function initializePlaybackRateDisplay() {
     const rate = player ? player.playbackRate() : 1.0;
     updatePlaybackRateDisplay(rate);
 }
+
+// ===============================
+// 大纲面板功能
+// ===============================
+
+function initializeOutlinePanel() {
+    const toggleBtn = document.getElementById('outline-toggle-btn');
+    const closeBtn = document.getElementById('outline-close-btn');
+    const outlinePanel = document.getElementById('outline-panel');
+    const mainContent = document.querySelector('.main-content');
+
+    // 切换按钮点击事件
+    toggleBtn.addEventListener('click', function() {
+        toggleOutlinePanel();
+    });
+
+    // 关闭按钮点击事件
+    closeBtn.addEventListener('click', function() {
+        closeOutlinePanel();
+    });
+
+    // 初始化面板状态（默认关闭）
+    closeOutlinePanel();
+}
+
+function toggleOutlinePanel() {
+    const outlinePanel = document.getElementById('outline-panel');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (outlinePanel.classList.contains('open')) {
+        closeOutlinePanel();
+    } else {
+        openOutlinePanel();
+    }
+}
+
+function openOutlinePanel() {
+    const outlinePanel = document.getElementById('outline-panel');
+    const mainContent = document.querySelector('.main-content');
+    
+    outlinePanel.classList.add('open');
+    mainContent.classList.add('outline-open');
+    
+    // 生成大纲列表
+    generateOutlineList();
+}
+
+function closeOutlinePanel() {
+    const outlinePanel = document.getElementById('outline-panel');
+    const mainContent = document.querySelector('.main-content');
+    
+    outlinePanel.classList.remove('open');
+    mainContent.classList.remove('outline-open');
+    
+}
+
+function generateOutlineList() {
+    const outlineList = document.getElementById('outline-list');
+    
+    if (!window.annotationManager) {
+        outlineList.innerHTML = '<div class="outline-empty">打点管理器未加载</div>';
+        return;
+    }
+    
+    const annotations = window.annotationManager.getAllAnnotations();
+    
+    if (annotations.length === 0) {
+        outlineList.innerHTML = '<div class="outline-empty">暂无打点信息</div>';
+        return;
+    }
+    
+    // 清空现有列表
+    outlineList.innerHTML = '';
+    
+    // 为每个打点创建列表项
+    annotations.forEach(annotation => {
+        const item = createOutlineItem(annotation);
+        outlineList.appendChild(item);
+    });
+}
+
+function createOutlineItem(annotation) {
+    const item = document.createElement('div');
+    item.className = 'outline-item';
+    
+    // 如果没有标题和内容，添加空打点样式
+    if (!annotation.title && !annotation.text) {
+        item.classList.add('empty-annotation');
+    }
+    
+    // 如果有时长，添加时长样式
+    if (annotation.duration && annotation.duration > 0) {
+        item.classList.add('has-duration');
+    }
+    
+    // 格式化时间信息
+    const timeInfo = annotation.duration && annotation.duration > 0 
+        ? `${formatTime(annotation.time)} - ${formatTime(annotation.time + annotation.duration)}`
+        : formatTime(annotation.time);
+    
+    // 创建内容
+    item.innerHTML = `
+        <div class="outline-color-indicator color-${annotation.color || 'blue'}"></div>
+        <div class="outline-time">${timeInfo}</div>
+        <div class="outline-title">${annotation.title || '空白打点'}</div>
+        ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
+        <div class="outline-level-indicator ${getLevelClass(annotation.level)}"></div>
+    `;
+    
+    // 点击跳转到对应时间
+    item.addEventListener('click', function() {
+        if (player && window.annotationManager) {
+            window.annotationManager.jumpToAnnotation(annotation.id);
+        }
+    });
+    
+    return item;
+}
+
+function getLevelClass(level) {
+    const normalizedLevel = window.annotationManager ? 
+        window.annotationManager.normalizeLevel(level) : level;
+    
+    if (normalizedLevel === '1') return 'level-high';
+    if (normalizedLevel === '2') return 'level-medium';
+    if (normalizedLevel === '3') return 'level-low';
+    return 'level-default';
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+// 更新大纲视图的函数，供AnnotationManager调用
+function updateOutlineView() {
+    const outlinePanel = document.getElementById('outline-panel');
+    
+    // 只有在面板打开时才更新
+    if (outlinePanel && outlinePanel.classList.contains('open')) {
+        generateOutlineList();
+    }
+}
+
+// 将updateOutlineView函数绑定到window对象，供其他模块调用
+window.updateOutlineView = updateOutlineView;
 

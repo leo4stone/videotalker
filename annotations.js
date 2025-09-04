@@ -73,6 +73,9 @@ class AnnotationManager {
         // 更新UI显示
         this.updateProgressBarAnnotations();
         
+        // 更新大纲视图
+        this.updateOutlineView();
+        
         return annotation;
     }
 
@@ -83,6 +86,7 @@ class AnnotationManager {
             this.annotations.splice(index, 1);
             await this.saveAnnotationsToFile();
             this.updateProgressBarAnnotations();
+            this.updateOutlineView();
             return true;
         }
         return false;
@@ -100,6 +104,7 @@ class AnnotationManager {
             annotation.updatedAt = new Date().toISOString();
             await this.saveAnnotationsToFile();
             this.updateProgressBarAnnotations();
+            this.updateOutlineView();
             return true;
         }
         return false;
@@ -149,6 +154,7 @@ class AnnotationManager {
                     this.annotations = Array.isArray(data.annotations) ? data.annotations : [];
                     this.annotations.sort((a, b) => a.time - b.time);
                     this.updateProgressBarAnnotations();
+                    this.updateOutlineView();
                     console.log(`加载了 ${this.annotations.length} 个打点`);
                 }
             }
@@ -1264,6 +1270,14 @@ class AnnotationManager {
                 e.stopPropagation();
             }
         });
+    }
+
+    // 更新大纲视图
+    updateOutlineView() {
+        // 检查是否存在renderer.js中定义的updateOutlineView函数
+        if (typeof window.updateOutlineView === 'function') {
+            window.updateOutlineView();
+        }
     }
 }
 
