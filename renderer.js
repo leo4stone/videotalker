@@ -863,7 +863,11 @@ function setupProgressBar() {
     
     // 监听播放器时间更新
     if (player) {
-        player.on('timeupdate', updateProgress);
+        player.on('timeupdate', function() {
+            updateProgress();
+            updateOutlinePlayedStatus();
+            updateAnnotationContainerPlayedStatus();
+        });
     }
 }
 
@@ -1849,6 +1853,13 @@ function createOutlineItem(annotation) {
     const item = document.createElement('div');
     item.className = 'outline-item';
     
+    // 添加颜色类到outline-item
+    if (annotation.color) {
+        item.classList.add(`color-${annotation.color}`);
+    } else {
+        item.classList.add('color-blue'); // 默认颜色
+    }
+    
     // 如果没有标题和内容，添加空打点样式
     if (!annotation.title && !annotation.text) {
         item.classList.add('empty-annotation');
@@ -1859,6 +1870,10 @@ function createOutlineItem(annotation) {
         item.classList.add('has-duration');
     }
     
+    // 判断打点是否已播放完成
+    const currentTime = player ? player.currentTime() : 0;
+    updateElementPlayedStatus(item, annotation, currentTime);
+    
     // 格式化时间信息
     const timeInfo = annotation.duration && annotation.duration > 0 
         ? `${formatTime(annotation.time)} - ${formatTime(annotation.time + annotation.duration)}`
@@ -1866,7 +1881,7 @@ function createOutlineItem(annotation) {
     
     // 创建内容
     item.innerHTML = `
-        <div class="outline-color-indicator color-${annotation.color || 'blue'}"></div>
+        <div class="outline-color-indicator"></div>
         <div class="outline-time">${timeInfo}</div>
         <div class="outline-title">${annotation.title || '空白打点'}</div>
         ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
@@ -1917,6 +1932,99 @@ function updateOutlineView() {
     }
 }
 
+// 防抖更新播放状态
+let outlineUpdateTimeout = null;
+let annotationUpdateTimeout = null;
+
+// ===============================
+// 通用打点播放状态管理
+// ===============================
+
+// 判断打点是否已播放完成
+function isAnnotationPlayed(annotation, currentTime) {
+    const annotationEndTime = annotation.time + (annotation.duration || 0);
+    return currentTime > annotationEndTime;
+}
+
+// 更新元素的播放状态样式
+function updateElementPlayedStatus(element, annotation, currentTime) {
+    if (isAnnotationPlayed(annotation, currentTime)) {
+        element.classList.add('played');
+    } else {
+        element.classList.remove('played');
+    }
+}
+
+// 更新大纲中已播放打点的样式
+function updateOutlinePlayedStatus() {
+    // 清除之前的防抖定时器
+    if (outlineUpdateTimeout) {
+        clearTimeout(outlineUpdateTimeout);
+    }
+    
+    // 设置防抖延迟
+    outlineUpdateTimeout = setTimeout(() => {
+        updateOutlinePlayedStatusImmediate();
+    }, 100); // 100ms防抖
+}
+
+function updateOutlinePlayedStatusImmediate() {
+    const outlinePanel = document.getElementById('outline-panel');
+    
+    // 只有在面板打开时才更新
+    if (!outlinePanel || !outlinePanel.classList.contains('open') || !player) {
+        return;
+    }
+    
+    const currentTime = player.currentTime();
+    const outlineItems = document.querySelectorAll('.outline-item');
+    
+    // 获取所有打点数据
+    const annotations = window.annotationManager ? window.annotationManager.getAllAnnotations() : [];
+    
+    outlineItems.forEach((item, index) => {
+        if (index < annotations.length) {
+            const annotation = annotations[index];
+            updateElementPlayedStatus(item, annotation, currentTime);
+        }
+    });
+}
+
+// 更新进度条上annotation-container的播放状态
+function updateAnnotationContainerPlayedStatus() {
+    // 清除之前的防抖定时器
+    if (annotationUpdateTimeout) {
+        clearTimeout(annotationUpdateTimeout);
+    }
+    
+    // 设置防抖延迟
+    annotationUpdateTimeout = setTimeout(() => {
+        updateAnnotationContainerPlayedStatusImmediate();
+    }, 100); // 100ms防抖
+}
+
+function updateAnnotationContainerPlayedStatusImmediate() {
+    if (!player) {
+        return;
+    }
+    
+    const currentTime = player.currentTime();
+    const annotationContainers = document.querySelectorAll('.annotation-container');
+    
+    // 获取所有打点数据
+    const annotations = window.annotationManager ? window.annotationManager.getAllAnnotations() : [];
+    
+    annotationContainers.forEach((container) => {
+        const annotationId = container.dataset.annotationId;
+        const annotation = annotations.find(ann => ann.id === annotationId);
+        
+        if (annotation) {
+            updateElementPlayedStatus(container, annotation, currentTime);
+        }
+    });
+}
+
 // 将updateOutlineView函数绑定到window对象，供其他模块调用
 window.updateOutlineView = updateOutlineView;
+window.updateOutlinePlayedStatus = updateOutlinePlayedStatus;
 

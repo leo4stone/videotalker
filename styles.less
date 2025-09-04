@@ -245,30 +245,6 @@ body {
           bottom: 0;
           width: 3px;
           border-radius: 0 2px 2px 0;
-
-          &.color-red {
-            background: @danger-red;
-          }
-
-          &.color-orange {
-            background: @warning-orange;
-          }
-
-          &.color-yellow {
-            background: @warning-yellow;
-          }
-
-          &.color-green {
-            background: @success-green;
-          }
-
-          &.color-blue {
-            background: @primary-blue;
-          }
-
-          &.color-purple {
-            background: @info-purple;
-          }
         }
 
         // 级别标识
@@ -315,6 +291,49 @@ body {
             font-style: italic;
           }
         }
+
+        // 已播放完成的打点样式
+        &.played {
+          opacity: 0.6;
+          
+          .outline-time {
+            color: rgba(123, 123, 123, 0.8);
+          }
+          
+          .outline-title {
+            color: rgba(255, 255, 255, 0.5);
+          }
+          
+          .outline-text {
+            color: rgba(255, 255, 255, 0.3);
+          }
+          
+          .outline-color-indicator {
+            opacity: 0.4;
+          }
+          
+          .outline-level-indicator {
+            opacity: 0.3;
+          }
+        }
+
+        // 颜色主题mixin
+        .outline-color-theme(@color) {
+          .outline-color-indicator {
+            background: @color;
+          }
+          .outline-time {
+            color: @color;
+          }
+        }
+
+        // 颜色主题样式
+        &.color-red { .outline-color-theme(@danger-red); }
+        &.color-orange { .outline-color-theme(@warning-orange); }
+        &.color-yellow { .outline-color-theme(@warning-yellow); }
+        &.color-green { .outline-color-theme(@success-green); }
+        &.color-blue { .outline-color-theme(@primary-blue); }
+        &.color-purple { .outline-color-theme(@info-purple); }
       }
     }
   }
@@ -1412,6 +1431,25 @@ body {
         &::before{
           border-top-color:fade(@color, 90%);
         }
+      }
+      &.played{
+        .annotation-dot {
+          background-color: darken(@color, 30%);
+          &::before,
+          &::after{
+            background-color: darken(@color, 30%);
+            border: 2px solid darken(@color, 30%);
+          }
+  
+        }
+        .annotation-title {
+          background: darken(@color, 30%);
+          color: darken(@title-text-color, 30%);
+          &::before{
+            border-top-color:darken(@color, 30%);
+          }
+        }
+
       }
     }
 

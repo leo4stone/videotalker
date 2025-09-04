@@ -410,6 +410,12 @@ class AnnotationManager {
             this.jumpToAnnotation(annotation.id);
         });
 
+        // 初始化播放状态
+        if (this.player && typeof window.updateElementPlayedStatus === 'function') {
+            const currentTime = this.player.currentTime();
+            window.updateElementPlayedStatus(container, annotation, currentTime);
+        }
+
         return container;
     }
 
