@@ -1342,6 +1342,8 @@ function setupPlaybackIndicator() {
 // 设置播放进度背景区域的交互（点击跳转）
 function setupPlaybackProgress() {
     const playbackProgress = document.getElementById('playback-progress');
+    const playbackTooltip = document.getElementById('playback-tooltip');
+    const playbackTooltipText = document.getElementById('playback-tooltip-text');
     if (!playbackProgress) return;
     
     // 点击跳转到指定时间
@@ -1366,7 +1368,34 @@ function setupPlaybackProgress() {
         player.currentTime(targetTime);
     }
     
+    // 鼠标移动时更新时间提示的位置和内容
+    function handleProgressMouseMove(e) {
+        if (!player || !hasVideoLoaded || !playbackTooltip || !playbackTooltipText) return;
+        
+        const customPanSlider = document.getElementById('custom-pan-slider');
+        const sliderRect = customPanSlider.getBoundingClientRect();
+        const progressRect = playbackProgress.getBoundingClientRect();
+        
+        // 计算鼠标位置对应的视频时间
+        const mouseX = e.clientX - sliderRect.left;
+        const sliderWidth = sliderRect.width;
+        const progressPercent = Math.max(0, Math.min(100, (mouseX / sliderWidth) * 100));
+        
+        const videoDuration = player.duration();
+        const targetTime = (progressPercent / 100) * videoDuration;
+        
+        // 更新提示文本
+        playbackTooltipText.textContent = formatTime(targetTime);
+        
+        // 设置提示位置（使用百分比，相对于playback-progress的宽度）
+        const relativeX = e.clientX - progressRect.left;
+        const progressWidth = progressRect.width;
+        const positionPercent = Math.max(0, Math.min(100, (relativeX / progressWidth) * 100));
+        playbackTooltip.style.left = positionPercent + '%';
+    }
+    
     playbackProgress.addEventListener('click', handleProgressClick);
+    playbackProgress.addEventListener('mousemove', handleProgressMouseMove);
 }
 
 // 设置播放手柄的拖拽交互
@@ -1423,6 +1452,7 @@ function setupPlaybackHandle() {
 function updatePlaybackIndicator() {
     const playbackIndicator = document.getElementById('playback-indicator');
     const playbackHandle = document.getElementById('playback-handle');
+    const playbackHandleTime = document.getElementById('playback-handle-time');
     if (!playbackIndicator || !playbackHandle || !player || !hasVideoLoaded) return;
     
     const currentTime = player.currentTime();
@@ -1434,4 +1464,9 @@ function updatePlaybackIndicator() {
     
     // 设置播放标记位置
     playbackHandle.style.left = `${progressPercent}%`;
+    
+    // 更新playback-handle内的时间显示
+    if (playbackHandleTime) {
+        playbackHandleTime.textContent = formatTime(currentTime);
+    }
 }
