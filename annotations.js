@@ -17,6 +17,14 @@ class AnnotationManager {
         }
     }
 
+    // 规范化level值：确保默认level始终为null
+    normalizeLevel(level) {
+        if (level === null || level === undefined || level === '' || level === 'default') {
+            return null;
+        }
+        return String(level);
+    }
+
     // 初始化打点管理器
     init(player) {
         this.player = player;
@@ -81,14 +89,14 @@ class AnnotationManager {
     }
 
     // 编辑打点
-    async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = null, newDuration = null) {
+    async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
         const annotation = this.annotations.find(ann => ann.id === annotationId);
         if (annotation) {
             annotation.title = newTitle.trim();
             annotation.text = newText.trim();
             if (newColor !== null) annotation.color = newColor;
-            if (newLevel !== null) annotation.level = newLevel;
-            if (newDuration !== null) annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
+            if (newLevel !== 'UNCHANGED') annotation.level = newLevel; // 允许设置为null
+            if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
             annotation.updatedAt = new Date().toISOString();
             await this.saveAnnotationsToFile();
             this.updateProgressBarAnnotations();
@@ -203,10 +211,10 @@ class AnnotationManager {
         // 收集所有存在的级别
         const existingLevels = new Set();
         this.annotations.forEach(annotation => {
-            const level = annotation.level;
-            if (level === '1' || level === 1) existingLevels.add(1); // 高
-            else if (level === '2' || level === 2) existingLevels.add(2); // 中
-            else if (level === '3' || level === 3) existingLevels.add(3); // 低
+            const normalizedLevel = this.normalizeLevel(annotation.level);
+            if (normalizedLevel === '1') existingLevels.add(1); // 高
+            else if (normalizedLevel === '2') existingLevels.add(2); // 中
+            else if (normalizedLevel === '3') existingLevels.add(3); // 低
             else existingLevels.add(4); // 默认
         });
 
@@ -278,11 +286,11 @@ class AnnotationManager {
         
         // 应用动态高度
         if (levelHeightMap) {
-            const level = annotation.level;
+            const normalizedLevel = this.normalizeLevel(annotation.level);
             let levelKey;
-            if (level === '1' || level === 1) levelKey = 1; // 高
-            else if (level === '2' || level === 2) levelKey = 2; // 中
-            else if (level === '3' || level === 3) levelKey = 3; // 低
+            if (normalizedLevel === '1') levelKey = 1; // 高
+            else if (normalizedLevel === '2') levelKey = 2; // 中
+            else if (normalizedLevel === '3') levelKey = 3; // 低
             else levelKey = 4; // 默认
             
             const heightPercent = levelHeightMap[levelKey] || 100;
@@ -590,7 +598,9 @@ class AnnotationManager {
         const defaultTitle = isEdit ? annotation.title : '';
         const defaultText = isEdit ? annotation.text : '';
         const defaultColor = isEdit ? (annotation.color === 'gray' ? 'blue' : annotation.color || 'blue') : 'blue';
-        const defaultLevel = isEdit ? annotation.level || '' : '';
+        // 获取规范化的level值用于显示
+        const normalizedLevel = isEdit ? this.normalizeLevel(annotation.level) : null;
+        const defaultLevel = normalizedLevel || '';
         const defaultDuration = isEdit ? annotation.duration || '' : '';
         
         // 创建模态框
@@ -723,7 +733,9 @@ class AnnotationManager {
             const colorRadio = document.querySelector('input[name="annotation-color"]:checked');
             const levelRadio = document.querySelector('input[name="annotation-level"]:checked');
             const color = colorRadio ? colorRadio.value : 'blue';
-            const level = levelRadio ? levelRadio.value || null : null;
+            // 规范化level值：空字符串表示默认级别
+            const rawLevel = levelRadio ? levelRadio.value : '';
+            const level = rawLevel === '' ? null : rawLevel;
             
             if (isEdit) {
                 // 编辑模式
