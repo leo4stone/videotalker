@@ -1510,13 +1510,23 @@ function setupPanThumbFollowEvents() {
     // checkbox点击事件
     panThumbFollowCheckbox.addEventListener('change', function() {
         console.log('Pan-thumb follow:', this.checked);
+        const panThumb = document.getElementById('pan-thumb');
+        
         if (this.checked) {
-            // 开启跟随时，立即调整到当前播放位置
+            // 开启跟随时，添加className并立即调整到当前播放位置
+            if (panThumb) {
+                panThumb.classList.add('following');
+            }
             const currentTime = player.currentTime();
             const duration = player.duration();
             if (duration > 0) {
                 const progressPercent = (currentTime / duration) * 100;
                 updatePanThumbToFollowPlayback(progressPercent);
+            }
+        } else {
+            // 关闭跟随时，移除className
+            if (panThumb) {
+                panThumb.classList.remove('following');
             }
         }
     });
@@ -1536,6 +1546,13 @@ function disablePanThumbFollow() {
     const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
     if (panThumbFollowCheckbox && panThumbFollowCheckbox.checked) {
         panThumbFollowCheckbox.checked = false;
+        
+        // 移除跟随状态的className
+        const panThumb = document.getElementById('pan-thumb');
+        if (panThumb) {
+            panThumb.classList.remove('following');
+        }
+        
         console.log('Pan-thumb follow disabled due to manual drag');
     }
 }
