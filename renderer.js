@@ -988,6 +988,9 @@ function initializeProgressZoom() {
     
     // 播放进度指示器事件
     setupPlaybackIndicator();
+    
+    // 设置pan-thumb跟随播放事件
+    setupPanThumbFollowEvents();
 
 
 
@@ -1027,14 +1030,14 @@ function updateProgressTransform() {
     const progressContainer = document.getElementById('progress-container');
     if (!progressContainer) return;
 
-    // 设置宽度百分比
-    const width = progressZoom * 100;
-    progressContainer.style.width = `${width}%`;
+    // 设置宽度百分比（zoom倍数）
+    const widthPercent = progressZoom * 100;
+    progressContainer.style.width = `${widthPercent}%`;
     
-    // 计算left位置：将0-100转换为实际的left值
-    // 当缩放后，0表示完全左对齐，100表示完全右对齐
-    const maxLeft = progressZoom - 1; // 缩放后可移动的最大距离（比例）
-    const leftPercent = -(progressPan / 100) * maxLeft * 100; // 转换为百分比
+    // 计算left偏移：progressPan表示在原始视频时间轴上的位置百分比
+    // 需要将其转换为progress-container的left偏移百分比
+    // 公式：left = -progressPan * zoom（负号表示向左偏移）
+    const leftPercent = -progressPan * progressZoom;
     progressContainer.style.left = `${leftPercent}%`;
 }
 
@@ -1064,6 +1067,9 @@ function setupCustomPanSlider(sliderElement, thumbElement) {
         startX = e.clientX;
         startPan = progressPan;
         
+        // 拖拽pan-thumb时取消跟随播放
+        disablePanThumbFollow();
+        
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = 'grabbing';
@@ -1076,6 +1082,10 @@ function setupCustomPanSlider(sliderElement, thumbElement) {
         
         isResizing = true;
         resizeType = e.target.classList.contains('left-handle') ? 'left' : 'right';
+        
+        // 拖拽resize手柄时也取消跟随播放
+        disablePanThumbFollow();
+        
         startX = e.clientX;
         startPan = progressPan;
         startZoom = progressZoom;
@@ -1106,28 +1116,21 @@ function setupCustomPanSlider(sliderElement, thumbElement) {
         const deltaX = e.clientX - startX;
         
         if (isDragging) {
-            // 滑块主体拖拽 - 移动位置
-            const thumbRect = thumbElement.getBoundingClientRect();
-            const thumbWidth = thumbRect.width;
+            // 滑块主体拖拽 - 移动位置（使用百分比计算）
             const sliderWidth = sliderRect.width;
-            const maxMovablePixels = sliderWidth - thumbWidth;
+            const deltaPercent = (deltaX / sliderWidth) * 100;
             
-            if (maxMovablePixels <= 0) {
-                progressPan = 0;
-                updateProgressTransform();
-                updateCustomPanSlider();
-                return;
-            }
+            // 计算新的pan位置
+            const viewportWidthPercent = 100 / progressZoom;
+            const maxPanPercent = 100 - viewportWidthPercent;
+            const newPanPercent = startPan + deltaPercent * (maxPanPercent / 100);
             
-            const currentThumbPixelPosition = (startPan / 100) * maxMovablePixels;
-            const newThumbPixelPosition = currentThumbPixelPosition + deltaX;
-            const clampedPixelPosition = Math.max(0, Math.min(maxMovablePixels, newThumbPixelPosition));
-            
-            progressPan = (clampedPixelPosition / maxMovablePixels) * 100;
+            // 限制在有效范围内
+            progressPan = Math.max(0, Math.min(maxPanPercent, newPanPercent));
             
             updateProgressTransform();
             updateCustomPanSlider();
-            // pan-thumb拖拽不影响播放进度
+            updateThumbTimeDisplay();
         }
     }
     
@@ -1202,37 +1205,24 @@ function setupCustomPanSlider(sliderElement, thumbElement) {
             e.target.classList.contains('playback-progress')) return;
         
         const sliderRect = sliderElement.getBoundingClientRect();
-        const thumbRect = thumbElement.getBoundingClientRect();
         
-        // 计算点击位置相对于滑轨的像素位置
-        const clickPixelPosition = e.clientX - sliderRect.left;
+        // 计算点击位置的百分比
+        const clickPercent = ((e.clientX - sliderRect.left) / sliderRect.width) * 100;
         
-        // 获取滑块和滑轨的尺寸
-        const thumbWidth = thumbRect.width;
-        const sliderWidth = sliderRect.width;
+        // 计算视窗宽度和最大pan范围
+        const viewportWidthPercent = 100 / progressZoom;
+        const maxPanPercent = 100 - viewportWidthPercent;
         
-        // 计算滑块可移动的范围（像素）
-        const maxMovablePixels = sliderWidth - thumbWidth;
+        // 将点击位置转换为progressPan值
+        // 让点击位置成为视窗的中心
+        const targetPanPercent = (clickPercent / 100) * maxPanPercent - (viewportWidthPercent / 2);
         
-        if (maxMovablePixels <= 0) {
-            progressPan = 0;
-            updateProgressTransform();
-            updateCustomPanSlider();
-            return;
-        }
-        
-        // 计算滑块左边缘的目标位置（点击位置 - 滑块宽度的一半，让滑块中心对准点击位置）
-        const targetThumbPosition = clickPixelPosition - (thumbWidth / 2);
-        
-        // 限制在可移动范围内
-        const clampedPosition = Math.max(0, Math.min(maxMovablePixels, targetThumbPosition));
-        
-        // 转换为progressPan值（0-100）
-        progressPan = (clampedPosition / maxMovablePixels) * 100;
+        // 限制在有效范围内
+        progressPan = Math.max(0, Math.min(maxPanPercent, targetPanPercent));
         
         updateProgressTransform();
         updateCustomPanSlider();
-        // 点击pan-slider轨道只移动视窗，不影响播放进度
+        updateThumbTimeDisplay();
     }
     
     // 绑定事件
@@ -1261,17 +1251,18 @@ function calculateThumbTimeRange() {
     }
     
     const videoDuration = player.duration();
-    const minWidth = getMinThumbWidth();
-    const thumbWidthPercent = Math.max(minWidth, (1 / progressZoom) * 100);
-    const maxPosition = 100 - thumbWidthPercent;
-    const thumbPosition = (progressPan / 100) * maxPosition;
+    const viewportWidthPercent = 100 / progressZoom;
     
-    // 计算滑块在视频时间轴上的开始和结束位置
-    const startPercent = thumbPosition / 100;
-    const endPercent = (thumbPosition + thumbWidthPercent) / 100;
+    // progressPan直接表示视窗左边缘在原始视频时间轴上的百分比位置
+    const startPercent = progressPan / 100;
+    const endPercent = (progressPan + viewportWidthPercent) / 100;
     
-    const startTime = startPercent * videoDuration;
-    const endTime = endPercent * videoDuration;
+    // 确保不超出视频边界
+    const clampedStartPercent = Math.max(0, Math.min(1, startPercent));
+    const clampedEndPercent = Math.max(0, Math.min(1, endPercent));
+    
+    const startTime = clampedStartPercent * videoDuration;
+    const endTime = clampedEndPercent * videoDuration;
     
     return { startTime, endTime };
 }
@@ -1317,17 +1308,21 @@ function updateCustomPanSlider() {
     if (!panThumb) return;
     
     const minWidth = getMinThumbWidth();
-    // 计算矩形宽度：1/缩放倍数 * 滑轨总宽度
-    const thumbWidthPercent = Math.max(minWidth, (1 / progressZoom) * 100);
+    // 计算视窗宽度：在原始视频时间轴上的百分比转换为滑轨上的百分比
+    const viewportWidthPercent = 100 / progressZoom;
+    const thumbWidthPercent = Math.max(minWidth, viewportWidthPercent);
     
-    // 计算矩形位置：根据当前pan值和矩形宽度
-    const maxPosition = 100 - thumbWidthPercent; // 矩形可移动的最大位置百分比
-    const thumbPosition = (progressPan / 100) * maxPosition;
+    // 计算视窗位置：progressPan表示视窗左边缘在原始视频时间轴上的百分比位置
+    // 需要将其转换为滑轨上的位置百分比
+    const maxPanRange = 100 - viewportWidthPercent; // 可pan的范围
+    const maxSliderPosition = 100 - thumbWidthPercent; // 滑块可移动的最大位置
     
-    const panThumbPaddingX=0
-    // 设置矩形样式
-    panThumb.style.width = `calc(${thumbWidthPercent}% + ${panThumbPaddingX}px)`;
-    panThumb.style.left = `calc(${thumbPosition}% - ${panThumbPaddingX/2}px)`;
+    // 将progressPan从视频时间轴坐标转换为滑轨坐标
+    const thumbPositionPercent = maxPanRange > 0 ? (progressPan / maxPanRange) * maxSliderPosition : 0;
+    
+    // 设置样式（仅使用百分比，避免像素计算）
+    panThumb.style.width = `${thumbWidthPercent}%`;
+    panThumb.style.left = `${thumbPositionPercent}%`;
     
     // 更新时间显示
     updateThumbTimeDisplay();
@@ -1468,5 +1463,79 @@ function updatePlaybackIndicator() {
     // 更新playback-handle内的时间显示
     if (playbackHandleTime) {
         playbackHandleTime.textContent = formatTime(currentTime);
+    }
+    
+    // 如果开启了跟随播放，调整pan-thumb位置
+    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
+    if (panThumbFollowCheckbox && panThumbFollowCheckbox.checked) {
+        updatePanThumbToFollowPlayback(progressPercent);
+    }
+}
+
+// 根据播放进度调整pan-thumb位置
+function updatePanThumbToFollowPlayback(progressPercent) {
+    const duration = player.duration();
+    if (!duration) return;
+    
+    // 获取当前视窗宽度（在原始视频时间轴上的百分比）
+    const viewportWidthPercent = 100 / progressZoom;
+    
+    // 计算目标pan位置：让播放进度保持在视窗中心
+    // progressPercent是播放进度在整个视频中的百分比(0-100)
+    // 目标：让播放进度显示在视窗的中心位置
+    const targetPanPercent = progressPercent - (viewportWidthPercent / 2);
+    
+    // 限制pan范围：确保视窗不超出视频边界
+    // 最大pan值 = 100% - 视窗宽度
+    const maxPanPercent = 100 - viewportWidthPercent;
+    const clampedPanPercent = Math.max(0, Math.min(maxPanPercent, targetPanPercent));
+    
+    // 检查是否需要更新（防抖动：避免微小抖动）
+    // const panDifference = Math.abs(clampedPanPercent - progressPan);
+    // if (panDifference < 0.01) return; // 小于0.1%的变化忽略
+    
+    // 更新全局变量并同步更新所有组件
+    progressPan = clampedPanPercent;
+    updateCustomPanSlider();
+    updateThumbTimeDisplay();
+    updateProgressTransform();
+}
+
+// 设置pan-thumb跟随播放的相关事件
+function setupPanThumbFollowEvents() {
+    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
+    
+    if (!panThumbFollowCheckbox) return;
+    
+    // checkbox点击事件
+    panThumbFollowCheckbox.addEventListener('change', function() {
+        console.log('Pan-thumb follow:', this.checked);
+        if (this.checked) {
+            // 开启跟随时，立即调整到当前播放位置
+            const currentTime = player.currentTime();
+            const duration = player.duration();
+            if (duration > 0) {
+                const progressPercent = (currentTime / duration) * 100;
+                updatePanThumbToFollowPlayback(progressPercent);
+            }
+        }
+    });
+    
+    // label点击事件（确保点击文字也能切换checkbox）
+    const panThumbFollowLabel = document.querySelector('.pan-thumb-checkbox-label');
+    if (panThumbFollowLabel) {
+        panThumbFollowLabel.addEventListener('click', function() {
+            panThumbFollowCheckbox.checked = !panThumbFollowCheckbox.checked;
+            panThumbFollowCheckbox.dispatchEvent(new Event('change'));
+        });
+    }
+}
+
+// 在拖拽pan-thumb时取消跟随状态
+function disablePanThumbFollow() {
+    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
+    if (panThumbFollowCheckbox && panThumbFollowCheckbox.checked) {
+        panThumbFollowCheckbox.checked = false;
+        console.log('Pan-thumb follow disabled due to manual drag');
     }
 }

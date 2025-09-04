@@ -439,10 +439,53 @@ body {
           // 鼠标悬停时显示时间
           &:hover .playback-handle-time {
             opacity: 1;
+                      }
           }
-        }
-        // 禁用状态
-        &.disabled {
+          
+          // Pan-thumb内的控制面板
+          .pan-thumb-controls {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0,0,0,0.8);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            z-index: 4;
+
+            .pan-thumb-checkbox {
+              width: 12px;
+              height: 12px;
+              margin: 0;
+              cursor: pointer;
+              pointer-events: auto;
+            }
+
+            .pan-thumb-checkbox-label {
+              color: #fff;
+              font-size: 9px;
+              cursor: pointer;
+              pointer-events: auto;
+              user-select: none;
+            }
+          }
+
+          // 鼠标悬停pan-thumb时显示控制面板
+          &:hover .pan-thumb-controls {
+            opacity: 1;
+            pointer-events: auto;
+          }
+          
+          // 禁用状态
+          &.disabled {
           opacity: 0.3;
           cursor: not-allowed;
 
