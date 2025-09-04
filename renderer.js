@@ -1324,9 +1324,10 @@ function updateCustomPanSlider() {
     const maxPosition = 100 - thumbWidthPercent; // 矩形可移动的最大位置百分比
     const thumbPosition = (progressPan / 100) * maxPosition;
     
+    const panThumbPaddingX=0
     // 设置矩形样式
-    panThumb.style.width = `calc(${thumbWidthPercent}% + 20px)`;
-    panThumb.style.left = `calc(${thumbPosition}% - 10px)`;
+    panThumb.style.width = `calc(${thumbWidthPercent}% + ${panThumbPaddingX}px)`;
+    panThumb.style.left = `calc(${thumbPosition}% - ${panThumbPaddingX/2}px)`;
     
     // 更新时间显示
     updateThumbTimeDisplay();
