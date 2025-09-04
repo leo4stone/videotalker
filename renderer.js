@@ -1932,9 +1932,11 @@ function updateOutlineView() {
     }
 }
 
-// 防抖更新播放状态
+// 防抖+节流更新播放状态
 let outlineUpdateTimeout = null;
+let outlineLastUpdateTime = 0;
 let annotationUpdateTimeout = null;
+let annotationLastUpdateTime = 0;
 
 // ===============================
 // 通用打点播放状态管理
@@ -1955,8 +1957,18 @@ function updateElementPlayedStatus(element, annotation, currentTime) {
     }
 }
 
-// 更新大纲中已播放打点的样式
+// 更新大纲中已播放打点的样式（防抖+节流）
 function updateOutlinePlayedStatus() {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - outlineLastUpdateTime;
+    
+    // 如果距离上次更新超过1秒，立即执行
+    if (timeSinceLastUpdate >= 1000) {
+        updateOutlinePlayedStatusImmediate();
+        outlineLastUpdateTime = now;
+        return;
+    }
+    
     // 清除之前的防抖定时器
     if (outlineUpdateTimeout) {
         clearTimeout(outlineUpdateTimeout);
@@ -1965,6 +1977,7 @@ function updateOutlinePlayedStatus() {
     // 设置防抖延迟
     outlineUpdateTimeout = setTimeout(() => {
         updateOutlinePlayedStatusImmediate();
+        outlineLastUpdateTime = Date.now();
     }, 100); // 100ms防抖
 }
 
@@ -1990,8 +2003,18 @@ function updateOutlinePlayedStatusImmediate() {
     });
 }
 
-// 更新进度条上annotation-container的播放状态
+// 更新进度条上annotation-container的播放状态（防抖+节流）
 function updateAnnotationContainerPlayedStatus() {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - annotationLastUpdateTime;
+    
+    // 如果距离上次更新超过1秒，立即执行
+    if (timeSinceLastUpdate >= 1000) {
+        updateAnnotationContainerPlayedStatusImmediate();
+        annotationLastUpdateTime = now;
+        return;
+    }
+    
     // 清除之前的防抖定时器
     if (annotationUpdateTimeout) {
         clearTimeout(annotationUpdateTimeout);
@@ -2000,6 +2023,7 @@ function updateAnnotationContainerPlayedStatus() {
     // 设置防抖延迟
     annotationUpdateTimeout = setTimeout(() => {
         updateAnnotationContainerPlayedStatusImmediate();
+        annotationLastUpdateTime = Date.now();
     }, 100); // 100ms防抖
 }
 
