@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', function() {
             updateThumbTimeDisplay();
             // 初始化播放进度指示器
             updatePlaybackIndicator();
+            // 初始化播放倍速显示
+            initializePlaybackRateDisplay();
         });
 
         player.on('error', function(error) {
@@ -243,11 +245,11 @@ function setupEventListeners() {
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                player.volume(Math.min(1, player.volume() + 0.1));
+                adjustPlaybackRate(1); // 增加倍速
                 break;
             case 'ArrowDown':
                 e.preventDefault();
-                player.volume(Math.max(0, player.volume() - 0.1));
+                adjustPlaybackRate(-1); // 减少倍速
                 break;
             case 'KeyF':
                 e.preventDefault();
@@ -1674,5 +1676,79 @@ function extractVideoFrame(video, canvas, targetTime) {
     offscreenVideo.addEventListener('error', onError, { once: true });
     
     // 设置时间会自动触发seeked事件
+}
+
+// 播放倍速调整功能
+function adjustPlaybackRate(direction) {
+    if (!player || !hasVideoLoaded) return;
+    
+    // 支持的播放倍速列表
+    const playbackRates = [0.1, 0.2, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 8.0, 16.0];
+    
+    // 获取当前播放倍速
+    const currentRate = player.playbackRate();
+    
+    // 找到当前倍速在列表中的索引
+    let currentIndex = playbackRates.findIndex(rate => Math.abs(rate - currentRate) < 0.01);
+    
+    // 如果当前倍速不在列表中，找到最接近的倍速
+    if (currentIndex === -1) {
+        currentIndex = playbackRates.findIndex(rate => rate >= currentRate);
+        if (currentIndex === -1) currentIndex = playbackRates.length - 1;
+    }
+    
+    // 计算新的索引
+    let newIndex = currentIndex + direction;
+    
+    // 限制在有效范围内
+    newIndex = Math.max(0, Math.min(playbackRates.length - 1, newIndex));
+    
+    // 设置新的播放倍速
+    const newRate = playbackRates[newIndex];
+    player.playbackRate(newRate);
+    
+    // 更新界面显示
+    updatePlaybackRateDisplay(newRate);
+    
+    console.log(`播放倍速调整为: ${newRate}x`);
+}
+
+// 更新播放倍速显示
+function updatePlaybackRateDisplay(rate) {
+    const rateDisplay = document.getElementById('playback-rate-display');
+    const rateText = document.getElementById('rate-text');
+    
+    if (!rateDisplay || !rateText) return;
+    
+    // 更新文字内容
+    rateText.textContent = `${rate}x`;
+    
+    // 清除所有状态class
+    rateDisplay.className = 'playback-rate-display';
+    
+    // 添加临时显示效果（调节时的闪现）
+    rateDisplay.classList.add('temporary');
+    
+    // 200ms后移除临时效果
+    setTimeout(() => {
+        rateDisplay.classList.remove('temporary');
+        
+        if (Math.abs(rate - 1.0) < 0.01) {
+            // 倍速为1.0时，2秒后隐藏
+            rateDisplay.classList.add('show');
+            setTimeout(() => {
+                rateDisplay.classList.remove('show');
+            }, 2000);
+        } else {
+            // 倍速不为1.0时，常驻显示
+            rateDisplay.classList.add('persistent');
+        }
+    }, 200);
+}
+
+// 初始化播放倍速显示
+function initializePlaybackRateDisplay() {
+    const rate = player ? player.playbackRate() : 1.0;
+    updatePlaybackRateDisplay(rate);
 }
 

@@ -136,6 +136,55 @@ body {
   }
 }
 
+// 播放倍速提示 - body > div.playback-rate-display
+// ===============================
+.playback-rate-display {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 500;
+  user-select: none;
+  pointer-events: none;
+
+  .rate-text {
+    display: block;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  // 显示状态
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  // 常驻显示状态（非1.0x倍速）
+  &.persistent {
+    opacity: 1;
+    visibility: visible;
+    background: rgba(255,165,0,0.9); // 橙色背景表示非正常倍速
+    border-color: rgba(255,165,0,0.5);
+  }
+
+  // 临时显示状态（调节时的闪现）
+  &.temporary {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1.1);
+  }
+}
+
 // ===============================
 // 视频进度条外层容器 - body > div.progress-wrapper
 // ===============================

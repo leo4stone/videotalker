@@ -3,10 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' 'unsafe-eval'; font-src 'self' data:; connect-src 'self'"
-    />
     <title>VideoTalker - 视频播放器</title>
     
     <!-- Video.js CSS -->
@@ -40,6 +36,11 @@
     <!-- 文件信息浮层 -->
     <div class="file-info-overlay" id="file-info-overlay">
       请选择一个视频文件开始播放
+    </div>
+    
+    <!-- 播放倍速提示 -->
+    <div class="playback-rate-display" id="playback-rate-display">
+      <span class="rate-text" id="rate-text">1.0x</span>
     </div>
 
     <!-- 视频进度条容器 -->
