@@ -193,6 +193,43 @@ body {
           border-radius: 2px;
           border: 1px solid #1a1a1a;
           
+          // 缩略打点标记
+          .pan-annotation-thumbnail {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            margin-top: -8px;
+            z-index: 5;
+            pointer-events: none;
+            background-color: @primary-blue; // 默认颜色
+            
+            // 有时长的打点（条形）
+            &.has-duration {
+              // height: 3px;
+            }
+            
+            // 不同级别的缩略标记
+            &.level-high {
+              margin-top: -24px;
+            }
+            
+            &.level-medium {
+              margin-top: -16px;
+            }
+            
+            &.level-low {
+              margin-top: -12px;
+            }
+            
+            
+            // 不同颜色的缩略标记
+            &.color-red { background-color: @danger-red; }
+            &.color-orange { background-color: @warning-orange; }
+            &.color-yellow { background-color: @warning-yellow; }
+            &.color-green { background-color: @success-green; }
+            &.color-blue { background-color: @primary-blue; }
+            &.color-purple { background-color: @info-purple; }
+          }
         }
 
         // 播放进度指示器

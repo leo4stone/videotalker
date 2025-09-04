@@ -204,6 +204,61 @@ class AnnotationManager {
             const dot = this.createAnnotationDot(annotation, duration, levelHeightMap);
             progressContainer.appendChild(dot);
         });
+        
+        // 同时更新pan-track上的缩略打点
+        this.updatePanTrackAnnotations(duration);
+    }
+
+    // 更新pan-track上的缩略打点标记
+    updatePanTrackAnnotations(duration) {
+        const panTrack = document.querySelector('.pan-track');
+        if (!panTrack || !duration || duration <= 0) return;
+
+        // 清除现有的缩略打点
+        const existingThumbnails = panTrack.querySelectorAll('.pan-annotation-thumbnail');
+        existingThumbnails.forEach(thumbnail => thumbnail.remove());
+
+        // 为每个打点创建缩略标记
+        this.annotations.forEach(annotation => {
+            const thumbnail = this.createPanAnnotationThumbnail(annotation, duration);
+            panTrack.appendChild(thumbnail);
+        });
+    }
+
+    // 创建pan-track上的缩略打点标记
+    createPanAnnotationThumbnail(annotation, duration) {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'pan-annotation-thumbnail';
+        
+        // 添加颜色类
+        if (annotation.color) {
+            thumbnail.classList.add(`color-${annotation.color}`);
+        }
+        
+        // 添加级别类
+        const normalizedLevel = this.normalizeLevel(annotation.level);
+        if (normalizedLevel === '1') {
+            thumbnail.classList.add('level-high');
+        } else if (normalizedLevel === '2') {
+            thumbnail.classList.add('level-medium');
+        } else if (normalizedLevel === '3') {
+            thumbnail.classList.add('level-low');
+        } else {
+            thumbnail.classList.add('level-default');
+        }
+        
+        // 如果有时长，添加时长类并设置宽度
+        if (annotation.duration && annotation.duration > 0) {
+            thumbnail.classList.add('has-duration');
+            const widthPercentage = (annotation.duration / duration) * 100;
+            thumbnail.style.width = `${Math.max(0.1, widthPercentage)}%`; // 最小宽度0.1%
+        }
+        
+        // 计算并设置位置（这个必须用JS动态计算）
+        const percentage = (annotation.time / duration) * 100;
+        thumbnail.style.left = `${percentage}%`;
+        
+        return thumbnail;
     }
 
     // 计算动态级别高度映射
