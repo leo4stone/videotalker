@@ -1474,8 +1474,8 @@ function updatePlaybackIndicator() {
     }
     
     // 如果开启了跟随播放，调整pan-thumb位置
-    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
-    if (panThumbFollowCheckbox && panThumbFollowCheckbox.checked) {
+    const panThumbFollowBtn = document.getElementById('pan-thumb-follow-btn');
+    if (panThumbFollowBtn && panThumbFollowBtn.getAttribute('data-following') === 'true') {
         updatePanThumbToFollowPlayback(progressPercent);
     }
 }
@@ -1511,16 +1511,28 @@ function updatePanThumbToFollowPlayback(progressPercent) {
 
 // 设置pan-thumb跟随播放的相关事件
 function setupPanThumbFollowEvents() {
-    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
+    const panThumbFollowBtn = document.getElementById('pan-thumb-follow-btn');
     
-    if (!panThumbFollowCheckbox) return;
+    if (!panThumbFollowBtn) return;
     
-    // checkbox点击事件
-    panThumbFollowCheckbox.addEventListener('change', function() {
-        console.log('Pan-thumb follow:', this.checked);
+    // button点击事件
+    panThumbFollowBtn.addEventListener('click', function() {
+        const isCurrentlyFollowing = this.getAttribute('data-following') === 'true';
+        const newFollowingState = !isCurrentlyFollowing;
+        
+        // 更新按钮状态
+        this.setAttribute('data-following', newFollowingState.toString());
+        
+        // 更新按钮文字
+        const btnText = this.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = newFollowingState ? '跟随' : '自由';
+        }
+        
+        console.log('Pan-thumb follow:', newFollowingState);
         const panThumb = document.getElementById('pan-thumb');
         
-        if (this.checked) {
+        if (newFollowingState) {
             // 开启跟随时，添加className并立即调整到当前播放位置
             if (panThumb) {
                 panThumb.classList.add('following');
@@ -1538,22 +1550,20 @@ function setupPanThumbFollowEvents() {
             }
         }
     });
-    
-    // label点击事件（确保点击文字也能切换checkbox）
-    const panThumbFollowLabel = document.querySelector('.pan-thumb-checkbox-label');
-    if (panThumbFollowLabel) {
-        panThumbFollowLabel.addEventListener('click', function() {
-            panThumbFollowCheckbox.checked = !panThumbFollowCheckbox.checked;
-            panThumbFollowCheckbox.dispatchEvent(new Event('change'));
-        });
-    }
 }
 
 // 在拖拽pan-thumb时取消跟随状态
 function disablePanThumbFollow() {
-    const panThumbFollowCheckbox = document.getElementById('pan-thumb-follow');
-    if (panThumbFollowCheckbox && panThumbFollowCheckbox.checked) {
-        panThumbFollowCheckbox.checked = false;
+    const panThumbFollowBtn = document.getElementById('pan-thumb-follow-btn');
+    if (panThumbFollowBtn && panThumbFollowBtn.getAttribute('data-following') === 'true') {
+        // 更新按钮状态为非跟随
+        panThumbFollowBtn.setAttribute('data-following', 'false');
+        
+        // 更新按钮文字
+        const btnText = panThumbFollowBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = '自由';
+        }
         
         // 移除跟随状态的className
         const panThumb = document.getElementById('pan-thumb');

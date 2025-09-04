@@ -789,33 +789,69 @@ body {
           top: 2px;
           left: 50%;
           transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          background: rgba(0,0,0,0.8);
-          padding: 2px 6px;
-          border-radius: 3px;
-          font-size: 10px;
-          white-space: nowrap;
           opacity: 0;
           transition: opacity 0.2s ease;
           pointer-events: none;
           z-index: 4;
+          white-space: nowrap;
 
-          .pan-thumb-checkbox {
-            width: 12px;
-            height: 12px;
-            margin: 0;
-            cursor: pointer;
-            pointer-events: auto;
-          }
-
-          .pan-thumb-checkbox-label {
-            color: #fff;
+          // button.pan-thumb-follow-btn
+          .pan-thumb-follow-btn {
             font-size: 9px;
+            color: @primary-text;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1px 2px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             cursor: pointer;
             pointer-events: auto;
-            user-select: none;
+            backdrop-filter: @blur-medium;
+            -webkit-backdrop-filter: @blur-medium;
+            transition: @transition-fast;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .btn-text {
+              font-weight: 500;
+            }
+
+            // 自由状态（未跟随）
+            &[data-following="false"] {
+              background: rgba(60, 60, 60, 0.9);
+              border-color: rgba(255, 255, 255, 0.3);
+              color: rgba(255, 255, 255, 0.8);
+
+              &:hover {
+                background: rgba(80, 80, 80, 0.9);
+                border-color: rgba(255, 255, 255, 0.4);
+                color: @primary-text;
+                transform: scale(1.05);
+              }
+
+              &:active {
+                transform: scale(0.95);
+              }
+            }
+
+            // 跟随状态（已开启跟随）
+            &[data-following="true"] {
+              background: linear-gradient(135deg, rgba(0, 123, 255, 0.8), rgba(0, 123, 255, 0.9));
+              border-color: rgba(0, 123, 255, 0.8);
+              color: white;
+              box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+
+              &:hover {
+                background: linear-gradient(135deg, rgba(0, 123, 255, 0.9), rgba(0, 123, 255, 1));
+                border-color: rgba(0, 123, 255, 1);
+                transform: scale(1.05);
+                box-shadow: 0 0 12px rgba(0, 123, 255, 0.4);
+              }
+
+              &:active {
+                transform: scale(0.95);
+              }
+            }
           }
         }
 
