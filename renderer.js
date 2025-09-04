@@ -743,9 +743,9 @@ function setupProgressBar() {
             const time = percent * player.duration();
             tooltipText.textContent = formatTime(time);
             
-            // 根据进度计算数字提示的translateX值：0%进度时为0%，100%进度时为-100%
-            const translateXPercent = -(percent * 100);
-            tooltipText.style.transform = `translateX(${-50}%)`;
+            
+            // 更新主进度条缩略图预览
+            updateThumbnailPreview(time, 'main-thumbnail-canvas', 80);
         }
     }
     
@@ -1387,6 +1387,9 @@ function setupPlaybackProgress() {
         const progressWidth = progressRect.width;
         const positionPercent = Math.max(0, Math.min(100, (relativeX / progressWidth) * 100));
         playbackTooltip.style.left = positionPercent + '%';
+        
+        // 更新缩略图预览
+        updateThumbnailPreview(targetTime, 'playback-thumbnail-canvas', 100);
     }
     
     playbackProgress.addEventListener('click', handleProgressClick);
@@ -1556,3 +1559,120 @@ function disablePanThumbFollow() {
         console.log('Pan-thumb follow disabled due to manual drag');
     }
 }
+
+// 缩略图预览相关功能
+let thumbnailCache = new Map(); // 缓存已生成的缩略图
+let thumbnailTimeouts = new Map(); // 多个防抖定时器
+
+// 统一的缩略图预览更新函数
+function updateThumbnailPreview(targetTime, canvasId, debounceTime = 100) {
+    if (!player || !hasVideoLoaded) return;
+    
+    // 为每个canvas单独管理防抖定时器
+    if (thumbnailTimeouts.has(canvasId)) {
+        clearTimeout(thumbnailTimeouts.get(canvasId));
+    }
+    
+    const timeoutId = setTimeout(() => {
+        generateThumbnail(targetTime, canvasId);
+        thumbnailTimeouts.delete(canvasId);
+    }, debounceTime);
+    
+    thumbnailTimeouts.set(canvasId, timeoutId);
+}
+
+// 统一的缩略图生成函数
+function generateThumbnail(targetTime, canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const video = player.el().querySelector('video');
+    
+    if (!canvas || !video) return;
+    
+    // 将时间四舍五入到5秒，减少缓存数量
+    const roundedTime = Math.round(targetTime / 5) * 5;
+    
+    // 检查缓存
+    if (thumbnailCache.has(roundedTime)) {
+        const cachedImageData = thumbnailCache.get(roundedTime);
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = cachedImageData;
+        return;
+    }
+    
+    // 如果没有缓存，生成新的缩略图
+    extractVideoFrame(video, canvas, roundedTime);
+}
+
+// 从视频提取帧
+function extractVideoFrame(video, canvas, targetTime) {
+    const ctx = canvas.getContext('2d');
+    
+    // 创建一个离屏视频元素来提取帧
+    const offscreenVideo = document.createElement('video');
+    offscreenVideo.src = video.src;
+    offscreenVideo.currentTime = targetTime;
+    offscreenVideo.muted = true;
+    offscreenVideo.preload = 'metadata';
+    
+    // 监听seeked事件
+    const onSeeked = () => {
+        try {
+            // 清除canvas并绘制视频帧
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(offscreenVideo, 0, 0, canvas.width, canvas.height);
+            
+            // 将结果缓存起来
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            thumbnailCache.set(Math.round(targetTime / 5) * 5, imageData);
+            
+            // 限制缓存大小（最多100个缩略图）
+            if (thumbnailCache.size > 100) {
+                const firstKey = thumbnailCache.keys().next().value;
+                thumbnailCache.delete(firstKey);
+            }
+            
+        } catch (error) {
+            console.warn('生成缩略图失败:', error);
+            // 如果生成失败，显示默认的占位符
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('预览不可用', canvas.width / 2, canvas.height / 2);
+        } finally {
+            // 清理离屏视频元素
+            offscreenVideo.removeEventListener('seeked', onSeeked);
+            offscreenVideo.removeEventListener('error', onError);
+            offscreenVideo.remove();
+        }
+    };
+    
+    // 监听错误事件
+    const onError = () => {
+        console.warn('视频帧提取失败');
+        // 显示错误占位符
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('加载失败', canvas.width / 2, canvas.height / 2);
+        
+        // 清理
+        offscreenVideo.removeEventListener('seeked', onSeeked);
+        offscreenVideo.removeEventListener('error', onError);
+        offscreenVideo.remove();
+    };
+    
+    offscreenVideo.addEventListener('seeked', onSeeked, { once: true });
+    offscreenVideo.addEventListener('error', onError, { once: true });
+    
+    // 设置时间会自动触发seeked事件
+}
+

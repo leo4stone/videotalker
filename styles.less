@@ -157,7 +157,7 @@ body {
     opacity: 1;
     // pointer-events: none;
     font-size: 12px;
-    z-index: 1;
+    z-index: 11;
     cursor: default;
 
     &.show {
@@ -238,14 +238,14 @@ body {
           position: absolute;
           left: 0;
           right: 0;
-          bottom: 0;
-          height: 100%;
+          top: -10px;
+          bottom: -10px;
           border-radius: 1.5px;
 
           // 播放进度条的时间提示
           .playback-tooltip {
             position: absolute;
-            bottom: 0px;
+            bottom: 8px;
             left: 0%; // 使用百分比定位
             pointer-events: none;
             opacity: 0;
@@ -259,16 +259,28 @@ body {
               left: 50%;
               transform: translateX(-50%);
               width: 1px;
-              height: 20px;
+              height: 30px;
               background: rgba(255,255,255,0.8);
               border-radius: 0.5px;
             }
-
+            // 缩略图画布
+            .playback-thumbnail-canvas {
+              position: absolute;
+              bottom: 30px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 160px;
+              height: 90px;
+              border: 2px solid rgba(255,255,255,0.8);
+              border-radius: 4px;
+              background: #1a1a1a;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            }
             // 提示文本
             .playback-tooltip-text {
               position: absolute;
-              bottom: 10px;
-              left: 50%;
+              bottom: 35px;
+              right: -75px;
               background: rgba(0,0,0,0.8);
               color: #fff;
               padding: 2px 6px;
@@ -278,7 +290,6 @@ body {
               font-weight: 500;
               backdrop-filter: blur(10px);
               border: 1px solid rgba(255,255,255,0.2);
-              transform: translateX(-50%);
             }
           }
 
@@ -439,74 +450,74 @@ body {
           // 鼠标悬停时显示时间
           &:hover .playback-handle-time {
             opacity: 1;
-                      }
           }
+        }
           
-          // Pan-thumb内的控制面板
-          .pan-thumb-controls {
-            position: absolute;
-            top: 2px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(0,0,0,0.8);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
-            z-index: 4;
+        // Pan-thumb内的控制面板
+        .pan-thumb-controls {
+          position: absolute;
+          top: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: rgba(0,0,0,0.8);
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 10px;
+          white-space: nowrap;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          pointer-events: none;
+          z-index: 4;
 
-            .pan-thumb-checkbox {
-              width: 12px;
-              height: 12px;
-              margin: 0;
-              cursor: pointer;
-              pointer-events: auto;
-            }
-
-            .pan-thumb-checkbox-label {
-              color: #fff;
-              font-size: 9px;
-              cursor: pointer;
-              pointer-events: auto;
-              user-select: none;
-            }
-          }
-
-          // 鼠标悬停pan-thumb时显示控制面板
-          &:hover .pan-thumb-controls {
-            opacity: 1;
+          .pan-thumb-checkbox {
+            width: 12px;
+            height: 12px;
+            margin: 0;
+            cursor: pointer;
             pointer-events: auto;
           }
-          
-          // 禁用状态
-          &.disabled {
-          opacity: 0.3;
+
+          .pan-thumb-checkbox-label {
+            color: #fff;
+            font-size: 9px;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+          }
+        }
+
+        // 鼠标悬停pan-thumb时显示控制面板
+        &:hover .pan-thumb-controls {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        
+        // 禁用状态
+        &.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+
+        .pan-thumb {
           cursor: not-allowed;
+          background: rgba(0,123,255,0.3);
+        }
 
-          .pan-thumb {
-            cursor: not-allowed;
-            background: rgba(0,123,255,0.3);
-          }
+        .resize-handle {
+          cursor: not-allowed;
+          background: rgba(255,255,255,0.2);
+        }
 
-          .resize-handle {
-            cursor: not-allowed;
-            background: rgba(255,255,255,0.2);
-          }
+        .thumb-time-display {
+          opacity: 0.5;
+        }
 
-          .thumb-time-display {
-            opacity: 0.5;
-          }
-
-          .playback-indicator {
-            pointer-events: none;
-            opacity: 0.3;
-          }
+        .playback-indicator {
+          pointer-events: none;
+          opacity: 0.3;
+        }
         }
       }
     }
@@ -764,7 +775,7 @@ body {
   // 鼠标时间指示器
   .progress-tooltip {
     position: absolute;
-    bottom: 0;
+    bottom: 50%;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -772,20 +783,33 @@ body {
     // div.tooltip-line
     .tooltip-line {
       position: absolute;
-      bottom: 0;
+      bottom: -4px;
       left: 50%;
       transform: translateX(-50%);
-      width: 2px;
-      height: 60px;
-      background: @overlay-bg;
+      width: 1px;
+      height: 35px;
+      background: #fff;
       border-radius: 1px;
+      z-index: 1;
     }
-
+    // 主进度条缩略图画布
+    .main-thumbnail-canvas {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 90px;
+      border: 2px solid rgba(255,255,255,0.9);
+      border-radius: 4px;
+      background: #1a1a1a;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    }
     // div.tooltip-text
     .tooltip-text {
       position: absolute;
-      bottom: 60px;
-      left: 50%;
+      bottom: 35px;
+      right: -80px;
       background: @overlay-bg;
       color: @primary-text;
       padding: 4px 8px;
@@ -796,7 +820,6 @@ body {
       backdrop-filter: @blur-small;
       -webkit-backdrop-filter: @blur-small;
       border: 1px solid @border-light;
-      transform: translateX(-50%);
     }
   }
 
