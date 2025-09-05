@@ -31,26 +31,6 @@
      </svg>
    </button>
 
-  <!-- 左侧大纲视图面板 -->
-  <div id="outline-panel" class="outline-panel">
-    <div class="outline-panel-header">
-      <h3>打点大纲</h3>
-      <div class="outline-panel-actions">
-        <button id="outline-expand-all-btn" class="outline-expand-all-btn" title="展开所有折叠项">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="7,11 12,6 17,11"></polyline>
-            <polyline points="7,13 12,18 17,13"></polyline>
-          </svg>
-        </button>
-        <button id="outline-close-btn" class="outline-close-btn">&times;</button>
-      </div>
-    </div>
-    <div class="outline-panel-content">
-      <div id="outline-list" class="outline-list">
-        <!-- 打点列表将在这里动态生成 -->
-      </div>
-    </div>
-  </div>
 
   <!-- 主内容区域 -->
   <div class="main-content">
@@ -65,6 +45,69 @@
         </p>
       </video>
     </div>
+
+
+    <!-- 视频进度条容器 -->
+    <div class="progress-wrapper" id="progress-wrapper">
+      <!-- 进度条缩放控制 -->
+      <div class="progress-zoom-control" id="progress-zoom-control">
+        <div class="pan-section">
+          <div class="custom-pan-slider" id="custom-pan-slider">
+            <div class="pan-track"></div>
+            <div class="playback-indicator" id="playback-indicator"></div>
+            <div class="pan-thumb" id="pan-thumb">
+              <div class="resize-handle left-handle" id="left-handle"></div>
+              <div class="resize-handle right-handle" id="right-handle"></div>
+              <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
+              <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
+                          <div class="pan-thumb-controls">
+                <button id="pan-thumb-follow-btn" class="pan-thumb-follow-btn" data-following="false">
+                  <span class="btn-text">自由</span>
+                </button>
+              </div>
+            </div>
+            <div class="playback-progress" id="playback-progress">
+              <div class="playback-tooltip" id="playback-tooltip">
+                <canvas class="playback-thumbnail-canvas" id="playback-thumbnail-canvas" width="160"
+                  height="90"></canvas>
+                <div class="playback-tooltip-line"></div>
+                <div class="playback-tooltip-text" id="playback-tooltip-text">00:00</div>
+              </div>
+            </div>
+            <div class="playback-handle" id="playback-handle">
+              <div class="playback-handle-time" id="playback-handle-time">00:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 视频进度条 -->
+      <div class="progress-container" id="progress-container">
+        <!-- 总时间轨道（橙色） -->
+        <div class="progress-bar-track" id="progress-bar-track"></div>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-line"></div>
+          <div class="progress-handle">
+            <div class="current-time-display" id="current-time-display">
+              <span class="time-text">00:00</span>
+              <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
+            </div>
+          </div>
+        </div>
+        <div class="progress-tooltip" id="progress-tooltip">
+          <canvas class="main-thumbnail-canvas" id="main-thumbnail-canvas" width="160" height="90"></canvas>
+          <div class="tooltip-line"></div>
+          <div class="tooltip-text" id="tooltip-text">00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左下角播放/暂停按钮 -->
+    <button class="floating-play-button" id="floating-play-button">
+      <div class="play-icon" id="play-icon"></div>
+      <div class="pause-icon" id="pause-icon" style="display: none;"></div>
+    </button>
+
 
     <!-- 文件信息浮层 -->
     <div class="file-info-overlay" id="file-info-overlay">
@@ -157,66 +200,30 @@
       </div>
     </div>
   </div> <!-- 关闭 main-content -->
-  <!-- 视频进度条容器 -->
-  <div class="progress-wrapper" id="progress-wrapper">
-    <!-- 进度条缩放控制 -->
-    <div class="progress-zoom-control" id="progress-zoom-control">
-      <div class="pan-section">
-        <div class="custom-pan-slider" id="custom-pan-slider">
-          <div class="pan-track"></div>
-          <div class="playback-indicator" id="playback-indicator"></div>
-          <div class="pan-thumb" id="pan-thumb">
-            <div class="resize-handle left-handle" id="left-handle"></div>
-            <div class="resize-handle right-handle" id="right-handle"></div>
-            <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
-            <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
-                         <div class="pan-thumb-controls">
-               <button id="pan-thumb-follow-btn" class="pan-thumb-follow-btn" data-following="false">
-                 <span class="btn-text">自由</span>
-               </button>
-             </div>
-          </div>
-          <div class="playback-progress" id="playback-progress">
-            <div class="playback-tooltip" id="playback-tooltip">
-              <canvas class="playback-thumbnail-canvas" id="playback-thumbnail-canvas" width="160"
-                height="90"></canvas>
-              <div class="playback-tooltip-line"></div>
-              <div class="playback-tooltip-text" id="playback-tooltip-text">00:00</div>
-            </div>
-          </div>
-          <div class="playback-handle" id="playback-handle">
-            <div class="playback-handle-time" id="playback-handle-time">00:00</div>
-          </div>
-        </div>
+
+
+  <!-- 左侧大纲视图面板 -->
+  <div id="outline-panel" class="outline-panel">
+    <div class="outline-panel-header">
+      <h3>打点大纲</h3>
+      <div class="outline-panel-actions">
+        <button id="outline-expand-all-btn" class="outline-expand-all-btn" title="展开所有折叠项">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="7,11 12,6 17,11"></polyline>
+            <polyline points="7,13 12,18 17,13"></polyline>
+          </svg>
+        </button>
+        <button id="outline-close-btn" class="outline-close-btn">&times;</button>
       </div>
     </div>
-
-    <!-- 视频进度条 -->
-    <div class="progress-container" id="progress-container">
-      <!-- 总时间轨道（橙色） -->
-      <div class="progress-bar-track" id="progress-bar-track"></div>
-      <div class="progress-bar" id="progress-bar">
-        <div class="progress-line"></div>
-        <div class="progress-handle">
-          <div class="current-time-display" id="current-time-display">
-            <span class="time-text">00:00</span>
-            <button class="add-annotation-btn" id="add-annotation-btn" title="添加打点"></button>
-          </div>
-        </div>
-      </div>
-      <div class="progress-tooltip" id="progress-tooltip">
-        <canvas class="main-thumbnail-canvas" id="main-thumbnail-canvas" width="160" height="90"></canvas>
-        <div class="tooltip-line"></div>
-        <div class="tooltip-text" id="tooltip-text">00:00</div>
+    <div class="outline-panel-content">
+      <div id="outline-list" class="outline-list">
+        <!-- 打点列表将在这里动态生成 -->
       </div>
     </div>
   </div>
-  <!-- 左下角播放/暂停按钮 -->
-  <button class="floating-play-button" id="floating-play-button">
-    <div class="play-icon" id="play-icon"></div>
-    <div class="pause-icon" id="pause-icon" style="display: none;"></div>
-  </button>
 
+  
   <!-- 视频总时长显示 -->
   <div class="video-duration-display" id="video-duration-display">
     <span class="duration-text">00:00</span>
