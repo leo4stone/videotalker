@@ -207,10 +207,25 @@
     <div class="outline-panel-header">
       <h3>打点大纲</h3>
       <div class="outline-panel-actions">
-        <button id="outline-expand-all-btn" class="outline-expand-all-btn" title="展开所有折叠项">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button id="outline-toggle-high-btn" class="outline-level-toggle-btn level-high" title="展开/折叠所有高级别项" data-level="high">
+          <span class="level-text">高</span>
+        </button>
+        <button id="outline-toggle-medium-btn" class="outline-level-toggle-btn level-medium" title="展开/折叠所有中级别项" data-level="medium">
+          <span class="level-text">中</span>
+        </button>
+        <button id="outline-toggle-low-btn" class="outline-level-toggle-btn level-low" title="展开/折叠所有低级别项" data-level="low">
+          <span class="level-text">低</span>
+        </button>
+        <button id="outline-expand-all-btn" class="outline-expand-all-btn" data-state="expand" title="展开所有项">
+          <!-- 展开状态图标（上下箭头） -->
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="7,11 12,6 17,11"></polyline>
             <polyline points="7,13 12,18 17,13"></polyline>
+          </svg>
+          <!-- 折叠状态图标（左右箭头） -->
+          <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+            <polyline points="11,7 6,12 11,17"></polyline>
+            <polyline points="13,7 18,12 13,17"></polyline>
           </svg>
         </button>
         <button id="outline-close-btn" class="outline-close-btn">&times;</button>
@@ -221,6 +236,8 @@
         <!-- 打点列表将在这里动态生成 -->
       </div>
     </div>
+    <!-- 拖拽调整手柄 -->
+    <div class="outline-resize-handle" id="outline-resize-handle"></div>
   </div>
 
   

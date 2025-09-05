@@ -1808,6 +1808,9 @@ function initializeOutlinePanel() {
     const toggleBtn = document.getElementById('outline-toggle-btn');
     const closeBtn = document.getElementById('outline-close-btn');
     const expandAllBtn = document.getElementById('outline-expand-all-btn');
+    const toggleHighBtn = document.getElementById('outline-toggle-high-btn');
+    const toggleMediumBtn = document.getElementById('outline-toggle-medium-btn');
+    const toggleLowBtn = document.getElementById('outline-toggle-low-btn');
     const outlinePanel = document.getElementById('outline-panel');
     const mainContent = document.querySelector('.main-content');
 
@@ -1821,28 +1824,267 @@ function initializeOutlinePanel() {
         closeOutlinePanel();
     });
 
-    // 展开所有按钮点击事件
+    // 展开/折叠所有按钮点击事件
     if (expandAllBtn) {
         expandAllBtn.addEventListener('click', function() {
-            expandAllOutlineItems();
+            toggleAllOutlineItems();
+        });
+        
+        // 初始化按钮显示状态
+        updateExpandAllButtonDisplay(expandAllBtn, 'expand');
+    }
+
+    // 级别切换按钮点击事件
+    if (toggleHighBtn) {
+        toggleHighBtn.addEventListener('click', function() {
+            toggleLevelItems('high');
+        });
+    }
+
+    if (toggleMediumBtn) {
+        toggleMediumBtn.addEventListener('click', function() {
+            toggleLevelItems('medium');
+        });
+    }
+
+    if (toggleLowBtn) {
+        toggleLowBtn.addEventListener('click', function() {
+            toggleLevelItems('low');
         });
     }
 
     // 初始化面板状态（默认关闭）
     closeOutlinePanel();
+    
+    // 初始化拖拽调整功能
+    initializeOutlinePanelResize();
 }
 
-// 展开所有折叠项
-function expandAllOutlineItems() {
-    // 清空状态管理对象
-    Object.keys(outlineCollapseState).forEach(annotationId => {
-        delete outlineCollapseState[annotationId];
+// 初始化大纲面板拖拽调整功能
+function initializeOutlinePanelResize() {
+    const resizeHandle = document.getElementById('outline-resize-handle');
+    const outlinePanel = document.getElementById('outline-panel');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!resizeHandle || !outlinePanel || !mainContent) return;
+    
+    let isDragging = false;
+    let startX = 0;
+    let startWidth = 320; // 默认宽度
+    
+    // 初始化CSS变量
+    document.documentElement.style.setProperty('--outline-panel-width', '320px');
+    
+    // 鼠标按下开始拖拽
+    resizeHandle.addEventListener('mousedown', function(e) {
+        if (!outlinePanel.classList.contains('open')) return; // 只有在展开状态才能拖拽
+        
+        isDragging = true;
+        startX = e.clientX;
+        startWidth = parseInt(getComputedStyle(outlinePanel).width);
+        
+        // 防止文本选择
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+        
+        // 添加全局事件监听
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        e.preventDefault();
     });
+    
+    // 鼠标移动时调整宽度
+    function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        let newWidth = startWidth + deltaX;
+        
+        // 限制最小和最大宽度
+        newWidth = Math.max(250, Math.min(600, newWidth));
+        
+        // 更新CSS变量
+        document.documentElement.style.setProperty('--outline-panel-width', newWidth + 'px');
+        
+        e.preventDefault();
+    }
+    
+    // 鼠标释放结束拖拽
+    function handleMouseUp(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        // 恢复样式
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        
+        // 移除全局事件监听
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        
+        // 保存当前宽度设置
+        const currentWidth = parseInt(getComputedStyle(outlinePanel).width);
+        localStorage.setItem('outline-panel-width', currentWidth);
+        
+        console.log(`大纲面板宽度已调整为: ${currentWidth}px`);
+    }
+    
+    // 从本地存储恢复宽度设置
+    const savedWidth = localStorage.getItem('outline-panel-width');
+    if (savedWidth) {
+        const width = parseInt(savedWidth);
+        if (width >= 250 && width <= 600) {
+            document.documentElement.style.setProperty('--outline-panel-width', width + 'px');
+        }
+    }
+}
+
+// 切换所有项的展开/折叠状态
+function toggleAllOutlineItems() {
+    const expandAllBtn = document.getElementById('outline-expand-all-btn');
+    const outlineList = document.querySelector('.outline-list');
+    
+    if (!expandAllBtn || !outlineList) return;
+    
+    // 找到所有有下级内容的item
+    const allItemsWithChildren = Array.from(outlineList.querySelectorAll('.outline-item')).filter(item => {
+        const colorIndicator = item.querySelector('.outline-color-indicator');
+        return colorIndicator && colorIndicator.classList.contains('has-children');
+    });
+    
+    if (allItemsWithChildren.length === 0) {
+        console.log('没有可折叠的项目');
+        return;
+    }
+    
+    // 获取按钮当前状态
+    const currentState = expandAllBtn.getAttribute('data-state') || 'expand';
+    
+    if (currentState === 'expand') {
+        // 当前是展开状态，点击后折叠所有
+        allItemsWithChildren.forEach(item => {
+            const annotationId = item.getAttribute('data-id');
+            outlineCollapseState[annotationId] = true;
+        });
+        
+        // 切换按钮状态到折叠
+        expandAllBtn.setAttribute('data-state', 'collapse');
+        updateExpandAllButtonDisplay(expandAllBtn, 'collapse');
+        console.log('已折叠所有项目');
+        
+    } else {
+        // 当前是折叠状态，点击后展开所有
+        Object.keys(outlineCollapseState).forEach(annotationId => {
+            delete outlineCollapseState[annotationId];
+        });
+        
+        // 切换按钮状态到展开
+        expandAllBtn.setAttribute('data-state', 'expand');
+        updateExpandAllButtonDisplay(expandAllBtn, 'expand');
+        console.log('已展开所有项目');
+    }
     
     // 调用更新方法刷新显示
     updateOutlineCollapseDisplay();
+}
+
+// 更新展开所有按钮的显示
+function updateExpandAllButtonDisplay(expandAllBtn, state) {
+    const expandIcon = expandAllBtn.querySelector('.expand-icon');
+    const collapseIcon = expandAllBtn.querySelector('.collapse-icon');
     
-    console.log('已展开所有折叠项');
+    if (!expandIcon || !collapseIcon) return;
+    
+    if (state === 'expand') {
+        // 展开状态：显示展开图标，表示"点击展开"
+        expandIcon.style.display = 'block';
+        collapseIcon.style.display = 'none';
+        expandAllBtn.title = '展开所有项目';
+    } else {
+        // 折叠状态：显示折叠图标，表示"点击折叠"
+        expandIcon.style.display = 'none';
+        collapseIcon.style.display = 'block';
+        expandAllBtn.title = '折叠所有项目';
+    }
+}
+
+// 按级别切换展开/折叠状态
+function toggleLevelItems(level) {
+    const outlineList = document.querySelector('.outline-list');
+    if (!outlineList) return;
+    
+    // 将级别字符串转换为CSS类名
+    let levelClass;
+    switch(level) {
+        case 'high': levelClass = 'level-high'; break;
+        case 'medium': levelClass = 'level-medium'; break;
+        case 'low': levelClass = 'level-low'; break;
+        default: return;
+    }
+    
+    // 找到所有该级别的item
+    const levelItems = Array.from(outlineList.querySelectorAll(`.outline-item.${levelClass}`));
+    
+    if (levelItems.length === 0) {
+        console.log(`没有找到${level}级别的打点项`);
+        return;
+    }
+    
+    // 检查该级别的item中有多少当前是折叠状态
+    let collapsedCount = 0;
+    let totalWithChildren = 0;
+    
+    levelItems.forEach(item => {
+        const annotationId = item.getAttribute('data-id');
+        const colorIndicator = item.querySelector('.outline-color-indicator');
+        
+        // 只统计有下级内容的item
+        if (colorIndicator && colorIndicator.classList.contains('has-children')) {
+            totalWithChildren++;
+            if (outlineCollapseState[annotationId]) {
+                collapsedCount++;
+            }
+        }
+    });
+    
+    // 决定是展开还是折叠：如果超过一半是折叠的，则全部展开；否则全部折叠
+    const shouldExpand = collapsedCount > totalWithChildren / 2;
+    
+    levelItems.forEach(item => {
+        const annotationId = item.getAttribute('data-id');
+        const colorIndicator = item.querySelector('.outline-color-indicator');
+        
+        // 只处理有下级内容的item
+        if (colorIndicator && colorIndicator.classList.contains('has-children')) {
+            if (shouldExpand) {
+                // 展开：删除折叠状态
+                delete outlineCollapseState[annotationId];
+            } else {
+                // 折叠：设置折叠状态
+                outlineCollapseState[annotationId] = true;
+            }
+        }
+    });
+    
+    // 更新显示
+    updateOutlineCollapseDisplay();
+    
+    // 重置展开所有按钮状态
+    resetExpandAllButtonState();
+    
+    const action = shouldExpand ? '展开' : '折叠';
+    console.log(`已${action}所有${level}级别项 (${totalWithChildren}个)`);
+}
+
+// 重置展开所有按钮状态到默认的展开状态
+function resetExpandAllButtonState() {
+    const expandAllBtn = document.getElementById('outline-expand-all-btn');
+    if (expandAllBtn) {
+        expandAllBtn.setAttribute('data-state', 'expand');
+        updateExpandAllButtonDisplay(expandAllBtn, 'expand');
+    }
 }
 
 function toggleOutlinePanel() {
@@ -2222,21 +2464,49 @@ function removeCollapseState(annotationId) {
     }
 }
 
-// 更新展开所有按钮的显示/隐藏状态
+// 更新级别按钮的显示状态
 function updateExpandAllButtonVisibility() {
-    const expandAllBtn = document.getElementById('outline-expand-all-btn');
-    if (!expandAllBtn) return;
+    const toggleHighBtn = document.getElementById('outline-toggle-high-btn');
+    const toggleMediumBtn = document.getElementById('outline-toggle-medium-btn');
+    const toggleLowBtn = document.getElementById('outline-toggle-low-btn');
     
-    // 检查是否有任何有效的折叠状态
-    const hasCollapsedItems = Object.keys(outlineCollapseState).some(
-        annotationId => outlineCollapseState[annotationId] === true
-    );
+    // 只更新级别按钮显示状态，展开所有按钮状态由自身维护
+    updateLevelButtonsVisibility(toggleHighBtn, toggleMediumBtn, toggleLowBtn);
+}
+
+// 更新级别按钮的显示状态
+function updateLevelButtonsVisibility(toggleHighBtn, toggleMediumBtn, toggleLowBtn) {
+    const outlineList = document.querySelector('.outline-list');
+    if (!outlineList) return;
     
-    if (hasCollapsedItems) {
-        expandAllBtn.style.display = 'flex'; // 显示按钮
-    } else {
-        expandAllBtn.style.display = 'none'; // 隐藏按钮
-    }
+    // 检查各级别是否存在有下级内容的item
+    const levels = [
+        { btn: toggleHighBtn, class: 'level-high' },
+        { btn: toggleMediumBtn, class: 'level-medium' },
+        { btn: toggleLowBtn, class: 'level-low' }
+    ];
+    
+    levels.forEach(({ btn, class: levelClass }) => {
+        if (!btn) return;
+        
+        // 检查是否有该级别且有下级内容的item
+        const levelItems = outlineList.querySelectorAll(`.outline-item.${levelClass}`);
+        let hasItemsWithChildren = false;
+        
+        levelItems.forEach(item => {
+            const colorIndicator = item.querySelector('.outline-color-indicator');
+            if (colorIndicator && colorIndicator.classList.contains('has-children')) {
+                hasItemsWithChildren = true;
+            }
+        });
+        
+        // 显示/隐藏按钮
+        if (hasItemsWithChildren) {
+            btn.style.display = 'flex';
+        } else {
+            btn.style.display = 'none';
+        }
+    });
 }
 
 // 检查是否有下级内容并更新指示器
@@ -2413,5 +2683,6 @@ window.updateElementPlayedStatus = updateElementPlayedStatus;
 window.updateAnnotationContainerPlayedStatus = updateAnnotationContainerPlayedStatus;
 window.updateOutlineCollapseDisplay = updateOutlineCollapseDisplay;
 window.removeCollapseState = removeCollapseState;
-window.expandAllOutlineItems = expandAllOutlineItems;
+window.toggleAllOutlineItems = toggleAllOutlineItems;
+window.toggleLevelItems = toggleLevelItems;
 

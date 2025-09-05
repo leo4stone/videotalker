@@ -93,7 +93,7 @@ body {
 
   // 展开状态
   &.expanded {
-    left: calc(320px + 10px); // 面板宽度 + 原始left值
+    left: calc(var(--outline-panel-width, 320px) + 10px); // 面板宽度 + 原始left值
     
     .list-icon {
       opacity: 0;
@@ -122,7 +122,7 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 320px;
+  width: var(--outline-panel-width, 320px);
   height: calc(100%);
   background: rgba(10, 10, 10, 0.95);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -136,6 +136,26 @@ body {
 
   &.open {
     transform: translateX(0);
+  }
+
+  // 拖拽调整手柄
+  .outline-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background: transparent;
+    cursor: col-resize;
+    z-index: 20;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    &:active {
+      background: rgba(255, 255, 255, 0.5);
+    }
   }
 
   // div.outline-panel-header
@@ -157,7 +177,76 @@ body {
     .outline-panel-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+    }
+
+    // button.outline-level-toggle-btn
+    .outline-level-toggle-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      padding: 2px 6px;
+      width: 24px;
+      height: 24px;
+      display: none; // 默认隐藏，有对应级别时才显示
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      transition: @transition-fast;
+
+      .level-text {
+        line-height: 1;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: @primary-text;
+      }
+
+      &:active {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(0.95);
+      }
+
+      // 高级别样式
+      &.level-high {
+        border-color: @danger-red;
+        color: @danger-red;
+
+        &:hover {
+          background: fade(@danger-red, 20%);
+          border-color: @danger-red;
+          color: @danger-red;
+        }
+      }
+
+      // 中级别样式
+      &.level-medium {
+        border-color: @warning-orange;
+        color: @warning-orange;
+
+        &:hover {
+          background: fade(@warning-orange, 20%);
+          border-color: @warning-orange;
+          color: @warning-orange;
+        }
+      }
+
+      // 低级别样式
+      &.level-low {
+        border-color: @success-green;
+        color: @success-green;
+
+        &:hover {
+          background: fade(@success-green, 20%);
+          border-color: @success-green;
+          color: @success-green;
+        }
+      }
     }
 
     // button.outline-expand-all-btn
@@ -169,7 +258,7 @@ body {
       padding: 4px;
       width: 28px;
       height: 28px;
-      display: none; // 默认隐藏，只有在有折叠状态时才显示
+      display: flex; // 一直显示
       align-items: center;
       justify-content: center;
       border-radius: 4px;
@@ -256,7 +345,7 @@ body {
 
               // 打点条目
         .outline-item {
-          padding-left: 8px;
+          padding-left: 18px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
           transition: @transition-fast;
           position: relative;
@@ -339,7 +428,7 @@ body {
             .outline-time {
               position: absolute;
               top: 12px;
-              right: calc(100% + 6px);
+              right: calc(100% + 16px);
               font-size: 12px;
               font-weight: 600;
               font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
@@ -360,7 +449,7 @@ body {
             .outline-color-indicator {
               position: absolute;
               width: 6px;
-  height: 100%;
+              height: 100%;
               left: 0px;
               top: 50%;
               border-radius: 1.5px;
@@ -368,6 +457,7 @@ body {
               cursor: pointer;
               transform: translate(-50%,-50%);
               transition: @transition-fast;
+              z-index: 1;
 
               &:hover {
                 opacity: 0.8;
@@ -417,8 +507,9 @@ body {
 
               // 折叠状态
               &.collapsed {
-                width: 12px;
-                height: 18px;
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
 
                 &:hover {
                   transform: translate(-50%,-50%) scale(1.2, 1.2);
@@ -443,7 +534,7 @@ body {
             .outline-content {
               flex: 1;
               min-width: 0;
-              padding: 10px 10px;
+              padding: 10px 10px 10px 20px;
 
               // 标题 - 可点击编辑
               .outline-title {
@@ -507,12 +598,12 @@ body {
         &.has-duration {
           .outline-content-wrapper{
             .outline-time {
-              margin-top: -6px;
+              // margin-top: -6px;
               .duration{
                 position: absolute;
                 top: 100%;
                 right: 4px;
-                transform: translate(0%,1px);
+                transform: translate(0%,-2px);
                 font-size: 8px;
                 color: rgba(255,255,255,.8);
                 pointer-events: none;
@@ -593,7 +684,7 @@ body {
   position: relative;
 
   &.outline-open {
-    margin-left: 320px;
+    margin-left: var(--outline-panel-width, 320px);
   }
 }
 
