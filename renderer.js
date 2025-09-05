@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 添加一些自定义事件监听
         player.on('loadstart', function() {
             updateFileInfo('正在加载视频...');
+            // 清空缩略图缓存，避免显示上一个视频的缩略图
+            clearThumbnailCache();
         });
 
         player.on('loadedmetadata', function() {
@@ -1582,6 +1584,35 @@ function disablePanThumbFollow() {
 // 缩略图预览相关功能
 let thumbnailCache = new Map(); // 缓存已生成的缩略图
 let thumbnailTimeouts = new Map(); // 多个防抖定时器
+
+// 清空缩略图缓存
+function clearThumbnailCache() {
+    // 清空缓存数据
+    thumbnailCache.clear();
+    
+    // 清理所有防抖定时器
+    thumbnailTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    thumbnailTimeouts.clear();
+    
+    // 清空当前显示的canvas内容
+    const canvasIds = ['main-thumbnail-canvas', 'playback-thumbnail-canvas'];
+    canvasIds.forEach(canvasId => {
+        const canvas = document.getElementById(canvasId);
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 显示加载占位符
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('加载中...', canvas.width / 2, canvas.height / 2);
+        }
+    });
+    
+    console.log('已清空缩略图缓存和显示内容');
+}
 
 // 统一的缩略图预览更新函数
 function updateThumbnailPreview(targetTime, canvasId, debounceTime = 100) {
