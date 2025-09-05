@@ -1873,6 +1873,18 @@ function createOutlineItem(annotation) {
         item.classList.add('color-blue'); // 默认颜色
     }
     
+    // 添加级别类用于缩进
+    const normalizedLevel = window.annotationManager ? window.annotationManager.normalizeLevel(annotation.level) : null;
+    if (normalizedLevel === '1') {
+        item.classList.add('level-high');
+    } else if (normalizedLevel === '2') {
+        item.classList.add('level-medium');
+    } else if (normalizedLevel === '3') {
+        item.classList.add('level-low');
+    } else {
+        item.classList.add('level-default');
+    }
+    
     // 如果没有标题和内容，添加空打点样式
     if (!annotation.title && !annotation.text) {
         item.classList.add('empty-annotation');
@@ -1892,14 +1904,24 @@ function createOutlineItem(annotation) {
         ? `${formatTime(annotation.time)} - ${formatTime(annotation.time + annotation.duration)}`
         : formatTime(annotation.time);
     
-    // 创建内容
+    // 创建新的结构
     item.innerHTML = `
-        <div class="outline-color-indicator"></div>
-        <div class="outline-content">
+        
+        <!-- 内容区域包装器 - 包含左侧竖线、内容和按钮 -->
+        <div class="outline-content-wrapper">
+            <!-- 时间显示 - 固定在最左侧，带颜色 -->
             <div class="outline-time">${timeInfo}</div>
-            <div class="outline-title">${annotation.title || '空白打点'}</div>
-            ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
+            <!-- 左侧竖线 - 会根据级别缩进 -->
+            <div class="outline-color-indicator"></div>
+            
+            <!-- 内容区域 -->
+            <div class="outline-content">
+                <div class="outline-title">${annotation.title || '空白打点'}</div>
+                ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
+            </div>
+            
         </div>
+        <!-- 操作按钮区域 -->
         <div class="outline-actions">
             <button class="outline-action-btn edit-btn" data-id="${annotation.id}" title="编辑打点">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
@@ -1915,12 +1937,14 @@ function createOutlineItem(annotation) {
                 </svg>
             </button>
         </div>
-        <div class="outline-level-indicator ${getLevelClass(annotation.level)}"></div>
     `;
     
-    // 内容区域点击跳转到对应时间
-    const contentArea = item.querySelector('.outline-content');
-    contentArea.addEventListener('click', function() {
+    // 整个条目点击跳转到对应时间（除了按钮区域）
+    item.addEventListener('click', function(e) {
+        // 如果点击的是按钮区域，不触发跳转
+        if (e.target.closest('.outline-actions')) {
+            return;
+        }
         if (player && window.annotationManager) {
             window.annotationManager.jumpToAnnotation(annotation.id);
         }

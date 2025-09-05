@@ -45,6 +45,9 @@ class AnnotationManager {
     setCurrentVideoFile(filePath) {
         this.currentVideoFile = filePath;
         this.annotations = [];
+        // 立即清理UI显示
+        this.updateProgressBarAnnotations();
+        this.updateOutlineView();
     }
 
     // 添加打点
@@ -153,15 +156,24 @@ class AnnotationManager {
                 if (data) {
                     this.annotations = Array.isArray(data.annotations) ? data.annotations : [];
                     this.annotations.sort((a, b) => a.time - b.time);
-                    this.updateProgressBarAnnotations();
-                    this.updateOutlineView();
                     console.log(`加载了 ${this.annotations.length} 个打点`);
+                } else {
+                    // 文件存在但数据为空
+                    this.annotations = [];
+                    console.log('打点文件为空，初始化空数组');
                 }
+            } else {
+                // 无法生成文件路径
+                this.annotations = [];
+                console.log('无法生成打点文件路径，初始化空数组');
             }
         } catch (error) {
             console.log('打点文件不存在或读取失败，将创建新的打点文件');
             this.annotations = [];
         } finally {
+            // 无论成功还是失败，都要更新UI显示
+            this.updateProgressBarAnnotations();
+            this.updateOutlineView();
             this.isLoading = false;
         }
     }
