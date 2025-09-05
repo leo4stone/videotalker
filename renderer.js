@@ -1923,13 +1923,6 @@ function createOutlineItem(annotation) {
         </div>
         <!-- 操作按钮区域 -->
         <div class="outline-actions">
-            <button class="outline-action-btn edit-btn" data-id="${annotation.id}" title="编辑打点">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L10.5 8.207l-3-3L12.146.146zM11.207 9l2-2L14.5 8.293a.25.25 0 0 0 .177-.427L13.354 6.543a.25.25 0 0 0-.427.177L11.207 9z"/>
-                    <path d="M4.5 11.5A.5.5 0 0 1 5 11h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 1 0v.5a.5.5 0 0 1 .5.5zM3 10.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
-                    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0z"/>
-                </svg>
-            </button>
             <button class="outline-action-btn delete-btn" data-id="${annotation.id}" title="删除打点">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -1939,25 +1932,52 @@ function createOutlineItem(annotation) {
         </div>
     `;
     
-    // 整个条目点击跳转到对应时间（除了按钮区域）
-    item.addEventListener('click', function(e) {
-        // 如果点击的是按钮区域，不触发跳转
-        if (e.target.closest('.outline-actions')) {
-            return;
-        }
+    // 时间区域点击跳转到对应时间
+    const timeElement = item.querySelector('.outline-time');
+    timeElement.addEventListener('click', function(e) {
+        e.stopPropagation();
         if (player && window.annotationManager) {
             window.annotationManager.jumpToAnnotation(annotation.id);
         }
     });
 
-    // 编辑按钮事件
-    const editBtn = item.querySelector('.edit-btn');
-    editBtn.addEventListener('click', function(e) {
+    // 标题点击编辑，聚焦标题字段
+    const titleElement = item.querySelector('.outline-title');
+    titleElement.addEventListener('click', function(e) {
         e.stopPropagation();
         if (window.annotationManager) {
+            // 打开编辑模态框
             window.annotationManager.showAnnotationDetailModal(annotation.id);
+            // 延迟聚焦到标题字段，确保模态框已经渲染
+            setTimeout(() => {
+                const titleInput = document.querySelector('#annotation-input-title');
+                if (titleInput) {
+                    titleInput.focus();
+                    titleInput.select(); // 选中所有文本，方便直接替换
+                }
+            }, 100);
         }
     });
+
+    // 内容文本点击编辑，聚焦内容字段
+    const textElement = item.querySelector('.outline-text');
+    if (textElement) {
+        textElement.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (window.annotationManager) {
+                // 打开编辑模态框
+                window.annotationManager.showAnnotationDetailModal(annotation.id);
+                // 延迟聚焦到内容字段，确保模态框已经渲染
+                setTimeout(() => {
+                    const textArea = document.querySelector('#annotation-input-text');
+                    if (textArea) {
+                        textArea.focus();
+                        textArea.select(); // 选中所有文本，方便直接替换
+                    }
+                }, 100);
+            }
+        });
+    }
 
     // 删除按钮事件
     const deleteBtn = item.querySelector('.delete-btn');

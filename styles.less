@@ -219,14 +219,13 @@ body {
 
               // 打点条目
         .outline-item {
-          padding: 0px 8px;
+          padding-left: 8px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
           transition: @transition-fast;
           position: relative;
           display: flex;
           align-items: flex-start;
           gap: 12px;
-          cursor: pointer;
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);
@@ -240,8 +239,8 @@ body {
           // 操作按钮区域
           .outline-actions {
             position: absolute;
-            right: 8px;
-            bottom: 8px;
+            right: 2px;
+            top: 2px;
             display: flex;
             gap: 4px;
             align-items: flex-start;
@@ -299,23 +298,33 @@ body {
             align-items: flex-start;
             gap: 12px;
 
-            // 时间显示 - 固定在最左侧，带颜色
+            // 时间显示 - 固定在最左侧，带颜色，可点击跳转
             .outline-time {
-              margin-top: 12px;
+              position: absolute;
+              top: 12px;
+              right: calc(100% + 6px);
               font-size: 12px;
               font-weight: 600;
-              min-width: 50px;
+              font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
               flex-shrink: 0;
               backdrop-filter: blur(100px);
               text-align: right;
               z-index: 1;
+              cursor: pointer;
+              padding: 2px 4px;
+              border-radius: 4px;
+              transition: @transition-fast;
+
+              &:hover {
+                background: rgba(255, 255, 255, 0.1);
+              }
             }
             // 左侧竖线 - 会根据级别缩进
             .outline-color-indicator {
               position: absolute;
               width: 3px;
               height: 100%;
-              left: 60px;
+              left: 0px;
               top: 0;
               border-radius: 1.5px;
               flex-shrink: 0;
@@ -328,7 +337,7 @@ body {
               min-width: 0;
               padding: 10px 10px;
 
-              // 标题
+              // 标题 - 可点击编辑
               .outline-title {
                 color: @primary-text;
                 font-size: 14px;
@@ -337,15 +346,33 @@ body {
                 line-height: 1.3;
                 word-wrap: break-word;
                 word-break: break-word;
+                cursor: pointer;
+                padding: 2px 4px;
+                border-radius: 4px;
+                transition: @transition-fast;
+
+                &:hover {
+                  background: rgba(255, 255, 255, 0.08);
+                  color: lighten(@primary-text, 10%);
+                }
               }
 
-              // 内容预览
+              // 内容预览 - 可点击编辑
               .outline-text {
                 color: @secondary-text;
                 font-size: 12px;
                 line-height: 1.4;
                 word-wrap: break-word;
                 word-break: break-word;
+                cursor: pointer;
+                padding: 2px 4px;
+                border-radius: 4px;
+                transition: @transition-fast;
+
+                &:hover {
+                  background: rgba(255, 255, 255, 0.08);
+                  color: lighten(@secondary-text, 15%);
+                }
               }
             }
 
@@ -353,34 +380,34 @@ body {
 
           // 级别缩进样式 - 只影响content-wrapper
           &.level-high .outline-content-wrapper {
-            margin-left: 0px; // 高级别：无缩进
+            margin-left: 70px; // 高级别：无缩进
           }
 
           &.level-medium .outline-content-wrapper {
-            margin-left: 10px; // 中级别：20px缩进
+            margin-left: 80px; // 中级别：20px缩进
           }
 
           &.level-low .outline-content-wrapper {
-            margin-left: 20px; // 低级别：40px缩进
+            margin-left: 90px; // 低级别：40px缩进
           }
 
           &.level-default .outline-content-wrapper {
-            margin-left: 30px; // 默认级别：60px缩进
+            margin-left: 100px; // 默认级别：60px缩进
           }
 
         // 时长标识
         &.has-duration {
           .outline-content-wrapper{
             .outline-time {
-              position: relative;
-              top: -6px;
+              margin-top: -6px;
               .duration{
                 position: absolute;
                 top: 100%;
-                right: 0%;
+                right: 4px;
                 transform: translate(0%,1px);
                 font-size: 8px;
                 color: rgba(255,255,255,.8);
+                pointer-events: none;
               }
             }
 
@@ -2129,6 +2156,58 @@ body {
             &:active {
               background: rgba(255, 255, 255, 0.3);
               transform: scale(0.98);
+            }
+
+            &:focus {
+              outline: 2px solid @primary-blue;
+              outline-offset: 2px;
+            }
+          }
+        }
+
+        // 输入框与清空按钮的容器
+        .annotation-input-with-clear {
+          position: relative;
+          display: flex;
+          align-items: center;
+
+          .annotation-input-field-input {
+            flex: 1;
+            padding-right: 36px; // 为清空按钮留出空间
+          }
+
+          .annotation-input-clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: @secondary-text;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none; // 默认隐藏
+            align-items: center;
+            justify-content: center;
+            transition: @transition-fast;
+            z-index: 2;
+
+            svg {
+              width: 12px;
+              height: 12px;
+              pointer-events: none;
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.2);
+              color: @primary-text;
+            }
+
+            &:active {
+              background: rgba(255, 255, 255, 0.3);
+              transform: translateY(-50%) scale(0.95);
             }
 
             &:focus {

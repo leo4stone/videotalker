@@ -743,15 +743,22 @@ class AnnotationManager {
                                 <label class="annotation-input-label">时长（秒，可选）</label>
                                 <button type="button" class="annotation-input-helper-btn" id="set-duration-to-current-btn">到当前结束</button>
                             </div>
-                            <input 
-                                type="number" 
-                                id="annotation-input-duration" 
-                                class="annotation-input-field-input"
-                                placeholder="请输入时长（秒）..."
-                                min="0"
-                                step="0.1"
-                                value="${defaultDuration}"
-                            />
+                            <div class="annotation-input-with-clear">
+                                <input 
+                                    type="number" 
+                                    id="annotation-input-duration" 
+                                    class="annotation-input-field-input"
+                                    placeholder="请输入时长（秒）..."
+                                    min="0"
+                                    step="0.1"
+                                    value="${defaultDuration}"
+                                />
+                                <button type="button" class="annotation-input-clear-btn" id="clear-duration-btn" title="清空时长">
+                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                                    </svg>
+                                </button>
+                            </div>
                             <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
                                 设置时长后，打点会显示为时间段；不设置则显示为时间点
                             </small>
@@ -838,6 +845,7 @@ class AnnotationManager {
         const levelSelect = modal.querySelector('#annotation-input-level');
         const setCurrentTimeBtn = modal.querySelector('#set-current-time-btn');
         const setDurationToCurrentBtn = modal.querySelector('#set-duration-to-current-btn');
+        const clearDurationBtn = modal.querySelector('#clear-duration-btn');
 
         const closeModal = () => {
             // 清理焦点陷阱事件监听器
@@ -948,6 +956,26 @@ class AnnotationManager {
                 }
             }
         });
+
+        // 处理"清空时长"按钮
+        const updateClearButtonVisibility = () => {
+            const hasValue = durationInput.value.trim() !== '';
+            clearDurationBtn.style.display = hasValue ? 'flex' : 'none';
+        };
+
+        clearDurationBtn.addEventListener('click', () => {
+            durationInput.value = '';
+            durationInput.dispatchEvent(new Event('input', { bubbles: true }));
+            updateClearButtonVisibility();
+            durationInput.focus();
+        });
+
+        // 监听时长输入变化，控制清空按钮显示
+        durationInput.addEventListener('input', updateClearButtonVisibility);
+        durationInput.addEventListener('change', updateClearButtonVisibility);
+
+        // 初始化清空按钮显示状态
+        updateClearButtonVisibility();
 
         // 删除按钮（仅编辑时显示）
         if (deleteBtn) {
