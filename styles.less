@@ -154,6 +154,43 @@ body {
       font-weight: 600;
     }
 
+    .outline-panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    // button.outline-expand-all-btn
+    .outline-expand-all-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      padding: 4px;
+      width: 28px;
+      height: 28px;
+      display: none; // 默认隐藏，只有在有折叠状态时才显示
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: @transition-fast;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: @primary-text;
+      }
+
+      &:active {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(0.95);
+      }
+    }
+
     // button.outline-close-btn
     .outline-close-btn {
       background: none;
@@ -319,16 +356,87 @@ body {
                 background: rgba(255, 255, 255, 0.1);
               }
             }
-            // 左侧竖线 - 会根据级别缩进
+            // 左侧竖线 - 会根据级别缩进，可点击折叠/展开
             .outline-color-indicator {
               position: absolute;
-              width: 3px;
-              height: 100%;
+              width: 6px;
+  height: 100%;
               left: 0px;
-              top: 0;
+              top: 50%;
               border-radius: 1.5px;
               flex-shrink: 0;
-              margin-top: 2px;
+              cursor: pointer;
+              transform: translate(-50%,-50%);
+              transition: @transition-fast;
+
+              &:hover {
+                opacity: 0.8;
+                transform: translate(-50%,-50%) scale(1.2, 1);
+              }
+
+              // 折叠状态指示
+              &::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 0;
+                height: 0;
+                border-left: 2px solid transparent;
+                border-right: 2px solid transparent;
+                border-top: 3px solid rgba(255, 255, 255, 0.8);
+                opacity: 0;
+                transition: @transition-fast;
+              }
+
+              // 隐藏数量显示
+              &::before {
+                content: attr(data-hidden-count);
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 10px;
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.9);
+                width: 16px;
+                height: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: @transition-fast;
+                pointer-events: none;
+              }
+
+              // 有下级内容时显示折叠指示器
+              &.has-children::after {
+                opacity: 1;
+              }
+
+              // 折叠状态
+              &.collapsed {
+                width: 12px;
+                height: 18px;
+
+                &:hover {
+                  transform: translate(-50%,-50%) scale(1.2, 1.2);
+                }
+                &::after {
+                  transform: translate(-50%, -50%) rotate(-90deg);
+                }
+                
+                // 折叠时显示隐藏数量
+                &::before {
+                  opacity: 1;
+                }
+                
+                // 折叠时隐藏箭头
+                &::after {
+                  opacity: 0;
+                }
+              }
             }
 
             // 内容区域
@@ -466,6 +574,11 @@ body {
         &.color-green { .outline-color-theme(@success-green); }
         &.color-blue { .outline-color-theme(@primary-blue); }
         &.color-purple { .outline-color-theme(@info-purple); }
+
+        // 隐藏状态（被折叠）
+        &.hidden-by-collapse {
+          display: none;
+        }
       }
     }
   }

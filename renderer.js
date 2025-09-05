@@ -1776,6 +1776,7 @@ function initializePlaybackRateDisplay() {
 function initializeOutlinePanel() {
     const toggleBtn = document.getElementById('outline-toggle-btn');
     const closeBtn = document.getElementById('outline-close-btn');
+    const expandAllBtn = document.getElementById('outline-expand-all-btn');
     const outlinePanel = document.getElementById('outline-panel');
     const mainContent = document.querySelector('.main-content');
 
@@ -1789,8 +1790,28 @@ function initializeOutlinePanel() {
         closeOutlinePanel();
     });
 
+    // 展开所有按钮点击事件
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function() {
+            expandAllOutlineItems();
+        });
+    }
+
     // 初始化面板状态（默认关闭）
     closeOutlinePanel();
+}
+
+// 展开所有折叠项
+function expandAllOutlineItems() {
+    // 清空状态管理对象
+    Object.keys(outlineCollapseState).forEach(annotationId => {
+        delete outlineCollapseState[annotationId];
+    });
+    
+    // 调用更新方法刷新显示
+    updateOutlineCollapseDisplay();
+    
+    console.log('已展开所有折叠项');
 }
 
 function toggleOutlinePanel() {
@@ -1860,11 +1881,17 @@ function generateOutlineList() {
         const item = createOutlineItem(annotation);
         outlineList.appendChild(item);
     });
+    
+    // 应用折叠状态
+    updateOutlineCollapseDisplay();
 }
 
 function createOutlineItem(annotation) {
     const item = document.createElement('div');
     item.className = 'outline-item';
+    
+    // 添加data-id属性用于识别
+    item.setAttribute('data-id', annotation.id);
     
     // 添加颜色类到outline-item
     if (annotation.color) {
@@ -1984,9 +2011,23 @@ function createOutlineItem(annotation) {
     deleteBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (window.annotationManager && confirm('确定要删除这个打点吗？')) {
+            // 先清理折叠状态，再删除打点
+            removeCollapseState(annotation.id);
             window.annotationManager.deleteAnnotation(annotation.id);
         }
     });
+
+    // 竖线点击折叠/展开事件
+    const colorIndicator = item.querySelector('.outline-color-indicator');
+    colorIndicator.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleCollapseState(annotation.id);
+        // 注意：折叠状态的视觉更新现在由 toggleCollapseState -> updateOutlineCollapseDisplay 统一处理
+    });
+
+    // 检查是否有下级内容
+    checkAndUpdateHasChildren(annotation, colorIndicator);
+    // 注意：折叠状态的视觉效果由 updateOutlineCollapseDisplay 统一处理
     
     return item;
 }
@@ -2046,6 +2087,183 @@ let outlineUpdateTimeout = null;
 let outlineLastUpdateTime = 0;
 let annotationUpdateTimeout = null;
 let annotationLastUpdateTime = 0;
+
+// 大纲折叠状态管理
+const outlineCollapseState = {}; // 存储折叠状态 {annotationId: true/false}
+
+// 更新大纲的折叠/展开显示状态
+function updateOutlineCollapseDisplay() {
+    const outlineList = document.querySelector('.outline-list');
+    if (!outlineList) return;
+    
+    const allItems = Array.from(outlineList.querySelectorAll('.outline-item'));
+    
+    // 1. 重置所有item显示状态和视觉状态
+    allItems.forEach(item => {
+        item.classList.remove('hidden-by-collapse');
+        const colorIndicator = item.querySelector('.outline-color-indicator');
+        if (colorIndicator) {
+            colorIndicator.removeAttribute('data-hidden-count');
+            colorIndicator.classList.remove('collapsed'); // 重置折叠视觉状态
+        }
+    });
+    
+    // 2. 根据折叠状态隐藏相应的item并计算数量
+    const itemsToRemove = []; // 记录需要从状态管理中移除的item
+    
+    Object.keys(outlineCollapseState).forEach(collapsedAnnotationId => {
+        if (!outlineCollapseState[collapsedAnnotationId]) return; // 只处理折叠状态为true的
+        
+        const collapsedItem = allItems.find(item => 
+            item.getAttribute('data-id') === collapsedAnnotationId
+        );
+        
+        // 如果找不到对应的item，标记为需要移除
+        if (!collapsedItem) {
+            itemsToRemove.push(collapsedAnnotationId);
+            return;
+        }
+        
+        // 获取折叠item的级别
+        const collapsedLevel = getItemLevel(collapsedItem);
+        const collapsedIndex = allItems.indexOf(collapsedItem);
+        let hiddenCount = 0;
+        
+        // 3. 隐藏后续所有级别低于(数值大于)当前级别的item并计数
+        for (let i = collapsedIndex + 1; i < allItems.length; i++) {
+            const currentItem = allItems[i];
+            const currentLevel = getItemLevel(currentItem);
+            
+            // 如果遇到级别不低于原item的，停止隐藏
+            if (currentLevel <= collapsedLevel) {
+                break;
+            }
+            
+            // 隐藏级别低于原item的item
+            currentItem.classList.add('hidden-by-collapse');
+            hiddenCount++;
+        }
+        
+        // 4. 如果没有可隐藏的后续元素，标记为需要移除
+        if (hiddenCount === 0) {
+            itemsToRemove.push(collapsedAnnotationId);
+            return;
+        }
+        
+        // 5. 设置隐藏数量和折叠视觉状态到竖线
+        const colorIndicator = collapsedItem.querySelector('.outline-color-indicator');
+        if (colorIndicator) {
+            colorIndicator.setAttribute('data-hidden-count', hiddenCount);
+            colorIndicator.classList.add('collapsed'); // 添加折叠视觉状态
+        }
+    });
+    
+    // 3. 清理无效的折叠状态
+    itemsToRemove.forEach(annotationId => {
+        delete outlineCollapseState[annotationId];
+        console.log(`清理无效的折叠状态: ${annotationId}`);
+    });
+
+    // 4. 根据是否有折叠状态来显示/隐藏展开所有按钮
+    updateExpandAllButtonVisibility();
+}
+
+// 获取outline-item的级别数值
+function getItemLevel(item) {
+    if (item.classList.contains('level-high')) return 1;
+    if (item.classList.contains('level-medium')) return 2;
+    if (item.classList.contains('level-low')) return 3;
+    if (item.classList.contains('level-default')) return 4;
+    return 4; // 默认级别
+}
+
+// 切换折叠状态
+function toggleCollapseState(annotationId) {
+    outlineCollapseState[annotationId] = !outlineCollapseState[annotationId];
+    updateOutlineCollapseDisplay();
+}
+
+// 清理删除打点的折叠状态
+function removeCollapseState(annotationId) {
+    if (outlineCollapseState.hasOwnProperty(annotationId)) {
+        delete outlineCollapseState[annotationId];
+        updateOutlineCollapseDisplay();
+    }
+}
+
+// 更新展开所有按钮的显示/隐藏状态
+function updateExpandAllButtonVisibility() {
+    const expandAllBtn = document.getElementById('outline-expand-all-btn');
+    if (!expandAllBtn) return;
+    
+    // 检查是否有任何有效的折叠状态
+    const hasCollapsedItems = Object.keys(outlineCollapseState).some(
+        annotationId => outlineCollapseState[annotationId] === true
+    );
+    
+    if (hasCollapsedItems) {
+        expandAllBtn.style.display = 'flex'; // 显示按钮
+    } else {
+        expandAllBtn.style.display = 'none'; // 隐藏按钮
+    }
+}
+
+// 检查是否有下级内容并更新指示器
+function checkAndUpdateHasChildren(annotation, colorIndicator) {
+    if (!window.annotationManager) return;
+    
+    const annotations = window.annotationManager.getAllAnnotations();
+    const currentLevel = getItemLevel({classList: {
+        contains: (className) => {
+            const normalizedLevel = window.annotationManager.normalizeLevel(annotation.level);
+            if (normalizedLevel === '1') return className === 'level-high';
+            if (normalizedLevel === '2') return className === 'level-medium';
+            if (normalizedLevel === '3') return className === 'level-low';
+            return className === 'level-default';
+        }
+    }});
+    
+    // 找到当前打点在数组中的位置
+    const currentIndex = annotations.findIndex(ann => ann.id === annotation.id);
+    
+    // 检查后续是否有级别低于当前级别的打点
+    let hasChildren = false;
+    for (let i = currentIndex + 1; i < annotations.length; i++) {
+        const nextAnnotation = annotations[i];
+        const nextLevel = getItemLevel({classList: {
+            contains: (className) => {
+                const normalizedLevel = window.annotationManager.normalizeLevel(nextAnnotation.level);
+                if (normalizedLevel === '1') return className === 'level-high';
+                if (normalizedLevel === '2') return className === 'level-medium';
+                if (normalizedLevel === '3') return className === 'level-low';
+                return className === 'level-default';
+            }
+        }});
+        
+        // 如果遇到级别不低于当前级别的，停止检查
+        if (nextLevel <= currentLevel) {
+            break;
+        }
+        
+        // 如果有级别低于当前级别的，说明有下级内容
+        if (nextLevel > currentLevel) {
+            hasChildren = true;
+            break;
+        }
+    }
+    
+    // 根据是否有下级内容添加或移除 has-children 类
+    if (hasChildren) {
+        colorIndicator.classList.add('has-children');
+    } else {
+        colorIndicator.classList.remove('has-children');
+        // 如果没有下级内容，同时清理可能存在的折叠状态
+        if (outlineCollapseState[annotation.id]) {
+            delete outlineCollapseState[annotation.id];
+            console.log(`清理无下级内容的折叠状态: ${annotation.id}`);
+        }
+    }
+}
 
 // ===============================
 // 通用打点播放状态管理
@@ -2160,4 +2378,9 @@ function updateAnnotationContainerPlayedStatusImmediate() {
 // 将updateOutlineView函数绑定到window对象，供其他模块调用
 window.updateOutlineView = updateOutlineView;
 window.updateOutlinePlayedStatus = updateOutlinePlayedStatus;
+window.updateElementPlayedStatus = updateElementPlayedStatus;
+window.updateAnnotationContainerPlayedStatus = updateAnnotationContainerPlayedStatus;
+window.updateOutlineCollapseDisplay = updateOutlineCollapseDisplay;
+window.removeCollapseState = removeCollapseState;
+window.expandAllOutlineItems = expandAllOutlineItems;
 

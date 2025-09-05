@@ -35,7 +35,15 @@
   <div id="outline-panel" class="outline-panel">
     <div class="outline-panel-header">
       <h3>打点大纲</h3>
-      <button id="outline-close-btn" class="outline-close-btn">&times;</button>
+      <div class="outline-panel-actions">
+        <button id="outline-expand-all-btn" class="outline-expand-all-btn" title="展开所有折叠项">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="7,11 12,6 17,11"></polyline>
+            <polyline points="7,13 12,18 17,13"></polyline>
+          </svg>
+        </button>
+        <button id="outline-close-btn" class="outline-close-btn">&times;</button>
+      </div>
     </div>
     <div class="outline-panel-content">
       <div id="outline-list" class="outline-list">

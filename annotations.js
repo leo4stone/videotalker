@@ -86,6 +86,11 @@ class AnnotationManager {
     async deleteAnnotation(annotationId) {
         const index = this.annotations.findIndex(ann => ann.id === annotationId);
         if (index !== -1) {
+            // 先清理折叠状态
+            if (typeof window.removeCollapseState === 'function') {
+                window.removeCollapseState(annotationId);
+            }
+            
             this.annotations.splice(index, 1);
             await this.saveAnnotationsToFile();
             this.updateProgressBarAnnotations();
@@ -1768,6 +1773,10 @@ class AnnotationManager {
         // 检查是否存在renderer.js中定义的updateOutlineView函数
         if (typeof window.updateOutlineView === 'function') {
             window.updateOutlineView();
+        }
+        // 打点数据变更后更新折叠状态显示
+        if (typeof window.updateOutlineCollapseDisplay === 'function') {
+            window.updateOutlineCollapseDisplay();
         }
     }
 }
