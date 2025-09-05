@@ -673,6 +673,7 @@ class AnnotationManager {
         // 创建模态框
         const modal = document.createElement('div');
         modal.className = 'annotation-input-modal';
+        modal.tabIndex = 0; // 让模态框本身可以获取焦点
         modal.innerHTML = `
             <div class="annotation-input-overlay"></div>
             <div class="annotation-input-content">
@@ -716,7 +717,7 @@ class AnnotationManager {
                             设置时长后，打点会显示为时间段；不设置则显示为时间点
                         </small>
                     </div>
-                    <div class="annotation-input-row">
+                    <div class="annotation-input-row annotation-options-row">
                         <div class="annotation-input-field">
                             <label class="annotation-input-label">颜色</label>
                             <div class="annotation-color-group" tabindex="0" role="radiogroup" aria-label="选择颜色">
@@ -739,14 +740,9 @@ class AnnotationManager {
                                 <label for="color-purple" class="color-button color-purple" title="紫色"></label>
                             </div>
                         </div>
-                    </div>
-                    <div class="annotation-input-row">
                         <div class="annotation-input-field">
                             <label class="annotation-input-label">级别</label>
                             <div class="annotation-level-group" tabindex="0" role="radiogroup" aria-label="选择级别">
-                                <input type="radio" id="level-default" name="annotation-level" value="" ${defaultLevel === '' ? 'checked' : ''} tabindex="-1">
-                                <label for="level-default" class="level-button">默认</label>
-                                
                                 <input type="radio" id="level-high" name="annotation-level" value="1" ${defaultLevel === '1' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-high" class="level-button">高</label>
                                 
@@ -755,6 +751,9 @@ class AnnotationManager {
                                 
                                 <input type="radio" id="level-low" name="annotation-level" value="3" ${defaultLevel === '3' ? 'checked' : ''} tabindex="-1">
                                 <label for="level-low" class="level-button">低</label>
+                                
+                                <input type="radio" id="level-default" name="annotation-level" value="" ${defaultLevel === '' ? 'checked' : ''} tabindex="-1">
+                                <label for="level-default" class="level-button">默认</label>
                             </div>
                         </div>
                     </div>
@@ -777,10 +776,38 @@ class AnnotationManager {
         const colorSelect = modal.querySelector('#annotation-input-color');
         const levelSelect = modal.querySelector('#annotation-input-level');
 
-        const closeModal = () => modal.remove();
+        const closeModal = () => {
+            // 清理焦点陷阱事件监听器
+            if (modal._focusTrapCleanup) {
+                modal._focusTrapCleanup.forEach(cleanup => cleanup());
+                modal._focusTrapCleanup = null;
+            }
+            // 清理模态框快捷键事件监听器
+            if (modal._modalShortcutsCleanup) {
+                modal._modalShortcutsCleanup.forEach(cleanup => cleanup());
+                modal._modalShortcutsCleanup = null;
+            }
+            modal.remove();
+        };
 
         closeBtn.addEventListener('click', closeModal);
         overlay.addEventListener('click', closeModal);
+
+        // 点击模态框内容区域时，让模态框获取焦点（确保快捷键能工作）
+        const modalContent = modal.querySelector('.annotation-input-content');
+        modalContent.addEventListener('click', (e) => {
+            // 如果点击的不是输入元素，则让模态框获取焦点
+            const clickedElement = e.target;
+            const isInputElement = clickedElement.tagName === 'INPUT' || 
+                                 clickedElement.tagName === 'TEXTAREA' || 
+                                 clickedElement.tagName === 'BUTTON' ||
+                                 clickedElement.closest('.annotation-color-group') ||
+                                 clickedElement.closest('.annotation-level-group');
+            
+            if (!isInputElement) {
+                modal.focus();
+            }
+        });
 
         // 删除按钮（仅编辑时显示）
         if (deleteBtn) {
@@ -826,27 +853,35 @@ class AnnotationManager {
         };
         document.addEventListener('keydown', escHandler);
 
-        // Enter键保存（Ctrl+Enter或Cmd+Enter）
-        const handleKeyboardSave = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                saveBtn.click();
-            }
-        };
-        
-        titleInput.addEventListener('keydown', handleKeyboardSave);
-        textArea.addEventListener('keydown', handleKeyboardSave);
-        durationInput.addEventListener('keydown', handleKeyboardSave);
+        // 获取radio group元素
+        const colorGroup = modal.querySelector('.annotation-color-group');
+        const levelGroup = modal.querySelector('.annotation-level-group');
+
+        // 添加模态框快捷键支持
+        this.setupModalShortcuts(modal, colorGroup, levelGroup);
 
         // 添加键盘导航支持
         this.setupRadioGroupNavigation(modal);
 
+        // 设置颜色同步
+        this.setupColorSync(modal, colorGroup, levelGroup);
+
         // 阻止模态框内的按键事件冒泡到视频界面
         this.setupModalKeyboardIsolation(modal);
 
+        // 设置焦点陷阱
+        this.setupFocusTrap(modal);
+
         document.body.appendChild(modal);
         
-        // 自动聚焦到标题输入框
-        setTimeout(() => titleInput.focus(), 100);
+        // 自动聚焦到标题输入框，如果失败则让模态框获取焦点
+        setTimeout(() => {
+            if (titleInput) {
+                titleInput.focus();
+            } else {
+                modal.focus();
+            }
+        }, 100);
     }
 
     // 显示添加打点的输入模态框（保持兼容性）
@@ -1185,6 +1220,16 @@ class AnnotationManager {
             
             // 键盘事件监听
             group.addEventListener('keydown', (e) => {
+                // 如果是Ctrl+Enter或Cmd+Enter，让事件继续冒泡以便触发保存
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    return; // 不阻止事件，让它冒泡到外层的保存处理器
+                }
+                
+                // 如果是Alt+箭头键，让事件继续冒泡到模态框快捷键处理器
+                if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    return; // 不阻止事件，让它冒泡到模态框快捷键处理器
+                }
+                
                 const currentChecked = group.querySelector('input[type="radio"]:checked');
                 const radioArray = Array.from(radios);
                 const currentIndex = currentChecked ? radioArray.indexOf(currentChecked) : 0;
@@ -1227,6 +1272,191 @@ class AnnotationManager {
                 group.classList.remove('focused');
             });
         });
+    }
+
+    // 切换radio选项的通用方法
+    switchRadioOption(group, direction, enableCycle = true) {
+        const radios = Array.from(group.querySelectorAll('input[type="radio"]'));
+        const currentChecked = group.querySelector('input[type="radio"]:checked');
+        
+        if (radios.length === 0) return;
+        
+        let currentIndex = currentChecked ? radios.indexOf(currentChecked) : 0;
+        let newIndex;
+        
+        if (direction > 0) {
+            // 向下/向右：下一个选项
+            if (enableCycle) {
+                newIndex = currentIndex < radios.length - 1 ? currentIndex + 1 : 0;
+            } else {
+                newIndex = Math.min(currentIndex + 1, radios.length - 1);
+            }
+        } else {
+            // 向上/向左：上一个选项
+            if (enableCycle) {
+                newIndex = currentIndex > 0 ? currentIndex - 1 : radios.length - 1;
+            } else {
+                newIndex = Math.max(currentIndex - 1, 0);
+            }
+        }
+        
+        // 如果索引没有变化（已到边界且不循环），则不执行切换
+        if (newIndex === currentIndex && !enableCycle) {
+            return;
+        }
+        
+        // 选中新的radio按钮
+        radios[newIndex].checked = true;
+        radios[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // 给一个简短的视觉反馈
+        const label = group.querySelector(`label[for="${radios[newIndex].id}"]`);
+        if (label) {
+            label.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                label.style.transform = '';
+            }, 150);
+        }
+    }
+
+    // 设置模态框快捷键
+    setupModalShortcuts(modal, colorGroup, levelGroup) {
+        const saveBtn = modal.querySelector('.annotation-input-btn-save');
+        
+        const handleModalShortcuts = (e) => {
+            // Ctrl+Enter或Cmd+Enter保存
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (saveBtn) {
+                    saveBtn.click();
+                }
+                return;
+            }
+
+            // Alt+箭头键切换选项
+            if (e.altKey) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                        // Alt+上下箭头切换level（上箭头=向后，下箭头=向前，不循环）
+                        if (levelGroup) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            this.switchRadioOption(levelGroup, e.key === 'ArrowUp' ? -1 : 1, false);
+                        }
+                        break;
+                        
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        // Alt+左右箭头切换color（循环）
+                        if (colorGroup) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            this.switchRadioOption(colorGroup, e.key === 'ArrowLeft' ? -1 : 1, true);
+                        }
+                        break;
+                }
+            }
+        };
+
+        // 在模态框上添加事件监听器
+        modal.addEventListener('keydown', handleModalShortcuts);
+
+        // 存储清理函数
+        if (!modal._modalShortcutsCleanup) {
+            modal._modalShortcutsCleanup = [];
+        }
+        modal._modalShortcutsCleanup.push(() => {
+            modal.removeEventListener('keydown', handleModalShortcuts);
+        });
+    }
+
+    // 设置焦点陷阱，让Tab键只在模态框内循环
+    setupFocusTrap(modal) {
+        // 获取模态框内所有可聚焦的元素
+        const getFocusableElements = () => {
+            const focusableSelectors = [
+                'input:not([disabled]):not([tabindex="-1"])',
+                'textarea:not([disabled]):not([tabindex="-1"])',
+                'button:not([disabled]):not([tabindex="-1"])',
+                'select:not([disabled]):not([tabindex="-1"])',
+                '[tabindex]:not([tabindex="-1"])',
+                'a[href]'
+            ].join(', ');
+            
+            return Array.from(modal.querySelectorAll(focusableSelectors))
+                .filter(el => {
+                    // 过滤掉不可见的元素
+                    const style = window.getComputedStyle(el);
+                    return style.display !== 'none' && style.visibility !== 'hidden';
+                });
+        };
+
+        // Tab键处理函数
+        const handleTabKey = (e) => {
+            if (e.key !== 'Tab') return;
+
+            const focusableElements = getFocusableElements();
+            if (focusableElements.length === 0) return;
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            const currentElement = document.activeElement;
+
+            if (e.shiftKey) {
+                // Shift+Tab - 向前循环
+                if (currentElement === firstElement || !focusableElements.includes(currentElement)) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                // Tab - 向后循环
+                if (currentElement === lastElement || !focusableElements.includes(currentElement)) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        // 添加事件监听器
+        modal.addEventListener('keydown', handleTabKey);
+
+        // 存储清理函数到模态框对象上，以便后续清理
+        if (!modal._focusTrapCleanup) {
+            modal._focusTrapCleanup = [];
+        }
+        modal._focusTrapCleanup.push(() => {
+            modal.removeEventListener('keydown', handleTabKey);
+        });
+    }
+
+    // 设置颜色同步：当颜色组变化时，同步更新级别组的颜色
+    setupColorSync(modal, colorGroup, levelGroup) {
+        if (!colorGroup || !levelGroup) return;
+
+        // 更新level-group的颜色类名
+        const updateLevelGroupColor = () => {
+            const checkedColor = colorGroup.querySelector('input[type="radio"]:checked');
+            if (!checkedColor) return;
+
+            const colorValue = checkedColor.value;
+            
+            // 移除所有现有的颜色类
+            const colorClasses = ['color-red', 'color-orange', 'color-yellow', 'color-green', 'color-blue', 'color-purple'];
+            colorClasses.forEach(cls => levelGroup.classList.remove(cls));
+            
+            // 添加当前选中的颜色类
+            if (colorValue) {
+                levelGroup.classList.add(`color-${colorValue}`);
+            }
+        };
+
+        // 监听颜色组的变化
+        colorGroup.addEventListener('change', updateLevelGroupColor);
+
+        // 初始化时也更新一次
+        updateLevelGroupColor();
     }
 
     // 设置模态框的键盘事件隔离

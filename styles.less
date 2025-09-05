@@ -67,7 +67,7 @@ body {
   cursor: pointer;
   backdrop-filter: @blur-medium;
   -webkit-backdrop-filter: @blur-medium;
-  transition: @transition-fast;
+  transition: left 0.3s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   width: 44px;
   height: 44px;
   display: flex;
@@ -77,6 +77,31 @@ body {
   svg {
     width: 20px;
     height: 20px;
+    transition: opacity 0.2s ease;
+  }
+
+  // 列表图标（默认显示）
+  .list-icon {
+    opacity: 1;
+  }
+
+  // 关闭图标（默认隐藏）
+  .close-icon {
+    position: absolute;
+    opacity: 0;
+  }
+
+  // 展开状态
+  &.expanded {
+    left: calc(320px + 10px); // 面板宽度 + 原始left值
+    
+    .list-icon {
+      opacity: 0;
+    }
+    
+    .close-icon {
+      opacity: 1;
+    }
   }
 
   &:hover {
@@ -196,16 +221,25 @@ body {
       .outline-item {
         padding: 12px 20px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        cursor: pointer;
         transition: @transition-fast;
         position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
 
         &:hover {
           background: rgba(255, 255, 255, 0.05);
+          
+          .outline-actions {
+            opacity: 1;
+          }
         }
 
-        &:active {
-          background: rgba(255, 255, 255, 0.1);
+        // 内容区域
+        .outline-content {
+          flex: 1;
+          cursor: pointer;
+          min-width: 0; // 确保文本能够正确截断
         }
 
         // 时间显示
@@ -236,6 +270,54 @@ body {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+
+        // 操作按钮区域
+        .outline-actions {
+          display: flex;
+          gap: 4px;
+          align-items: flex-start;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          margin-top: 2px; // 与时间对齐
+        }
+
+        // 操作按钮
+        .outline-action-btn {
+          width: 24px;
+          height: 24px;
+          border: none;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.1);
+          color: @primary-text;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: @transition-fast;
+          
+          svg {
+            width: 12px;
+            height: 12px;
+            pointer-events: none;
+          }
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+          }
+
+          &:active {
+            transform: scale(0.95);
+          }
+
+          &.edit-btn:hover {
+            background: rgba(40, 167, 69, 0.8);
+          }
+
+          &.delete-btn:hover {
+            background: rgba(220, 53, 69, 0.8);
+          }
         }
 
         // 颜色标识
@@ -1901,6 +1983,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  // 移除焦点时的默认轮廓
+  &:focus {
+    outline: none;
+  }
 
   // div.annotation-input-overlay
   .annotation-input-overlay {
@@ -1959,6 +2046,11 @@ body {
           background: rgba(255,255,255,0.1);
           color: @primary-text;
         }
+
+        &:focus {
+          outline: 2px solid @primary-blue;
+          outline-offset: 2px;
+        }
       }
     }
 
@@ -1998,8 +2090,8 @@ body {
           box-sizing: border-box;
 
           &:focus {
-            outline: none;
-            border-color: @success-green;
+            outline: 2px solid @primary-blue;
+            outline-offset: 2px;
             background: rgba(255,255,255,0.15);
           }
 
@@ -2023,8 +2115,8 @@ body {
           box-sizing: border-box;
 
           &:focus {
-            outline: none;
-            border-color: @success-green;
+            outline: 2px solid @primary-blue;
+            outline-offset: 2px;
             background: rgba(255,255,255,0.15);
           }
 
@@ -2047,8 +2139,8 @@ body {
           cursor: pointer;
 
           &:focus {
-            outline: none;
-            border-color: @success-green;
+            outline: 2px solid @primary-blue;
+            outline-offset: 2px;
             background: rgba(255,255,255,0.15);
           }
 
@@ -2071,6 +2163,16 @@ body {
         gap: 12px;
         margin-bottom: 16px;
 
+        // 横向排列的选项行（颜色和级别）
+        &.annotation-options-row {
+          gap: 24px;
+          align-items: flex-start;
+
+          .annotation-input-field {
+            flex: 0 0 auto; // 不拉伸，保持内容尺寸
+          }
+        }
+
         // div.annotation-input-field-half
         .annotation-input-field-half {
           flex: 1;
@@ -2083,8 +2185,8 @@ body {
         display: flex;
         gap: 8px;
         margin-top: 8px;
-        padding: 4px;
-        border-radius: 6px;
+        padding: 0px;
+        border-radius: 8px;
         transition: @transition-fast;
 
         &:focus {
@@ -2102,8 +2204,8 @@ body {
 
           &:checked + .color-button {
             border-color: #fff;
-            box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
-            transform: scale(1.1);
+            // box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+            // transform: scale(1.1);
 
             &::after {
               content: '✓';
@@ -2121,16 +2223,17 @@ body {
 
         // label.color-button
         .color-button {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
+          box-sizing: border-box;
+          width: 40px;
+          height: 60px;
+          border-radius: 8px;
           cursor: pointer;
           border: 2px solid transparent;
           transition: @transition-fast;
           position: relative;
 
           &:hover {
-            transform: scale(1.1);
+            // transform: scale(1.1);
             border-color: @border-strong;
           }
 
@@ -2146,10 +2249,15 @@ body {
       // div.annotation-level-group
       .annotation-level-group {
         display: flex;
-        gap: 8px;
+        box-sizing: border-box;
+        flex-direction: column;
         margin-top: 8px;
-        padding: 4px;
-        border-radius: 6px;
+        width: 90px;
+        height: 60px;
+        border: 1px solid @border-strong;
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.3);
         transition: @transition-fast;
 
         &:focus {
@@ -2158,7 +2266,8 @@ body {
         }
 
         &.focused {
-          background: rgba(0,123,255,0.1);
+          border-color: @primary-blue;
+          box-shadow: 0 0 0 1px @primary-blue;
         }
 
         // input[type="radio"]
@@ -2166,27 +2275,87 @@ body {
           display: none;
 
           &:checked + .level-button {
-            background: @primary-blue;
-            border-color: @primary-blue;
+            background: rgba(255, 255, 255, 0.8);
             color: @primary-text;
+            
+            &::after {
+              opacity: 1;
+            }
           }
+        }
+
+        // 颜色主题样式 - 当level-group有对应颜色类时应用
+        &.color-red input[type="radio"]:checked + .level-button {
+          background: @danger-red;
+          color: white;
+        }
+
+        &.color-orange input[type="radio"]:checked + .level-button {
+          background: @warning-orange;
+          color: white;
+        }
+
+        &.color-yellow input[type="radio"]:checked + .level-button {
+          background: @warning-yellow;
+          color: black;
+        }
+
+        &.color-green input[type="radio"]:checked + .level-button {
+          background: @success-green;
+          color: white;
+        }
+
+        &.color-blue input[type="radio"]:checked + .level-button {
+          background: @primary-blue;
+          color: white;
+        }
+
+        &.color-purple input[type="radio"]:checked + .level-button {
+          background: @info-purple;
+          color: white;
         }
 
         // label.level-button
         .level-button {
-          padding: 8px 16px;
-          border: 1px solid @border-strong;
-          border-radius: 6px;
-          background: rgba(255,255,255,0.1);
+          padding: 0px;
+          border: none;
+          border-bottom: 1px solid @border-strong;
+          border-radius: 0;
+          background: rgba(255,255,255,0.05);
           color: @primary-text;
           cursor: pointer;
           transition: @transition-fast;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 500;
+          text-align: center;
+          position: relative;
+          flex: 1;
+          height: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:last-child {
+            border-bottom: none;
+          }
 
           &:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+          }
+
+          // 选中状态的指示器
+          &::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: @primary-text;
+            opacity: 0;
+            transition: opacity 0.2s ease;
           }
         }
       }
@@ -2207,6 +2376,11 @@ body {
         font-weight: 500;
         cursor: pointer;
         transition: @transition-fast;
+
+        &:focus {
+          outline: 2px solid @primary-blue;
+          outline-offset: 2px;
+        }
 
         &.annotation-input-btn-cancel {
           background: rgba(255,255,255,0.1);

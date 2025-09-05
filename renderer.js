@@ -1807,9 +1807,16 @@ function toggleOutlinePanel() {
 function openOutlinePanel() {
     const outlinePanel = document.getElementById('outline-panel');
     const mainContent = document.querySelector('.main-content');
+    const toggleBtn = document.getElementById('outline-toggle-btn');
     
     outlinePanel.classList.add('open');
     mainContent.classList.add('outline-open');
+    
+    // 切换按钮状态
+    if (toggleBtn) {
+        toggleBtn.classList.add('expanded');
+        toggleBtn.title = '关闭大纲';
+    }
     
     // 生成大纲列表
     generateOutlineList();
@@ -1818,10 +1825,16 @@ function openOutlinePanel() {
 function closeOutlinePanel() {
     const outlinePanel = document.getElementById('outline-panel');
     const mainContent = document.querySelector('.main-content');
+    const toggleBtn = document.getElementById('outline-toggle-btn');
     
     outlinePanel.classList.remove('open');
     mainContent.classList.remove('outline-open');
     
+    // 恢复按钮状态
+    if (toggleBtn) {
+        toggleBtn.classList.remove('expanded');
+        toggleBtn.title = '打点大纲';
+    }
 }
 
 function generateOutlineList() {
@@ -1882,16 +1895,52 @@ function createOutlineItem(annotation) {
     // 创建内容
     item.innerHTML = `
         <div class="outline-color-indicator"></div>
-        <div class="outline-time">${timeInfo}</div>
-        <div class="outline-title">${annotation.title || '空白打点'}</div>
-        ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
+        <div class="outline-content">
+            <div class="outline-time">${timeInfo}</div>
+            <div class="outline-title">${annotation.title || '空白打点'}</div>
+            ${annotation.text ? `<div class="outline-text">${annotation.text}</div>` : ''}
+        </div>
+        <div class="outline-actions">
+            <button class="outline-action-btn edit-btn" data-id="${annotation.id}" title="编辑打点">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L10.5 8.207l-3-3L12.146.146zM11.207 9l2-2L14.5 8.293a.25.25 0 0 0 .177-.427L13.354 6.543a.25.25 0 0 0-.427.177L11.207 9z"/>
+                    <path d="M4.5 11.5A.5.5 0 0 1 5 11h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 1 0v.5a.5.5 0 0 1 .5.5zM3 10.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+                    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0z"/>
+                </svg>
+            </button>
+            <button class="outline-action-btn delete-btn" data-id="${annotation.id}" title="删除打点">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                </svg>
+            </button>
+        </div>
         <div class="outline-level-indicator ${getLevelClass(annotation.level)}"></div>
     `;
     
-    // 点击跳转到对应时间
-    item.addEventListener('click', function() {
+    // 内容区域点击跳转到对应时间
+    const contentArea = item.querySelector('.outline-content');
+    contentArea.addEventListener('click', function() {
         if (player && window.annotationManager) {
             window.annotationManager.jumpToAnnotation(annotation.id);
+        }
+    });
+
+    // 编辑按钮事件
+    const editBtn = item.querySelector('.edit-btn');
+    editBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (window.annotationManager) {
+            window.annotationManager.showAnnotationDetailModal(annotation.id);
+        }
+    });
+
+    // 删除按钮事件
+    const deleteBtn = item.querySelector('.delete-btn');
+    deleteBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (window.annotationManager && confirm('确定要删除这个打点吗？')) {
+            window.annotationManager.deleteAnnotation(annotation.id);
         }
     });
     
