@@ -230,9 +230,7 @@ body {
 
           &:hover {
             background: rgba(255, 255, 255, 0.05);
-            .outline-content-wrapper{
-
-            }
+            
             .outline-actions {
               opacity: 1;
             }
@@ -309,6 +307,7 @@ body {
               min-width: 50px;
               flex-shrink: 0;
               backdrop-filter: blur(100px);
+              text-align: right;
               z-index: 1;
             }
             // 左侧竖线 - 会根据级别缩进
@@ -372,10 +371,17 @@ body {
         // 时长标识
         &.has-duration {
           .outline-content-wrapper{
-            .outline-time::after {
-              content: ' 时长';
-              color: @secondary-text;
-              font-weight: normal;
+            .outline-time {
+              position: relative;
+              top: -6px;
+              .duration{
+                position: absolute;
+                top: 100%;
+                right: 0%;
+                transform: translate(0%,1px);
+                font-size: 8px;
+                color: rgba(255,255,255,.8);
+              }
             }
 
           }
@@ -632,7 +638,7 @@ body {
         // div.pan-track (胶片带)
         .pan-track {
           position: absolute;
-          box-sizing: border-box;
+  box-sizing: border-box;
           top: 0;
           left: 0;
           width: 100%;
@@ -703,7 +709,7 @@ body {
             // 提示线
             .playback-tooltip-line {
               position: absolute;
-              bottom: 0;
+  bottom: 0;
               left: 50%;
               transform: translateX(-50%);
               width: 1px;
@@ -1027,47 +1033,47 @@ body {
     bottom: 0px;
     width: 100%;
     height: 48px;
-    cursor: pointer;
-    border-radius: 9999px;
-    user-select: none;
+  cursor: pointer;
+  border-radius: 9999px;
+  user-select: none;
     transition: left 0.3s ease, width 0.3s ease;
-  
-    &,
-    &::before,
-    &::after,
-    *,
-    *::before,
-    *::after {
-      transition: @transition-fast;
-    }
-  
-    // 进度条背景轨道
-    &::before {
-      content: "";
-      position: absolute;
+
+  &,
+  &::before,
+  &::after,
+  *,
+  *::before,
+  *::after {
+    transition: @transition-fast;
+  }
+
+  // 进度条背景轨道
+  &::before {
+    content: "";
+    position: absolute;
       height: 48px;
       left: -50px;
       right: -50px;
       top: 50%;
       transform: translate(0,-50%);
-      cursor: pointer;
-      border-radius: 999px;
+    cursor: pointer;
+    border-radius: 999px;
       // background: rgba(0,0,0,0.4);
-    }
-    // 进度条悬停背景
-    &::after {
-      content: "";
-      position: absolute;
-      height: 4px;
+  }
+  // 进度条悬停背景
+  &::after {
+    content: "";
+    position: absolute;
+    height: 4px;
       left: -4px;
       right: -4px;
-      bottom: 0%;
+    bottom: 0%;
       transform: translate(0,15%);
-      cursor: pointer;
-      border-radius: 999px;
+    cursor: pointer;
+    border-radius: 999px;
       border: 2px solid rgba(0,0,0,0);
       background: rgba(0,0,0,0.4);
-      opacity: 0;
+    opacity: 0;
       // z-index: 1;
     }
 
@@ -1085,120 +1091,120 @@ body {
       z-index: 1; // 在背景之上，进度条之下
       transform: translateY(-100%);
     }
-    // div.progress-bar
-    .progress-bar {
+  // div.progress-bar
+  .progress-bar {
       position: relative;
-      height: 100%;
-      width: 0%;
-      display: flex;
-      align-items: center;
-      z-index: 2;
-      transform: none;
+    height: 100%;
+    width: 0%;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+    transform: none;
       opacity: 1;
 
-      // div.progress-line
-      .progress-line {
-        position: absolute;
-        left: 0;
-        right: 0;
+    // div.progress-line
+    .progress-line {
+      position: absolute;
+      left: 0;
+      right: 0;
         top: 100%;
         height: 4px;
-        background: @primary-blue;
-        transform: translateY(-100%);
+      background: @primary-blue;
+      transform: translateY(-100%);
         border-radius: 99px;
         opacity: 0;
-      }
+    }
 
-      // 当前时间指示器 & 打点添加按钮
-      .progress-handle {
-        position: absolute;
-        right: -1px;
+    // 当前时间指示器 & 打点添加按钮
+    .progress-handle {
+      position: absolute;
+      right: -1px;
         top: 15%;
-        width: 2px;
-        height: 16px;
-        transform: translate(0, -50%);
-        border-radius: 1px;
+      width: 2px;
+      height: 16px;
+      transform: translate(0, -50%);
+      border-radius: 1px;
 
-        // div.current-time-display
-        .current-time-display {
+      // div.current-time-display
+      .current-time-display {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%,-50%);
+          opacity: 1;
+
+        // 当前时间
+        .time-text {
+          display: block;
+          background: rgba(0,0,0,.6);
+          border-radius: 50px;
+          color: @primary-text;
+          padding: 2px 4px;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+            margin-top: 0px;
+        }
+
+        // 添加打点
+        .add-annotation-btn {
           position: absolute;
+            width: 64px;
+            height: 24px;
           left: 50%;
           top: 50%;
           transform: translate(-50%,-50%);
-          opacity: 1;
-
-          // 当前时间
-          .time-text {
-            display: block;
-            background: rgba(0,0,0,.6);
-            border-radius: 50px;
-            color: @primary-text;
-            padding: 2px 4px;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            margin-top: 0px;
-          }
-
-          // 添加打点
-          .add-annotation-btn {
-            position: absolute;
-            width: 64px;
-            height: 24px;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%,-50%);
             opacity: 1;
-            background: rgba(0,0,0,0.5);
-            border: 2px solid @primary-text;
-            color: @primary-text;
+          background: rgba(0,0,0,0.5);
+          border: 2px solid @primary-text;
+          color: @primary-text;
             border-radius: 999px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            //箭头
-            &::before {
-              content: '';
-              position: absolute;
-              width: 0;
-              height: 0;
-              left: 50%;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          //箭头
+          &::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            left: 50%;
               top: -45%;
-              transform: translate(-50%,0%);
+            transform: translate(-50%,0%);
               border-left: 4px solid transparent;
               border-right: 4px solid transparent;
               border-top: 0px solid @primary-text;
               border-bottom: 8px solid @primary-text;
+          }
+
+          &:hover {
+            background: rgba(255,255,255,0);
+            color: black;
+
+            &::before {
+              border-top-color: @primary-blue;
             }
+          }
 
-            &:hover {
-              background: rgba(255,255,255,0);
-              color: black;
-
-              &::before {
-                border-top-color: @primary-blue;
-              }
-            }
-
-            &::after {
-              content: '';
-              position: absolute;
-              width: 6px;
-              height: 6px;
-              left: 50%;
-              top: 50%;
-              transform: translate(-50%,-50%);
-              background-color: @primary-blue;
-              border-radius: 50%;
+          &::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%,-50%);
+            background-color: @primary-blue;
+            border-radius: 50%;
               opacity: 0;
-            }
           }
         }
       }
     }
+  }
 
   }
   // 悬停状态下的进度条和句柄样式
@@ -1233,23 +1239,23 @@ body {
         opacity: 1;
         top: 50%;
         transform: translateY(-50%);
-      }
+    }
 
-      .progress-handle {
-        opacity: 1;
+    .progress-handle {
+      opacity: 1;
         top: 50%;
-        height: 30px;
-        .current-time-display {
-          opacity: 1;
+      height: 30px;
+      .current-time-display {
+        opacity: 1;
 
-          .time-text {
-            margin-top: 29px;
-            font-size: 10px;
-          }
-          .add-annotation-btn {
+        .time-text {
+          margin-top: 29px;
+          font-size: 10px;
+        }
+        .add-annotation-btn {
             width: 16px;
             height: 16px;
-            opacity: 1;
+          opacity: 1;
             &::before{
               top: -80%;
               border-top: 8px solid @primary-text;
@@ -2063,10 +2069,20 @@ body {
           color: @primary-text;
         }
 
-        &:focus {
-          outline: 2px solid @primary-blue;
-          outline-offset: 2px;
-        }
+              &:focus {
+        outline: 2px solid @primary-blue;
+        outline-offset: 2px;
+      }
+
+      &.error {
+        border-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+      }
+
+      &.error:focus {
+        outline: 2px solid #dc3545;
+        outline-offset: 2px;
+      }
       }
     }
 
@@ -2080,6 +2096,46 @@ body {
 
         &:last-child {
           margin-bottom: 0;
+        }
+
+        // 标签和辅助按钮的横向容器
+        .annotation-input-label-with-button {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+
+          .annotation-input-label {
+            margin-bottom: 0; // 覆盖默认的下边距
+          }
+
+          .annotation-input-helper-btn {
+            padding: 2px 8px;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: @secondary-text;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: @transition-fast;
+            white-space: nowrap;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.2);
+              color: @primary-text;
+              border-color: rgba(255, 255, 255, 0.3);
+            }
+
+            &:active {
+              background: rgba(255, 255, 255, 0.3);
+              transform: scale(0.98);
+            }
+
+            &:focus {
+              outline: 2px solid @primary-blue;
+              outline-offset: 2px;
+            }
+          }
         }
 
         // label.annotation-input-label
@@ -2186,6 +2242,17 @@ body {
 
           .annotation-input-field {
             flex: 0 0 auto; // 不拉伸，保持内容尺寸
+          }
+        }
+
+        // 横向排列的时间和时长行
+        &.annotation-time-duration-row {
+          gap: 20px;
+          align-items: flex-start;
+
+          .annotation-input-field {
+            flex: 1; // 等分宽度
+            min-width: 0; // 允许收缩
           }
         }
 

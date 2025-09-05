@@ -113,6 +113,31 @@ class AnnotationManager {
         return false;
     }
 
+    // 编辑打点（包含时间修改）
+    async editAnnotationWithTime(annotationId, newTime, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
+        const annotation = this.annotations.find(ann => ann.id === annotationId);
+        if (annotation) {
+            // 更新所有值（包括时间）
+            annotation.time = newTime;
+            annotation.title = newTitle.trim();
+            annotation.text = newText.trim();
+            if (newColor !== null) annotation.color = newColor;
+            if (newLevel !== 'UNCHANGED') annotation.level = this.normalizeLevel(newLevel);
+            if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
+            annotation.updatedAt = new Date().toISOString();
+            
+            // 重新排序打点数组（因为时间可能改变了）
+            this.annotations.sort((a, b) => a.time - b.time);
+            
+            await this.saveAnnotationsToFile();
+            this.updateProgressBarAnnotations();
+            this.updateOutlineView();
+            console.log('打点已编辑（包含时间修改）:', annotation);
+            return true;
+        }
+        return false;
+    }
+
     // 获取指定时间的打点
     getAnnotationAtTime(time, tolerance = 0.5) {
         return this.annotations.find(ann => 
@@ -681,6 +706,7 @@ class AnnotationManager {
         const normalizedLevel = isEdit ? this.normalizeLevel(annotation.level) : null;
         const defaultLevel = normalizedLevel || '';
         const defaultDuration = isEdit ? annotation.duration || '' : '';
+        const defaultTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
         
         // 创建模态框
         const modal = document.createElement('div');
@@ -694,6 +720,43 @@ class AnnotationManager {
                     <button class="annotation-input-close">&times;</button>
                 </div>
                 <div class="annotation-input-body">
+                    <div class="annotation-input-row annotation-time-duration-row">
+                        <div class="annotation-input-field">
+                            <div class="annotation-input-label-with-button">
+                                <label class="annotation-input-label">开始时间</label>
+                                <button type="button" class="annotation-input-helper-btn" id="set-current-time-btn">从当前开始</button>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="annotation-input-time" 
+                                class="annotation-input-field-input"
+                                placeholder="mm:ss 或 hh:mm:ss"
+                                value="${defaultTime}"
+                            />
+                            <small class="annotation-input-time-error" style="color: #dc3545; font-size: 11px; margin-top: 4px; display: none;"></small>
+                            <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
+                                格式：分:秒 或 时:分:秒（如 1:30 或 1:30:45）
+                            </small>
+                        </div>
+                        <div class="annotation-input-field">
+                            <div class="annotation-input-label-with-button">
+                                <label class="annotation-input-label">时长（秒，可选）</label>
+                                <button type="button" class="annotation-input-helper-btn" id="set-duration-to-current-btn">到当前结束</button>
+                            </div>
+                            <input 
+                                type="number" 
+                                id="annotation-input-duration" 
+                                class="annotation-input-field-input"
+                                placeholder="请输入时长（秒）..."
+                                min="0"
+                                step="0.1"
+                                value="${defaultDuration}"
+                            />
+                            <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
+                                设置时长后，打点会显示为时间段；不设置则显示为时间点
+                            </small>
+                        </div>
+                    </div>
                     <div class="annotation-input-field">
                         <label class="annotation-input-label">打点标题（可选）</label>
                         <input 
@@ -713,21 +776,6 @@ class AnnotationManager {
                             placeholder="请输入打点内容..."
                             rows="4"
                         >${this.escapeHtml(defaultText)}</textarea>
-                    </div>
-                    <div class="annotation-input-field">
-                        <label class="annotation-input-label">时长（秒，可选）</label>
-                        <input 
-                            type="number" 
-                            id="annotation-input-duration" 
-                            class="annotation-input-field-input"
-                            placeholder="请输入时长（秒）..."
-                            min="0"
-                            step="0.1"
-                            value="${defaultDuration}"
-                        />
-                        <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
-                            设置时长后，打点会显示为时间段；不设置则显示为时间点
-                        </small>
                     </div>
                     <div class="annotation-input-row annotation-options-row">
                         <div class="annotation-input-field">
@@ -782,11 +830,14 @@ class AnnotationManager {
         const overlay = modal.querySelector('.annotation-input-overlay');
         const saveBtn = modal.querySelector('.annotation-input-btn-save');
         const deleteBtn = modal.querySelector('#annotation-delete-btn');
+        const timeInput = modal.querySelector('#annotation-input-time');
         const titleInput = modal.querySelector('#annotation-input-title');
         const textArea = modal.querySelector('#annotation-input-text');
         const durationInput = modal.querySelector('#annotation-input-duration');
         const colorSelect = modal.querySelector('#annotation-input-color');
         const levelSelect = modal.querySelector('#annotation-input-level');
+        const setCurrentTimeBtn = modal.querySelector('#set-current-time-btn');
+        const setDurationToCurrentBtn = modal.querySelector('#set-duration-to-current-btn');
 
         const closeModal = () => {
             // 清理焦点陷阱事件监听器
@@ -821,6 +872,83 @@ class AnnotationManager {
             }
         });
 
+        // 为时间输入添加实时验证和标题更新
+        const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
+        const modalTitleElement = modal.querySelector('.annotation-input-header h3');
+        
+        const updateModalTitle = () => {
+            const timeStr = timeInput.value.trim();
+            const parsedTime = this.parseTimeString(timeStr);
+            
+            if (parsedTime !== null) {
+                // 有效时间，更新标题
+                const formattedTime = this.formatTime(parsedTime);
+                modalTitleElement.textContent = isEdit ? `编辑打点 - ${formattedTime}` : `添加打点 - ${formattedTime}`;
+            } else if (timeStr) {
+                // 无效时间格式，显示输入的文本
+                modalTitleElement.textContent = isEdit ? `编辑打点 - ${timeStr}` : `添加打点 - ${timeStr}`;
+            } else {
+                // 空输入，使用原始时间
+                const originalFormattedTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
+                modalTitleElement.textContent = isEdit ? `编辑打点 - ${originalFormattedTime}` : `添加打点 - ${originalFormattedTime}`;
+            }
+        };
+        
+        timeInput.addEventListener('input', () => {
+            this.validateTimeInput(timeInput, timeErrorContainer);
+            updateModalTitle();
+        });
+
+        timeInput.addEventListener('blur', () => {
+            this.validateTimeInput(timeInput, timeErrorContainer);
+            updateModalTitle();
+        });
+
+        // 处理"从当前开始"按钮
+        setCurrentTimeBtn.addEventListener('click', () => {
+            if (this.player) {
+                const currentVideoTime = this.player.currentTime();
+                const formattedTime = this.formatTime(currentVideoTime);
+                timeInput.value = formattedTime;
+                
+                // 触发验证和标题更新
+                this.validateTimeInput(timeInput, timeErrorContainer);
+                updateModalTitle();
+                
+                // 触发input事件以确保所有监听器都能响应
+                timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        // 处理"到当前结束"按钮
+        setDurationToCurrentBtn.addEventListener('click', () => {
+            if (this.player) {
+                const currentVideoTime = this.player.currentTime();
+                
+                // 获取开始时间
+                const startTimeStr = timeInput.value.trim();
+                const startTime = this.parseTimeString(startTimeStr);
+                
+                if (startTime !== null && currentVideoTime > startTime) {
+                    // 计算时长：当前时间 - 开始时间
+                    const duration = currentVideoTime - startTime;
+                    // 保留一位小数
+                    const formattedDuration = Math.round(duration * 10) / 10;
+                    durationInput.value = formattedDuration;
+                    
+                    // 触发input事件
+                    durationInput.dispatchEvent(new Event('input', { bubbles: true }));
+                } else if (startTime === null) {
+                    // 开始时间格式无效，提示用户
+                    alert('请先输入有效的开始时间');
+                    timeInput.focus();
+                } else {
+                    // 当前时间早于或等于开始时间
+                    alert('当前播放时间需要晚于开始时间');
+                }
+            }
+        });
+
         // 删除按钮（仅编辑时显示）
         if (deleteBtn) {
             deleteBtn.addEventListener('click', async () => {
@@ -833,6 +961,20 @@ class AnnotationManager {
 
         // 保存打点
         saveBtn.addEventListener('click', async () => {
+            // 验证时间输入
+            const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
+            const isTimeValid = this.validateTimeInput(timeInput, timeErrorContainer);
+            
+            if (!isTimeValid) {
+                // 时间格式错误，停止保存
+                timeInput.focus();
+                return;
+            }
+            
+            // 解析时间
+            const parsedTime = this.parseTimeString(timeInput.value.trim());
+            const actualTime = parsedTime !== null ? parsedTime : (isEdit ? annotation.time : currentTime);
+            
             const title = titleInput.value.trim();
             const text = textArea.value.trim();
             const duration = durationInput.value ? parseFloat(durationInput.value) : null;
@@ -844,11 +986,17 @@ class AnnotationManager {
             const level = rawLevel === '' ? null : rawLevel;
             
             if (isEdit) {
-                // 编辑模式
-                await this.editAnnotation(annotation.id, title, text, color, level, duration);
+                // 编辑模式 - 需要支持时间修改
+                if (parsedTime !== null && parsedTime !== annotation.time) {
+                    // 时间发生了改变，需要特殊处理
+                    await this.editAnnotationWithTime(annotation.id, actualTime, title, text, color, level, duration);
+                } else {
+                    // 时间未改变，使用原有逻辑
+                    await this.editAnnotation(annotation.id, title, text, color, level, duration);
+                }
             } else {
                 // 新建模式
-                const newAnnotation = await this.addAnnotation(currentTime, title, text, color, level, duration);
+                const newAnnotation = await this.addAnnotation(actualTime, title, text, color, level, duration);
                 if (newAnnotation) {
                     console.log('打点已添加:', newAnnotation);
                 }
@@ -1205,6 +1353,73 @@ class AnnotationManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // 工具方法：解析时间字符串为秒数
+    parseTimeString(timeStr) {
+        if (!timeStr || typeof timeStr !== 'string') {
+            return null;
+        }
+
+        const trimmed = timeStr.trim();
+        if (!trimmed) {
+            return null;
+        }
+
+        // 支持格式：mm:ss 或 hh:mm:ss
+        const parts = trimmed.split(':');
+        
+        if (parts.length === 2) {
+            // mm:ss 格式
+            const minutes = parseInt(parts[0], 10);
+            const seconds = parseFloat(parts[1]);
+            
+            if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+                return null;
+            }
+            
+            return minutes * 60 + seconds;
+        } else if (parts.length === 3) {
+            // hh:mm:ss 格式
+            const hours = parseInt(parts[0], 10);
+            const minutes = parseInt(parts[1], 10);
+            const seconds = parseFloat(parts[2]);
+            
+            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || 
+                hours < 0 || minutes < 0 || seconds < 0 || 
+                minutes >= 60 || seconds >= 60) {
+                return null;
+            }
+            
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+        
+        return null;
+    }
+
+    // 工具方法：验证时间输入并显示错误
+    validateTimeInput(timeInput, errorContainer = null) {
+        const timeStr = timeInput.value.trim();
+        const parsedTime = this.parseTimeString(timeStr);
+        
+        // 清除之前的错误样式
+        timeInput.classList.remove('error');
+        if (errorContainer) {
+            errorContainer.textContent = '';
+            errorContainer.style.display = 'none';
+        }
+        
+        if (timeStr && parsedTime === null) {
+            // 有输入但格式错误
+            timeInput.classList.add('error');
+            if (errorContainer) {
+                errorContainer.textContent = '时间格式不正确，请使用 mm:ss 或 hh:mm:ss 格式';
+                errorContainer.style.display = 'block';
+            }
+            return false;
+        }
+        
+        return true;
     }
 
     // 获取颜色配置

@@ -1901,7 +1901,7 @@ function createOutlineItem(annotation) {
     
     // 格式化时间信息
     const timeInfo = annotation.duration && annotation.duration > 0 
-        ? `${formatTime(annotation.time)} - ${formatTime(annotation.time + annotation.duration)}`
+        ? `${formatTime(annotation.time)} <div class="duration"> ${formatDuration(annotation.duration)}</div>`
         : formatTime(annotation.time);
     
     // 创建新的结构
@@ -1992,6 +1992,22 @@ function formatTime(seconds) {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else {
         return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+// 格式化时长显示（优化显示格式）
+function formatDuration(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '0s';
+    
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (minutes > 0) {
+        // 分钟数不补零，秒数补零
+        return `${minutes}m${secs.toString().padStart(2, '0')}s`;
+    } else {
+        // 一分钟以内，秒数不补零
+        return `${secs}s`;
     }
 }
 
