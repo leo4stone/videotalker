@@ -79,6 +79,9 @@ class AnnotationManager {
         // 更新大纲视图
         this.updateOutlineView();
         
+        // 更新标记播放器数据
+        this.updateMarkerPlayerData();
+        
         return annotation;
     }
 
@@ -92,9 +95,19 @@ class AnnotationManager {
             }
             
             this.annotations.splice(index, 1);
+            
+            // 保存到文件
             await this.saveAnnotationsToFile();
+            
+            // 更新UI显示
             this.updateProgressBarAnnotations();
+            
+            // 更新大纲视图
             this.updateOutlineView();
+            
+            // 更新标记播放器数据
+            this.updateMarkerPlayerData();
+            
             return true;
         }
         return false;
@@ -110,9 +123,19 @@ class AnnotationManager {
             if (newLevel !== 'UNCHANGED') annotation.level = newLevel; // 允许设置为null
             if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
             annotation.updatedAt = new Date().toISOString();
+            
+            // 保存到文件
             await this.saveAnnotationsToFile();
+            
+            // 更新UI显示
             this.updateProgressBarAnnotations();
+            
+            // 更新大纲视图
             this.updateOutlineView();
+            
+            // 更新标记播放器数据
+            this.updateMarkerPlayerData();
+            
             return true;
         }
         return false;
@@ -134,9 +157,18 @@ class AnnotationManager {
             // 重新排序打点数组（因为时间可能改变了）
             this.annotations.sort((a, b) => a.time - b.time);
             
+            // 保存到文件
             await this.saveAnnotationsToFile();
+            
+            // 更新UI显示
             this.updateProgressBarAnnotations();
+            
+            // 更新大纲视图
             this.updateOutlineView();
+            
+            // 更新标记播放器数据
+            this.updateMarkerPlayerData();
+            
             console.log('打点已编辑（包含时间修改）:', annotation);
             return true;
         }
@@ -204,6 +236,10 @@ class AnnotationManager {
             // 无论成功还是失败，都要更新UI显示
             this.updateProgressBarAnnotations();
             this.updateOutlineView();
+            
+            // 更新标记播放器数据
+            this.updateMarkerPlayerData();
+            
             this.isLoading = false;
         }
     }
@@ -768,6 +804,17 @@ class AnnotationManager {
                                 设置时长后，打点会显示为时间段；不设置则显示为时间点
                             </small>
                         </div>
+                        <div class="annotation-input-field">
+                            <div class="annotation-input-label-with-button">
+                                <label class="annotation-input-label">标记（可选）</label>
+                            </div>
+                            <div class="annotation-marker-edit-wrapper">
+                                <button class="annotation-input-btn annotation-input-btn-secondary" id="annotation-edit-marker-btn">编辑标记</button>
+                            </div>
+                            <small style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; display: block;">
+                                在视频画面上添加矩形标记
+                            </small>
+                        </div>
                     </div>
                     <div class="annotation-input-field">
                         <label class="annotation-input-label">打点标题（可选）</label>
@@ -842,6 +889,7 @@ class AnnotationManager {
         const overlay = modal.querySelector('.annotation-input-overlay');
         const saveBtn = modal.querySelector('.annotation-input-btn-save');
         const deleteBtn = modal.querySelector('#annotation-delete-btn');
+        const editMarkerBtn = modal.querySelector('#annotation-edit-marker-btn');
         const timeInput = modal.querySelector('#annotation-input-time');
         const titleInput = modal.querySelector('#annotation-input-title');
         const textArea = modal.querySelector('#annotation-input-text');
@@ -990,6 +1038,17 @@ class AnnotationManager {
                     closeModal();
                 }
             });
+        }
+
+        // 编辑标记按钮事件
+        if (editMarkerBtn) {
+            console.log('绑定编辑标记按钮事件', editMarkerBtn);
+            editMarkerBtn.addEventListener('click', () => {
+                console.log('编辑标记按钮被点击');
+                this.startMarkerEditing(annotation, modal);
+            });
+        } else {
+            console.warn('未找到编辑标记按钮');
         }
 
         // 保存打点
@@ -1777,6 +1836,286 @@ class AnnotationManager {
         // 打点数据变更后更新折叠状态显示
         if (typeof window.updateOutlineCollapseDisplay === 'function') {
             window.updateOutlineCollapseDisplay();
+        }
+    }
+
+    // 开始标记编辑
+    startMarkerEditing(annotation, modal) {
+        console.log('开始标记编辑', annotation);
+        
+        // 如果没有marker字段，初始化默认值
+        if (!annotation.marker) {
+            annotation.marker = {
+                x: 25,      // 默认位置25%
+                y: 25,      // 默认位置25%
+                width: 20,  // 默认宽度20%
+                height: 15, // 默认高度15%
+                contentPosition: {
+                    horizontal: 'left-inside',  // 默认左内
+                    vertical: 'top-inside'      // 默认上内
+                }
+            };
+            console.log('初始化marker默认值', annotation.marker);
+        }
+        
+        // 确保contentPosition存在（兼容旧数据）
+        if (!annotation.marker.contentPosition) {
+            annotation.marker.contentPosition = {
+                horizontal: 'left-inside',  // 默认左内
+                vertical: 'top-inside'      // 默认上内
+            };
+        }
+
+        // 隐藏编辑窗口
+        modal.style.display = 'none';
+        console.log('隐藏编辑窗口');
+
+        // 显示videomarker容器
+        if (window.videoMarker) {
+            console.log('找到window.videoMarker', window.videoMarker);
+            const overlay = window.videoMarker.overlay;
+            if (overlay) {
+                console.log('找到overlay', overlay);
+                overlay.classList.add('editing');
+                console.log('添加editing类');
+                
+                // 清除现有标记，创建编辑标记
+                window.videoMarker.clearMarkers();
+                console.log('清除现有标记');
+                
+                // 创建编辑标记
+                const marker = {
+                    id: 'editing',
+                    x: annotation.marker.x,
+                    y: annotation.marker.y,
+                    width: annotation.marker.width,
+                    height: annotation.marker.height,
+                    text: annotation.title || '编辑中',
+                    color: this.getColorValue(annotation.color) || '#ff6b6b',
+                    contentPosition: annotation.marker.contentPosition || {
+                        horizontal: 'left-inside',
+                        vertical: 'top-inside'
+                    }
+                };
+                console.log('创建编辑标记', marker);
+                
+                window.videoMarker.markers.set('editing', marker);
+                this.renderEditingMarker(marker, annotation, modal);
+                
+                // 延迟更新字体大小，确保DOM已渲染完成
+                setTimeout(() => {
+                    if (window.videoMarker) {
+                        window.videoMarker.updateFontSize();
+                    }
+                }, 50);
+                
+                // 再次延迟更新，确保CSS transition完成
+                setTimeout(() => {
+                    if (window.videoMarker) {
+                        window.videoMarker.updateFontSize();
+                    }
+                }, 350); // 等待CSS transition(0.3s)完成
+                
+                console.log('渲染编辑标记完成');
+            } else {
+                console.error('未找到overlay');
+            }
+        } else {
+            console.error('未找到window.videoMarker');
+        }
+    }
+
+    // 渲染编辑中的标记（包含保存/取消按钮）
+    renderEditingMarker(marker, annotation, modal) {
+        if (!window.videoMarker || !window.videoMarker.overlay) return;
+        
+        const overlay = window.videoMarker.overlay;
+        
+        // 创建标记元素
+        const markerElement = document.createElement('div');
+        markerElement.className = `video-marker editing-marker color-${annotation.color}`;
+        markerElement.dataset.markerId = marker.id;
+        markerElement.style.cssText = `
+            position: absolute;
+            left: ${marker.x}%;
+            top: ${marker.y}%;
+            width: ${marker.width}%;
+            height: ${marker.height}%;
+        `;
+        
+        // 添加文本内容区域
+        const contentArea = document.createElement('div');
+        contentArea.className = 'marker-content';
+
+        // 创建行内内容
+        if (annotation.title || annotation.text) {
+            const inlineContent = document.createElement('div');
+            inlineContent.className = 'marker-inline-content';
+            
+            let contentHTML = '';
+            
+            // 添加标题
+            if (annotation.title) {
+                contentHTML += `<span class="marker-title">${this.escapeHtml(annotation.title)}</span>`;
+            }
+            
+            // 如果既有标题又有描述，添加换行
+            if (annotation.title && annotation.text) {
+                contentHTML += '<br>';
+            }
+            
+            // 添加描述
+            if (annotation.text) {
+                contentHTML += `<span class="marker-description">${this.escapeHtml(annotation.text)}</span>`;
+            }
+            
+            inlineContent.innerHTML = contentHTML;
+            contentArea.appendChild(inlineContent);
+        }
+
+        markerElement.appendChild(contentArea);
+        
+        // 添加调整大小的控制点
+        window.videoMarker.addResizeHandles(markerElement);
+        
+        // 添加位置控制
+        window.videoMarker.addPositionControls(markerElement, marker);
+        
+        // 添加保存/取消按钮
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'marker-actions';
+        actionsDiv.innerHTML = `
+            <button class="action-btn save-btn" title="保存标记">✓</button>
+            <button class="action-btn cancel-btn" title="取消编辑">✕</button>
+        `;
+        markerElement.appendChild(actionsDiv);
+        
+        // 绑定标记编辑事件
+        this.bindEditingMarkerEvents(markerElement, marker, annotation, modal);
+        
+        overlay.appendChild(markerElement);
+        
+        // 选中标记
+        window.videoMarker.selectMarker('editing');
+    }
+
+    // 绑定编辑标记的事件
+    bindEditingMarkerEvents(markerElement, marker, annotation, modal) {
+        // 标记主体的拖拽
+        markerElement.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('resize-handle') || 
+                e.target.classList.contains('action-btn') ||
+                e.target.classList.contains('horizontal-position-btn') ||
+                e.target.classList.contains('vertical-position-btn') ||
+                e.target.closest('.marker-position-controls')) return;
+            window.videoMarker.startDragging(e, marker);
+        });
+        
+        // 调整大小控制点事件
+        const resizeHandles = markerElement.querySelectorAll('.resize-handle');
+        resizeHandles.forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                window.videoMarker.startResizing(e, marker, handle.classList[1]);
+            });
+        });
+        
+        // 保存按钮事件
+        const saveBtn = markerElement.querySelector('.save-btn');
+        saveBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await this.saveMarkerEditing(marker, annotation, modal);
+        });
+        
+        // 取消按钮事件
+        const cancelBtn = markerElement.querySelector('.cancel-btn');
+        cancelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.cancelMarkerEditing(modal);
+        });
+    }
+
+    // 保存标记编辑
+    async saveMarkerEditing(marker, annotation, modal) {
+        // 更新annotation的marker数据
+        annotation.marker = {
+            x: marker.x,
+            y: marker.y,
+            width: marker.width,
+            height: marker.height,
+            contentPosition: marker.contentPosition || {
+                horizontal: 'left-inside',
+                vertical: 'top-inside'
+            }
+        };
+        
+        // 更新时间戳
+        annotation.updatedAt = new Date().toISOString();
+        
+        console.log('标记已保存:', annotation.marker);
+        
+        // 保存到文件
+        await this.saveAnnotationsToFile();
+        
+        // 更新UI显示
+        this.updateProgressBarAnnotations();
+        
+        // 更新大纲视图
+        this.updateOutlineView();
+        
+        // 更新标记播放器数据
+        this.updateMarkerPlayerData();
+        
+        // 退出编辑模式
+        this.exitMarkerEditing(modal);
+    }
+
+    // 取消标记编辑
+    cancelMarkerEditing(modal) {
+        console.log('取消标记编辑');
+        this.exitMarkerEditing(modal);
+    }
+
+    // 退出标记编辑模式
+    exitMarkerEditing(modal) {
+        // 隐藏videomarker容器
+        if (window.videoMarker && window.videoMarker.overlay) {
+            window.videoMarker.overlay.classList.remove('editing');
+            window.videoMarker.clearMarkers();
+        }
+        
+        // 显示编辑窗口
+        modal.style.display = 'flex';
+    }
+
+    // 获取颜色值
+    getColorValue(colorName) {
+        const colorMap = {
+            'red': '#ff6b6b',
+            'blue': '#4ecdc4',
+            'green': '#95e1d3',
+            'yellow': '#fce38a',
+            'purple': '#c7a6ff',
+            'orange': '#ffb347'
+        };
+        return colorMap[colorName] || '#ff6b6b';
+    }
+
+    // 转义HTML字符
+    escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // 更新标记播放器数据
+    updateMarkerPlayerData() {
+        if (window.markerPlayer) {
+            window.markerPlayer.setAnnotations(this.annotations);
         }
     }
 }

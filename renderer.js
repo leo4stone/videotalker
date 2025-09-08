@@ -12,8 +12,10 @@ let hasVideoLoaded = false;
 let isDragging = false;
 let playButtonTimeout = null;
 let historyData = null;
-let progressZoom = 1; // 进度条缩放倍数（通过宽度实现）
-let progressPan = 0;  // 进度条平移位置 (0-100)
+  let progressZoom = 1; // 进度条缩放倍数（通过宽度实现）
+  let progressPan = 0;  // 进度条平移位置 (0-100)
+  let videoMarker = null; // 视频标记组件实例
+  let markerPlayer = null; // 标记播放器组件实例
 
 // 当 DOM 加载完成时初始化播放器
 document.addEventListener('DOMContentLoaded', function() {
@@ -45,8 +47,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // 添加一些自定义事件监听
         player.on('loadstart', function() {
             updateFileInfo('正在加载视频...');
-            // 清空缩略图缓存，避免显示上一个视频的缩略图
-            clearThumbnailCache();
+              // 清空缩略图缓存，避免显示上一个视频的缩略图
+              clearThumbnailCache();
+              // 初始化视频标记组件
+              initializeVideoMarker();
+              // 初始化标记播放器组件
+              initializeMarkerPlayer();
         });
 
         player.on('loadedmetadata', function() {
@@ -869,6 +875,12 @@ function setupProgressBar() {
             updateProgress();
             updateOutlinePlayedStatus();
             updateAnnotationContainerPlayedStatus();
+            
+            // 更新标记播放器
+            if (markerPlayer) {
+                const currentTime = player.currentTime();
+                markerPlayer.updateCurrentTime(currentTime);
+            }
         });
     }
 }
@@ -1611,8 +1623,61 @@ function clearThumbnailCache() {
         }
     });
     
-    console.log('已清空缩略图缓存和显示内容');
-}
+      console.log('已清空缩略图缓存和显示内容');
+  }
+
+  // 初始化视频标记组件
+  function initializeVideoMarker() {
+      const videoContainer = document.querySelector('.video-container');
+      
+      if (!videoContainer) {
+          console.error('找不到视频容器，无法初始化标记组件');
+          return;
+      }
+      
+      // 如果已存在标记组件，先销毁
+      if (videoMarker) {
+          videoMarker.destroy();
+      }
+      
+      // 创建新的标记组件实例
+      videoMarker = new VideoMarker(videoContainer);
+      
+      // 暴露到window对象供annotations.js使用
+      window.videoMarker = videoMarker;
+      
+      // 当视频元数据加载完成后更新覆盖层尺寸
+      if (player) {
+          player.on('loadedmetadata', function() {
+              if (videoMarker) {
+                  videoMarker.updateOverlaySize();
+              }
+          });
+      }
+      
+  }
+
+  // 初始化标记播放器组件
+  function initializeMarkerPlayer() {
+      const videoContainer = document.querySelector('.video-container');
+      
+      if (!videoContainer) {
+          console.error('找不到视频容器，无法初始化标记播放器组件');
+          return;
+      }
+      
+      // 如果已存在标记播放器组件，先销毁
+      if (markerPlayer) {
+          markerPlayer.destroy();
+      }
+      
+      // 创建新的标记播放器组件实例
+      markerPlayer = new MarkerPlayer(videoContainer);
+      
+      // 暴露到window对象供其他模块使用
+      window.markerPlayer = markerPlayer;
+      
+  }
 
 // 统一的缩略图预览更新函数
 function updateThumbnailPreview(targetTime, canvasId, debounceTime = 100) {
