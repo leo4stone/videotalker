@@ -3254,3 +3254,16 @@ body {
 .hide-when-no-video {
   display: none;
 }
+
+// ===============================
+// 标记播放器模糊效果
+// ===============================
+#marker-player-overlay.blurred {
+  filter: blur(2px);
+  opacity: 0.6;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+#marker-player-overlay {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}

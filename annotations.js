@@ -525,6 +525,12 @@ class AnnotationManager {
                             <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0z"/>
                         </svg>
                     </button>
+                    <button class="popup-icon-btn marker-edit-btn" data-id="${annotation.id}" title="编辑标记">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C5.829 0 4.058 1.771 4.058 3.942c0 3.386 3.942 8.958 3.942 8.958s3.942-5.572 3.942-8.958C11.942 1.771 10.171 0 8 0zm0 6c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"/>
+                            <rect x="2" y="14" width="12" height="2" rx="1"/>
+                        </svg>
+                    </button>
                     <button class="popup-icon-btn delete-btn" data-id="${annotation.id}" title="删除打点">
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -568,6 +574,32 @@ class AnnotationManager {
             // 阻止按钮的其他鼠标事件
             editBtn.addEventListener('mousedown', (e) => e.stopPropagation());
             editBtn.addEventListener('mouseup', (e) => e.stopPropagation());
+        }
+
+        // 绑定标记编辑按钮事件
+        const markerEditBtn = popup.querySelector('.marker-edit-btn');
+        if (markerEditBtn) {
+            markerEditBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 如果打点没有marker数据，先初始化
+                if (!annotation.marker) {
+                    annotation.marker = {
+                        x: 25,      // 默认位置25%
+                        y: 25,      // 默认位置25%
+                        width: 20,  // 默认宽度20%
+                        height: 15, // 默认高度15%
+                        contentPosition: {
+                            horizontal: 'left-inside',  // 默认左内
+                            vertical: 'top-inside'      // 默认上内
+                        }
+                    };
+                }
+                // 直接进入标记编辑模式
+                this.startMarkerEditingDirect(annotation);
+            });
+            // 阻止按钮的其他鼠标事件
+            markerEditBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+            markerEditBtn.addEventListener('mouseup', (e) => e.stopPropagation());
         }
 
         // 绑定删除按钮事件
@@ -1839,8 +1871,8 @@ class AnnotationManager {
         }
     }
 
-    // 开始标记编辑
-    startMarkerEditing(annotation, modal) {
+    // 开始标记编辑（重构版本，支持独立编辑）
+    startMarkerEditing(annotation, modal = null) {
         console.log('开始标记编辑', annotation);
         
         // 如果没有marker字段，初始化默认值
@@ -1866,9 +1898,11 @@ class AnnotationManager {
             };
         }
 
-        // 隐藏编辑窗口
-        modal.style.display = 'none';
-        console.log('隐藏编辑窗口');
+        // 如果有modal，隐藏编辑窗口
+        if (modal) {
+            modal.style.display = 'none';
+            console.log('隐藏编辑窗口');
+        }
 
         // 显示videomarker容器
         if (window.videoMarker) {
@@ -1878,6 +1912,13 @@ class AnnotationManager {
                 console.log('找到overlay', overlay);
                 overlay.classList.add('editing');
                 console.log('添加editing类');
+                
+                // 设置marker-player-overlay为模糊状态
+                const markerPlayerOverlay = document.getElementById('marker-player-overlay');
+                if (markerPlayerOverlay) {
+                    markerPlayerOverlay.classList.add('blurred');
+                    console.log('添加marker-player-overlay模糊效果');
+                }
                 
                 // 清除现有标记，创建编辑标记
                 window.videoMarker.clearMarkers();
@@ -2034,8 +2075,8 @@ class AnnotationManager {
         });
     }
 
-    // 保存标记编辑
-    async saveMarkerEditing(marker, annotation, modal) {
+    // 保存标记编辑（重构版本，支持独立编辑）
+    async saveMarkerEditing(marker, annotation, modal = null) {
         // 更新annotation的marker数据
         annotation.marker = {
             x: marker.x,
@@ -2070,21 +2111,30 @@ class AnnotationManager {
     }
 
     // 取消标记编辑
-    cancelMarkerEditing(modal) {
+    cancelMarkerEditing(modal = null) {
         console.log('取消标记编辑');
         this.exitMarkerEditing(modal);
     }
 
-    // 退出标记编辑模式
-    exitMarkerEditing(modal) {
+    // 退出标记编辑模式（重构版本，支持独立编辑）
+    exitMarkerEditing(modal = null) {
         // 隐藏videomarker容器
         if (window.videoMarker && window.videoMarker.overlay) {
             window.videoMarker.overlay.classList.remove('editing');
             window.videoMarker.clearMarkers();
         }
         
-        // 显示编辑窗口
-        modal.style.display = 'flex';
+        // 移除marker-player-overlay的模糊效果
+        const markerPlayerOverlay = document.getElementById('marker-player-overlay');
+        if (markerPlayerOverlay) {
+            markerPlayerOverlay.classList.remove('blurred');
+            console.log('移除marker-player-overlay模糊效果');
+        }
+        
+        // 如果有modal，显示编辑窗口
+        if (modal) {
+            modal.style.display = 'flex';
+        }
     }
 
     // 获取颜色值
@@ -2110,6 +2160,17 @@ class AnnotationManager {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // 直接编辑标记（从popup调用，不依赖modal）
+    startMarkerEditingDirect(annotation) {
+        console.log('直接开始标记编辑', annotation);
+        
+        // 关闭任何打开的popup
+        this.hideAnnotationPopup();
+        
+        // 直接调用标记编辑（无modal）
+        this.startMarkerEditing(annotation, null);
     }
 
     // 更新标记播放器数据
