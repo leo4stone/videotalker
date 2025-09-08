@@ -340,122 +340,160 @@ class VideoMarker {
         });
     }
 
-    // 添加内容位置控制（公开方法）
+    // 添加内容位置控制（5x5矩阵）
     addPositionControls(markerElement, marker) {
         const controlsContainer = document.createElement('div');
-        controlsContainer.className = 'marker-position-controls';
+        controlsContainer.className = 'marker-position-controls matrix-controls';
 
-        // 水平位置按钮组
-        const horizontalButtons = document.createElement('div');
-        horizontalButtons.className = 'horizontal-buttons';
-
-        // 水平位置按钮选项
-        const horizontalOptions = [
-            { value: 'left-outside', text: '◀' },
-            { value: 'left-inside', text: '▶' },
-            { value: 'right-inside', text: '◀' },
-            { value: 'right-outside', text: '▶' }
+        // 5x5矩阵配置
+        const matrixConfig = [
+            // 行1: top:0, translateY:-100%, justify-content: flex-end (上外底对齐)
+            [
+                { horizontalPosition: 'left-outside', verticalPosition: 'top-outside', textAlign: 'right', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'top-outside', textAlign: 'left', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'top-outside', textAlign: 'center', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'top-outside', textAlign: 'right', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'right-outside', verticalPosition: 'top-outside', textAlign: 'left', verticalAlign: 'flex-end' }
+            ],
+            // 行2: top:0, translateY:0%, justify-content: flex-start (内部顶对齐)
+            [
+                { horizontalPosition: 'left-outside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'center', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'right-outside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'flex-start' }
+            ],
+            // 行3: top:0, translateY:0%, justify-content: space-evenly (内部均匀)
+            [
+                { horizontalPosition: 'left-outside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'space-evenly' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'space-evenly' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'center', verticalAlign: 'space-evenly' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'space-evenly' },
+                { horizontalPosition: 'right-outside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'space-evenly' }
+            ],
+            // 行4: top:0, translateY:0%, justify-content: flex-end (内部底对齐)
+            [
+                { horizontalPosition: 'left-outside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'center', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'inside', verticalPosition: 'inside', textAlign: 'right', verticalAlign: 'flex-end' },
+                { horizontalPosition: 'right-outside', verticalPosition: 'inside', textAlign: 'left', verticalAlign: 'flex-end' }
+            ],
+            // 行5: top:100%, translateY:0%, justify-content: flex-start (下外顶对齐)
+            [
+                { horizontalPosition: 'left-outside', verticalPosition: 'bottom-outside', textAlign: 'right', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'bottom-outside', textAlign: 'left', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'bottom-outside', textAlign: 'center', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'inside', verticalPosition: 'bottom-outside', textAlign: 'right', verticalAlign: 'flex-start' },
+                { horizontalPosition: 'right-outside', verticalPosition: 'bottom-outside', textAlign: 'left', verticalAlign: 'flex-start' }
+            ]
         ];
 
-        const currentHorizontal = marker.contentPosition?.horizontal || 'left-inside';
-        
-        horizontalOptions.forEach(option => {
-            const button = document.createElement('button');
-            button.className = 'horizontal-position-btn';
-            button.dataset.value = option.value;
-            button.textContent = option.text;
-            button.type = 'button';
-            
-            // 设置选中状态
-            if (option.value === currentHorizontal) {
-                button.classList.add('selected');
-            }
-            
-            horizontalButtons.appendChild(button);
-        });
+        // 获取当前设置
+        const currentPosition = marker.contentPosition || {
+            horizontalPosition: 'inside',
+            verticalPosition: 'inside',
+            textAlign: 'left',
+            verticalAlign: 'flex-start'
+        };
 
-        // 纵向位置按钮组
-        const verticalButtons = document.createElement('div');
-        verticalButtons.className = 'vertical-buttons';
+        // 创建5x5矩阵按钮容器
+        const matrixGrid = document.createElement('div');
+        matrixGrid.className = 'matrix-grid';
 
-        // 纵向位置按钮选项
-        const verticalOptions = [
-            { value: 'top-outside', text: '▲' },
-            { value: 'top-inside', text: '▼' },
-            { value: 'bottom-inside', text: '▲' },
-            { value: 'bottom-outside', text: '▼' }
+        // 定义五行的位置坐标
+        const rowPositions = [
+            { top: 'calc(0% - .2em)', translateY: '-100%' },    // 第1行: top:0, translateY:-100%
+            { top: 'calc(0% + .2em)', translateY: '0%' },       // 第2行: top:0, translateY:0%
+            { top: '50%', translateY: '-50%' },   // 第3行: top:50%, translateY:-50%
+            { top: 'calc(100% - .2em)', translateY: '-100%' }, // 第4行: top:100%, translateY:-100%
+            { top: 'calc(100% + .2em)', translateY: '0%' }     // 第5行: top:100%, translateY:0%
         ];
 
-        const currentVertical = marker.contentPosition?.vertical || 'top-inside';
-        
-        verticalOptions.forEach(option => {
-            const button = document.createElement('button');
-            button.className = 'vertical-position-btn';
-            button.dataset.value = option.value;
-            button.textContent = option.text;
-            button.type = 'button';
-            
-            // 设置选中状态
-            if (option.value === currentVertical) {
-                button.classList.add('selected');
-            }
-            
-            verticalButtons.appendChild(button);
+        // 定义五列的位置坐标
+        const colPositions = [
+            { left: 'calc(0% - .2em)', translateX: '-100%' },    // 第1列: left:0, translateX:-100%
+            { left: 'calc(0% + .2em)', translateX: '0%' },       // 第2列: left:0, translateX:0%
+            { left: '50%', translateX: '-50%' },   // 第3列: left:50%, translateX:-50%
+            { left: 'calc(100% - .2em)', translateX: '-100%' }, // 第4列: left:100%, translateX:-100%
+            { left: 'calc(100% + .2em)', translateX: '0%' }     // 第5列: left:100%, translateX:0%
+        ];
+
+        matrixConfig.forEach((row, rowIndex) => {
+            row.forEach((config, colIndex) => {
+                const button = document.createElement('div');
+                button.className = 'matrix-position-btn';
+                button.dataset.row = rowIndex;
+                button.dataset.col = colIndex;
+
+                // 获取当前按钮的行列位置坐标
+                const rowPos = rowPositions[rowIndex];
+                const colPos = colPositions[colIndex];
+
+                button.style.cssText = `
+                    top: ${rowPos.top};
+                    left: ${colPos.left};
+                    transform: translate(${colPos.translateX}, ${rowPos.translateY});
+                `;
+
+                // 检查是否为当前选中的配置
+                const isCurrent = (
+                    config.horizontalPosition === currentPosition.horizontalPosition &&
+                    config.verticalPosition === currentPosition.verticalPosition &&
+                    config.textAlign === currentPosition.textAlign &&
+                    config.verticalAlign === currentPosition.verticalAlign
+                );
+
+                if (isCurrent) {
+                    button.classList.add('selected');
+                }
+
+                // 按钮内容：使用简单的点来表示位置
+                // button.textContent = '●';
+
+                // 存储配置数据
+                button.dataset.config = JSON.stringify(config);
+
+                matrixGrid.appendChild(button);
+            });
         });
 
-        // 绑定水平按钮事件
-        horizontalButtons.querySelectorAll('.horizontal-position-btn').forEach(button => {
+        // 绑定矩阵按钮事件
+        matrixGrid.querySelectorAll('.matrix-position-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 e.stopPropagation();
                 
                 // 更新选中状态
-                horizontalButtons.querySelectorAll('.horizontal-position-btn').forEach(btn => {
+                matrixGrid.querySelectorAll('.matrix-position-btn').forEach(btn => {
                     btn.classList.remove('selected');
+                    btn.style.background = '#333';
+                    btn.style.borderColor = '#666';
                 });
+                
                 button.classList.add('selected');
                 
-                // 更新marker数据
+                // 获取配置并更新marker数据
+                const config = JSON.parse(button.dataset.config);
+                
                 if (!marker.contentPosition) {
                     marker.contentPosition = {};
                 }
-                marker.contentPosition.horizontal = button.dataset.value;
+                
+                // 一次性更新所有四个属性
+                marker.contentPosition.horizontalPosition = config.horizontalPosition;
+                marker.contentPosition.verticalPosition = config.verticalPosition;
+                marker.contentPosition.textAlign = config.textAlign;
+                marker.contentPosition.verticalAlign = config.verticalAlign;
+                
+                // 更新内容位置
                 this.updateMarkerContentPosition(markerElement, marker);
             });
 
-            // 防止鼠标事件冒泡
-            button.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
+            button.addEventListener('mousedown', (e) => e.stopPropagation());
         });
 
-        // 绑定纵向按钮事件
-        verticalButtons.querySelectorAll('.vertical-position-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                
-                // 更新选中状态
-                verticalButtons.querySelectorAll('.vertical-position-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-                button.classList.add('selected');
-                
-                // 更新marker数据
-                if (!marker.contentPosition) {
-                    marker.contentPosition = {};
-                }
-                marker.contentPosition.vertical = button.dataset.value;
-                this.updateMarkerContentPosition(markerElement, marker);
-            });
-
-            // 防止鼠标事件冒泡
-            button.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-        });
-
-        // 组装控件
-        controlsContainer.appendChild(horizontalButtons);
-        controlsContainer.appendChild(verticalButtons);
+        // 组装控件（只有矩阵）
+        controlsContainer.appendChild(matrixGrid);
         
         // 防止控件容器的事件冒泡
         controlsContainer.addEventListener('mousedown', (e) => {
@@ -477,25 +515,25 @@ class VideoMarker {
         const contentArea = markerElement.querySelector('.marker-content');
         if (!contentArea) return;
 
-        const horizontal = marker.contentPosition?.horizontal || 'left-inside';
-        const vertical = marker.contentPosition?.vertical || 'top-inside';
+        const contentPosition = marker.contentPosition || {
+            horizontalPosition: 'inside',
+            verticalPosition: 'inside',
+            textAlign: 'left',
+            verticalAlign: 'flex-start'
+        };
 
-        // 水平位置样式
+        // 1. 水平位置样式
         let leftStyle = '0';
         let transformXStyle = '0%';
         
-        switch (horizontal) {
+        switch (contentPosition.horizontalPosition) {
             case 'left-outside':
                 leftStyle = '0';
                 transformXStyle = '-100%';
                 break;
-            case 'left-inside':
+            case 'inside':
                 leftStyle = '0';
                 transformXStyle = '0%';
-                break;
-            case 'right-inside':
-                leftStyle = '100%';
-                transformXStyle = '-100%';
                 break;
             case 'right-outside':
                 leftStyle = '100%';
@@ -503,22 +541,18 @@ class VideoMarker {
                 break;
         }
 
-        // 纵向位置样式
+        // 2. 垂直位置样式  
         let topStyle = '0';
         let transformYStyle = '0%';
         
-        switch (vertical) {
+        switch (contentPosition.verticalPosition) {
             case 'top-outside':
                 topStyle = '0';
                 transformYStyle = '-100%';
                 break;
-            case 'top-inside':
+            case 'inside':
                 topStyle = '0';
                 transformYStyle = '0%';
-                break;
-            case 'bottom-inside':
-                topStyle = '100%';
-                transformYStyle = '-100%';
                 break;
             case 'bottom-outside':
                 topStyle = '100%';
@@ -526,40 +560,21 @@ class VideoMarker {
                 break;
         }
 
-        // 计算text-align和flex-direction
-        let textAlign = 'left';
-        let flexDirection = 'column';
-        
-        // 水平方向的text-align
-        switch (horizontal) {
-            case 'left-inside':   // 左内：左对齐
-            case 'right-outside': // 右外：左对齐
-                textAlign = 'left';
-                break;
-            case 'left-outside':  // 左外：右对齐
-            case 'right-inside':  // 右内：右对齐
-                textAlign = 'right';
-                break;
-        }
-        
-        // 垂直方向的flex-direction
-        switch (vertical) {
-            case 'top-inside':    // 上内：正常顺序
-            case 'bottom-outside': // 下外：正常顺序
-                flexDirection = 'column';
-                break;
-            case 'top-outside':   // 上外：反向顺序
-            case 'bottom-inside': // 下内：反向顺序
-                flexDirection = 'column-reverse';
-                break;
-        }
+        // 3. 文本对齐（直接使用设置值）
+        const textAlign = contentPosition.textAlign || 'left';
+
+        // 4. 垂直对齐（直接使用设置值）
+        const justifyContent = contentPosition.verticalAlign || 'flex-start';
 
         // 应用样式
+        contentArea.style.position = 'absolute';
         contentArea.style.left = leftStyle;
         contentArea.style.top = topStyle;
         contentArea.style.transform = `translate(${transformXStyle}, ${transformYStyle})`;
         contentArea.style.textAlign = textAlign;
-        contentArea.style.flexDirection = flexDirection;
+        contentArea.style.justifyContent = justifyContent;
+        contentArea.style.display = 'flex';
+        contentArea.style.flexDirection = 'column';
     }
     
     // 处理鼠标释放

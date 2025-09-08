@@ -589,8 +589,10 @@ class AnnotationManager {
                         width: 20,  // 默认宽度20%
                         height: 15, // 默认高度15%
                         contentPosition: {
-                            horizontal: 'left-inside',  // 默认左内
-                            vertical: 'top-inside'      // 默认上内
+                            horizontalPosition: 'inside',
+                            verticalPosition: 'inside',
+                            textAlign: 'left',
+                            verticalAlign: 'flex-start'
                         }
                     };
                 }
@@ -1883,18 +1885,25 @@ class AnnotationManager {
                 width: 20,  // 默认宽度20%
                 height: 15, // 默认高度15%
                 contentPosition: {
-                    horizontal: 'left-inside',  // 默认左内
-                    vertical: 'top-inside'      // 默认上内
+                    horizontalPosition: 'inside',    // 水平位置：left-outside, inside, right-outside  
+                    verticalPosition: 'inside',      // 垂直位置：top-outside, inside, bottom-outside
+                    textAlign: 'left',               // 文本对齐：left, center, right
+                    verticalAlign: 'flex-start'      // 垂直对齐：flex-start, space-evenly, flex-end
                 }
             };
             console.log('初始化marker默认值', annotation.marker);
         }
         
-        // 确保contentPosition存在（兼容旧数据）
-        if (!annotation.marker.contentPosition) {
+        // 确保contentPosition存在且格式正确（简化兼容逻辑）
+        if (!annotation.marker.contentPosition || 
+            !annotation.marker.contentPosition.horizontalPosition ||
+            annotation.marker.contentPosition.horizontal) {
+            // 直接重置为默认值
             annotation.marker.contentPosition = {
-                horizontal: 'left-inside',  // 默认左内
-                vertical: 'top-inside'      // 默认上内
+                horizontalPosition: 'inside',    
+                verticalPosition: 'inside',      
+                textAlign: 'left',               
+                verticalAlign: 'flex-start'      
             };
         }
 
@@ -1933,10 +1942,12 @@ class AnnotationManager {
                     height: annotation.marker.height,
                     text: annotation.title || '编辑中',
                     color: this.getColorValue(annotation.color) || '#ff6b6b',
-                    contentPosition: annotation.marker.contentPosition || {
-                        horizontal: 'left-inside',
-                        vertical: 'top-inside'
-                    }
+                contentPosition: annotation.marker.contentPosition || {
+                    horizontalPosition: 'inside',
+                    verticalPosition: 'inside',
+                    textAlign: 'left',
+                    verticalAlign: 'flex-start'
+                }
                 };
                 console.log('创建编辑标记', marker);
                 
@@ -2046,8 +2057,7 @@ class AnnotationManager {
         markerElement.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('resize-handle') || 
                 e.target.classList.contains('action-btn') ||
-                e.target.classList.contains('horizontal-position-btn') ||
-                e.target.classList.contains('vertical-position-btn') ||
+                e.target.classList.contains('matrix-position-btn') ||
                 e.target.closest('.marker-position-controls')) return;
             window.videoMarker.startDragging(e, marker);
         });
@@ -2084,8 +2094,10 @@ class AnnotationManager {
             width: marker.width,
             height: marker.height,
             contentPosition: marker.contentPosition || {
-                horizontal: 'left-inside',
-                vertical: 'top-inside'
+                horizontalPosition: 'inside',
+                verticalPosition: 'inside',
+                textAlign: 'left',
+                verticalAlign: 'flex-start'
             }
         };
         

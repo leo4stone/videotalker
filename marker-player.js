@@ -410,33 +410,31 @@ class MarkerPlayer {
 
     // 应用内容位置样式
     applyContentPosition(contentArea, contentPosition) {
-        if (!contentPosition) {
-            // 使用默认位置：左内，上内
+        // 检查数据格式，不匹配则使用默认设置（简化兼容逻辑）
+        if (!contentPosition || 
+            !contentPosition.horizontalPosition ||
+            contentPosition.horizontal) {
+            // 直接使用默认设置
             contentPosition = {
-                horizontal: 'left-inside',
-                vertical: 'top-inside'
+                horizontalPosition: 'inside',
+                verticalPosition: 'inside',
+                textAlign: 'left',
+                verticalAlign: 'flex-start'
             };
         }
 
-        const horizontal = contentPosition.horizontal || 'left-inside';
-        const vertical = contentPosition.vertical || 'top-inside';
-
-        // 水平位置样式
+        // 1. 水平位置样式
         let leftStyle = '0';
         let transformXStyle = '0%';
         
-        switch (horizontal) {
+        switch (contentPosition.horizontalPosition || 'inside') {
             case 'left-outside':
                 leftStyle = '0';
                 transformXStyle = '-100%';
                 break;
-            case 'left-inside':
+            case 'inside':
                 leftStyle = '0';
                 transformXStyle = '0%';
-                break;
-            case 'right-inside':
-                leftStyle = '100%';
-                transformXStyle = '-100%';
                 break;
             case 'right-outside':
                 leftStyle = '100%';
@@ -444,22 +442,18 @@ class MarkerPlayer {
                 break;
         }
 
-        // 纵向位置样式
+        // 2. 垂直位置样式
         let topStyle = '0';
         let transformYStyle = '0%';
         
-        switch (vertical) {
+        switch (contentPosition.verticalPosition || 'inside') {
             case 'top-outside':
                 topStyle = '0';
                 transformYStyle = '-100%';
                 break;
-            case 'top-inside':
+            case 'inside':
                 topStyle = '0';
                 transformYStyle = '0%';
-                break;
-            case 'bottom-inside':
-                topStyle = '100%';
-                transformYStyle = '-100%';
                 break;
             case 'bottom-outside':
                 topStyle = '100%';
@@ -467,33 +461,11 @@ class MarkerPlayer {
                 break;
         }
 
-        // 计算text-align和flex-direction
-        let textAlign = 'left';
-        let flexDirection = 'column';
-        
-        // 水平方向的text-align
-        switch (horizontal) {
-            case 'left-inside':   // 左内：左对齐
-            case 'right-outside': // 右外：左对齐
-                textAlign = 'left';
-                break;
-            case 'left-outside':  // 左外：右对齐
-            case 'right-inside':  // 右内：右对齐
-                textAlign = 'right';
-                break;
-        }
-        
-        // 垂直方向的flex-direction
-        switch (vertical) {
-            case 'top-inside':    // 上内：正常顺序
-            case 'bottom-outside': // 下外：正常顺序
-                flexDirection = 'column';
-                break;
-            case 'top-outside':   // 上外：反向顺序
-            case 'bottom-inside': // 下内：反向顺序
-                flexDirection = 'column-reverse';
-                break;
-        }
+        // 3. 文本对齐（直接使用设置值）
+        const textAlign = contentPosition.textAlign || 'left';
+
+        // 4. 垂直对齐（直接使用设置值）
+        const justifyContent = contentPosition.verticalAlign || 'flex-start';
 
         // 应用样式
         contentArea.style.position = 'absolute';
@@ -501,7 +473,10 @@ class MarkerPlayer {
         contentArea.style.top = topStyle;
         contentArea.style.transform = `translate(${transformXStyle}, ${transformYStyle})`;
         contentArea.style.textAlign = textAlign;
-        contentArea.style.flexDirection = flexDirection;
+        contentArea.style.justifyContent = justifyContent;
+        contentArea.style.display = 'flex';
+        contentArea.style.flexDirection = 'column';
+        contentArea.style.pointerEvents = 'none'; // 防止干扰标记交互
     }
     
     // 转义HTML字符
