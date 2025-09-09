@@ -512,34 +512,36 @@ class AnnotationManager {
       : this.formatTime(annotation.time);
 
     popup.innerHTML = `
-            <div class="annotation-popup-content">
-                <div class="annotation-time" style="color: ${colorConfig.primary};">${timeInfo}</div>
-                ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
-                ${annotation.text ? `<div class="annotation-text">${this.escapeHtml(annotation.text)}</div>` : ''}
-                ${!annotation.title && !annotation.text ? `<div class="annotation-empty">空白打点</div>` : ''}
-                <div class="annotation-actions">
-                    <button class="popup-icon-btn edit-btn" data-id="${annotation.id}" title="编辑打点">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L10.5 8.207l-3-3L12.146.146zM11.207 9l2-2L14.5 8.293a.25.25 0 0 0 .177-.427L13.354 6.543a.25.25 0 0 0-.427.177L11.207 9z"/>
-                            <path d="M4.5 11.5A.5.5 0 0 1 5 11h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 1 0v.5a.5.5 0 0 1 .5.5zM3 10.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
-                            <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0z"/>
-                        </svg>
-                    </button>
-                    <button class="popup-icon-btn marker-edit-btn" data-id="${annotation.id}" title="编辑标记">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 0C5.829 0 4.058 1.771 4.058 3.942c0 3.386 3.942 8.958 3.942 8.958s3.942-5.572 3.942-8.958C11.942 1.771 10.171 0 8 0zm0 6c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"/>
-                            <rect x="2" y="14" width="12" height="2" rx="1"/>
-                        </svg>
-                    </button>
-                    <button class="popup-icon-btn delete-btn" data-id="${annotation.id}" title="删除打点">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        `;
+      <div class="annotation-popup-content">
+        <div class="annotation-time" style="color: ${colorConfig.primary};">${timeInfo}</div>
+        ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
+        ${annotation.text ? `<div class="annotation-text">${this.escapeHtml(annotation.text)}</div>` : ''}
+        ${!annotation.title && !annotation.text ? `<div class="annotation-empty">空白打点</div>` : ''}
+        <div class="annotation-actions">
+          <button class="popup-icon-btn edit-btn" data-id="${annotation.id}" title="编辑打点">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+              <path fill-rule="evenodd" d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zM8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>
+            </svg>
+          </button>
+          <button class="popup-icon-btn marker-edit-btn" data-id="${annotation.id}" title="编辑标记">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,1"/>
+              <circle cx="2" cy="2" r="1.5" fill="currentColor"/>
+              <circle cx="14" cy="2" r="1.5" fill="currentColor"/>
+              <circle cx="2" cy="14" r="1.5" fill="currentColor"/>
+              <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="popup-icon-btn delete-btn" data-id="${annotation.id}" title="删除打点">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
 
     // popup整体点击事件 - 进入编辑窗口
     popup.addEventListener('click', (e) => {
@@ -1461,16 +1463,16 @@ class AnnotationManager {
 
   // 格式化时间显示
   formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0) return '00:00';
+    if (isNaN(seconds) || seconds < 0) return '00:00.00';
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+    const secs = (seconds % 60).toFixed(2);
 
     if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.padStart(5, '0')}`;
     } else {
-      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${minutes.toString().padStart(2, '0')}:${secs.padStart(5, '0')}`;
     }
   }
 
