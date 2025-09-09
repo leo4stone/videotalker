@@ -595,7 +595,8 @@ class AnnotationManager {
               verticalPosition: 'inside',
               textAlign: 'left',
               verticalAlign: 'flex-start'
-            }
+            },
+            contentFontSize: 1 // 默认字体大小1em
           };
         }
         // 直接进入标记编辑模式
@@ -1891,7 +1892,8 @@ class AnnotationManager {
           verticalPosition: 'inside',      // 垂直位置：top-outside, inside, bottom-outside
           textAlign: 'left',               // 文本对齐：left, center, right
           verticalAlign: 'flex-start'      // 垂直对齐：flex-start, space-evenly, flex-end
-        }
+        },
+        contentFontSize: 1 // 默认字体大小1em
       };
       console.log('初始化marker默认值', annotation.marker);
     }
@@ -1907,6 +1909,11 @@ class AnnotationManager {
         textAlign: 'left',
         verticalAlign: 'flex-start'
       };
+    }
+
+    // 确保contentFontSize存在
+    if (!annotation.marker.contentFontSize) {
+      annotation.marker.contentFontSize = 1; // 默认1em
     }
 
     // 如果有modal，隐藏编辑窗口
@@ -1949,7 +1956,8 @@ class AnnotationManager {
             verticalPosition: 'inside',
             textAlign: 'left',
             verticalAlign: 'flex-start'
-          }
+          },
+          contentFontSize: annotation.marker.contentFontSize || 1
         };
         console.log('创建编辑标记', marker);
 
@@ -2005,6 +2013,10 @@ class AnnotationManager {
     if (annotation.title || annotation.text) {
       const inlineContent = document.createElement('div');
       inlineContent.className = 'marker-inline-content';
+      
+      // 设置字体大小
+      const fontSize = marker.contentFontSize || 1;
+      inlineContent.style.fontSize = `${fontSize}em`;
 
       let contentHTML = '';
 
@@ -2039,10 +2051,31 @@ class AnnotationManager {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'marker-actions';
     actionsDiv.innerHTML = `
-            <button class="action-btn save-btn" title="保存标记">✓</button>
-            <button class="action-btn cancel-btn" title="取消编辑">✕</button>
-        `;
+      <div class="action-btn save-btn" title="保存标记">✓</div>
+      <div class="action-btn cancel-btn" title="取消编辑">✕</div>
+    `;
     markerElement.appendChild(actionsDiv);
+
+    // 添加字体大小控制
+    const fontSizeDiv = document.createElement('div');
+    fontSizeDiv.className = 'marker-fontsize';
+    const currentFontSize = marker.contentFontSize || 1;
+    fontSizeDiv.innerHTML = `
+      <div class="fontsize-btn decrease-btn" title="减小字体">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <text x="2" y="9" font-family="Arial, sans-serif" font-size="9" font-weight="bold">A</text>
+          <text x="10" y="11" font-family="Arial, sans-serif" font-size="6" font-weight="bold">-</text>
+        </svg>
+      </div>
+      <div class="fontsize-display" title="当前字体大小">${currentFontSize.toFixed(1)}</div>
+      <div class="fontsize-btn increase-btn" title="增大字体">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <text x="2" y="9" font-family="Arial, sans-serif" font-size="9" font-weight="bold">A</text>
+          <text x="9" y="5" font-family="Arial, sans-serif" font-size="6" font-weight="bold">+</text>
+        </svg>
+      </div>
+    `;
+    markerElement.appendChild(fontSizeDiv);
 
     // 绑定标记编辑事件
     this.bindEditingMarkerEvents(markerElement, marker, annotation, modal);
@@ -2060,7 +2093,9 @@ class AnnotationManager {
       if (e.target.classList.contains('resize-handle') ||
         e.target.classList.contains('action-btn') ||
         e.target.classList.contains('matrix-position-btn') ||
-        e.target.closest('.marker-position-controls')) return;
+        e.target.classList.contains('fontsize-btn') ||
+        e.target.closest('.marker-position-controls') ||
+        e.target.closest('.marker-fontsize')) return;
       window.videoMarker.startDragging(e, marker);
     });
 
@@ -2085,6 +2120,44 @@ class AnnotationManager {
       e.stopPropagation();
       this.cancelMarkerEditing(modal);
     });
+
+    // 字体大小调整按钮事件
+    const decreaseBtn = markerElement.querySelector('.decrease-btn');
+    const increaseBtn = markerElement.querySelector('.increase-btn');
+    
+    decreaseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.adjustFontSize(markerElement, marker, -0.2);
+    });
+    
+    increaseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.adjustFontSize(markerElement, marker, 0.2);
+    });
+  }
+
+  // 调整字体大小
+  adjustFontSize(markerElement, marker, step) {
+    // 确保contentFontSize存在且为有效数字
+    if (!marker.contentFontSize || isNaN(marker.contentFontSize)) {
+      marker.contentFontSize = 1; // 默认值
+    }
+    
+    // 更新marker数据
+    const newFontSize = marker.contentFontSize + step;
+    marker.contentFontSize = Math.max(0.2, Math.min(10, newFontSize));
+    
+    // 立即应用到内容元素
+    const inlineContent = markerElement.querySelector('.marker-inline-content');
+    if (inlineContent) {
+      inlineContent.style.fontSize = `${marker.contentFontSize}em`;
+    }
+    
+    // 更新字体大小显示
+    const fontSizeDisplay = markerElement.querySelector('.fontsize-display');
+    if (fontSizeDisplay) {
+      fontSizeDisplay.textContent = marker.contentFontSize.toFixed(1);
+    }
   }
 
   // 保存标记编辑（重构版本，支持独立编辑）
@@ -2100,7 +2173,8 @@ class AnnotationManager {
         verticalPosition: 'inside',
         textAlign: 'left',
         verticalAlign: 'flex-start'
-      }
+      },
+      contentFontSize: marker.contentFontSize || 1
     };
 
     // 更新时间戳

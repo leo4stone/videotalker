@@ -277,8 +277,9 @@ class MarkerPlayer {
     if (annotation.title || annotation.text) {
       const inlineContent = document.createElement('div');
       inlineContent.className = 'player-marker-inline-content';
+      const fontSize = marker.contentFontSize || 1;
       inlineContent.style.cssText = `
-        font-size: 1em;
+        font-size: ${fontSize}em;
         line-height: 1.3;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -446,8 +447,9 @@ class MarkerPlayer {
       if (annotation.title || annotation.text) {
         const inlineContent = document.createElement('div');
         inlineContent.className = 'player-marker-inline-content';
+        const fontSize = marker.contentFontSize || 1;
         inlineContent.style.cssText = `
-          font-size: 1em;
+          font-size: ${fontSize}em;
           line-height: 1.3;
           word-wrap: break-word;
           overflow-wrap: break-word;

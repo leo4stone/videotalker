@@ -3154,6 +3154,7 @@ body {
   min-width: 20px;
   min-height: 20px;
   transition: border-color 0.2s ease;
+  user-select: none;
 
 
   &:hover {
@@ -3440,14 +3441,13 @@ body {
   // 标记操作按钮
   .marker-actions {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 100%;
-    transform: translate(-50%, -50%);
+    right: 10%;
+    bottom: 10%;
     display: flex;
     gap: 0.3em;
     z-index: 22;
     justify-content: space-around;
+    pointer-events: none;
 
     .action-btn {
       width: 1em;
@@ -3462,6 +3462,7 @@ body {
       font-weight: bold;
       transition: all 0.2s ease;
       box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.3);
+      pointer-events: all;
 
       &.save-btn {
         background: #28a745;
@@ -3482,6 +3483,61 @@ body {
           transform: scale(1.1);
         }
       }
+    }
+  }
+
+  // 字体大小控制
+  .marker-fontsize {
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, 0%);
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.3);
+    border-radius: 0.4em;
+    display: flex;
+    gap: 0.1em;
+    pointer-events: none;
+    align-items: center;
+    z-index: 21;
+
+    .fontsize-btn {
+      width: 1.6em;
+      height: 1.6em;
+      padding: .2em;
+      // border: 0.08em solid rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7em;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      pointer-events: all;
+      color: white;
+
+      svg {
+        width: 100%;
+        height: 100%;
+        fill: currentColor;
+      }
+
+      
+    }
+
+    .fontsize-display {
+      min-width: 1.5em;
+      height: 0.8em;
+      border-radius: 0.2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6em;
+      font-weight: bold;
+      color: #fff;
+      pointer-events: none;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+      padding: 0 0.2em;
     }
   }
 }
