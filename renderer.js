@@ -6,6 +6,7 @@ ipcRenderer.on('menu-open-file', () => {
   openFileDialog();
 });
 
+window.player = null;
 let player = null;
 let sidePanelOpen = false;
 let hasVideoLoaded = false;
@@ -34,6 +35,9 @@ document.addEventListener('DOMContentLoaded', function () {
       enableModifiersForNumbers: false
     }
   });
+
+  // 将player暴露为全局变量
+  window.player = player;
 
   // 播放器准备就绪
   player.ready(function () {

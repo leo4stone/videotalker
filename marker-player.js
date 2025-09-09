@@ -347,9 +347,22 @@ class MarkerPlayer {
       </svg>
     `;
 
+    // 创建跳到打点结尾按钮
+    const jumpToEndButton = document.createElement('div');
+    jumpToEndButton.className = 'player-jump-to-end-btn';
+    jumpToEndButton.title = '跳到打点结尾';
+    jumpToEndButton.dataset.annotationId = annotation.id;
+    jumpToEndButton.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+        <polygon points="3,3 3,13 11,8" fill="currentColor"/>
+        <rect x="12" y="3" width="2" height="10" fill="currentColor"/>
+      </svg>
+    `;
+
     // 将按钮添加到容器
     editButtonsContainer.appendChild(editAnnotationButton);
     editButtonsContainer.appendChild(editMarkerButton);
+    editButtonsContainer.appendChild(jumpToEndButton);
     markerElement.appendChild(editButtonsContainer);
 
     // 复用annotation-popup的编辑打点按钮事件逻辑
@@ -391,6 +404,21 @@ class MarkerPlayer {
     // 阻止编辑标记按钮的其他鼠标事件
     editMarkerButton.addEventListener('mousedown', (e) => e.stopPropagation());
     editMarkerButton.addEventListener('mouseup', (e) => e.stopPropagation());
+
+    // 跳到打点结尾按钮事件
+    jumpToEndButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // 计算打点结尾时间
+      const endTime = annotation.time + (annotation.duration || 0) + 0.01;
+      // 设置视频播放进度到打点结尾
+      if (window.player && window.player.currentTime) {
+        window.player.currentTime(endTime);
+      }
+    });
+
+    // 阻止跳到打点结尾按钮的其他鼠标事件
+    jumpToEndButton.addEventListener('mousedown', (e) => e.stopPropagation());
+    jumpToEndButton.addEventListener('mouseup', (e) => e.stopPropagation());
 
     return markerElement;
   }
@@ -537,6 +565,28 @@ class MarkerPlayer {
 
       newEditMarkerButton.addEventListener('mousedown', (e) => e.stopPropagation());
       newEditMarkerButton.addEventListener('mouseup', (e) => e.stopPropagation());
+    }
+
+    // 更新跳到打点结尾按钮的annotation数据
+    const jumpToEndButton = markerElement.querySelector('.player-jump-to-end-btn');
+    if (jumpToEndButton) {
+      jumpToEndButton.dataset.annotationId = annotation.id;
+      // 重新绑定跳到打点结尾按钮事件
+      const newJumpToEndButton = jumpToEndButton.cloneNode(true);
+      jumpToEndButton.parentNode.replaceChild(newJumpToEndButton, jumpToEndButton);
+
+      newJumpToEndButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 计算打点结尾时间
+        const endTime = annotation.time + (annotation.duration || 0) + 0.01;
+        // 设置视频播放进度到打点结尾
+        if (window.player && window.player.currentTime) {
+          window.player.currentTime(endTime);
+        }
+      });
+
+      newJumpToEndButton.addEventListener('mousedown', (e) => e.stopPropagation());
+      newJumpToEndButton.addEventListener('mouseup', (e) => e.stopPropagation());
     }
   }
 
