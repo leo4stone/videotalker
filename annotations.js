@@ -1,517 +1,517 @@
 // 打点功能模块
 class AnnotationManager {
-    constructor() {
-        this.annotations = [];
-        this.currentVideoFile = null;
-        this.player = null;
-        this.isLoading = false;
-        this.hidePopupTimer = null; // 用于延迟隐藏popup的定时器
-        
-        // 设置 Electron API
-        if (typeof window !== 'undefined' && !window.electronAPI) {
-            const { ipcRenderer } = require('electron');
-            window.electronAPI = {
-                readAnnotationFile: (filePath) => ipcRenderer.invoke('read-annotation-file', filePath),
-                writeAnnotationFile: (filePath, data) => ipcRenderer.invoke('write-annotation-file', filePath, data)
-            };
-        }
+  constructor() {
+    this.annotations = [];
+    this.currentVideoFile = null;
+    this.player = null;
+    this.isLoading = false;
+    this.hidePopupTimer = null; // 用于延迟隐藏popup的定时器
+
+    // 设置 Electron API
+    if (typeof window !== 'undefined' && !window.electronAPI) {
+      const { ipcRenderer } = require('electron');
+      window.electronAPI = {
+        readAnnotationFile: (filePath) => ipcRenderer.invoke('read-annotation-file', filePath),
+        writeAnnotationFile: (filePath, data) => ipcRenderer.invoke('write-annotation-file', filePath, data)
+      };
+    }
+  }
+
+  // 规范化level值：确保默认level始终为null
+  normalizeLevel(level) {
+    if (level === null || level === undefined || level === '' || level === 'default') {
+      return null;
+    }
+    return String(level);
+  }
+
+  // 初始化打点管理器
+  init(player) {
+    this.player = player;
+    this.setupEventListeners();
+  }
+
+  // 设置事件监听器
+  setupEventListeners() {
+    // 监听视频加载事件，自动加载打点文件
+    if (this.player) {
+      this.player.on('loadedmetadata', () => {
+        this.loadAnnotationsFromFile();
+      });
+    }
+  }
+
+  // 设置当前视频文件路径
+  setCurrentVideoFile(filePath) {
+    this.currentVideoFile = filePath;
+    this.annotations = [];
+    // 立即清理UI显示
+    this.updateProgressBarAnnotations();
+    this.updateOutlineView();
+  }
+
+  // 添加打点
+  async addAnnotation(time, title = '', text = '', color = 'blue', level = null, duration = null) {
+    if (!this.currentVideoFile) {
+      return false;
     }
 
-    // 规范化level值：确保默认level始终为null
-    normalizeLevel(level) {
-        if (level === null || level === undefined || level === '' || level === 'default') {
-            return null;
-        }
-        return String(level);
+    const annotation = {
+      id: Date.now().toString(),
+      time: Math.round(time * 100) / 100, // 保留2位小数
+      title: title.trim(),
+      text: text.trim(),
+      color: color,
+      level: level,
+      duration: duration ? Math.round(duration * 100) / 100 : null, // 时长，保留2位小数
+      createdAt: new Date().toISOString()
+    };
+
+    this.annotations.push(annotation);
+    this.annotations.sort((a, b) => a.time - b.time); // 按时间排序
+
+    // 保存到文件
+    await this.saveAnnotationsToFile();
+
+    // 更新UI显示
+    this.updateProgressBarAnnotations();
+
+    // 更新大纲视图
+    this.updateOutlineView();
+
+    // 更新标记播放器数据
+    this.updateMarkerPlayerData();
+
+    return annotation;
+  }
+
+  // 删除打点
+  async deleteAnnotation(annotationId) {
+    const index = this.annotations.findIndex(ann => ann.id === annotationId);
+    if (index !== -1) {
+      // 先清理折叠状态
+      if (typeof window.removeCollapseState === 'function') {
+        window.removeCollapseState(annotationId);
+      }
+
+      this.annotations.splice(index, 1);
+
+      // 保存到文件
+      await this.saveAnnotationsToFile();
+
+      // 更新UI显示
+      this.updateProgressBarAnnotations();
+
+      // 更新大纲视图
+      this.updateOutlineView();
+
+      // 更新标记播放器数据
+      this.updateMarkerPlayerData();
+
+      return true;
     }
+    return false;
+  }
 
-    // 初始化打点管理器
-    init(player) {
-        this.player = player;
-        this.setupEventListeners();
+  // 编辑打点
+  async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
+    const annotation = this.annotations.find(ann => ann.id === annotationId);
+    if (annotation) {
+      annotation.title = newTitle.trim();
+      annotation.text = newText.trim();
+      if (newColor !== null) annotation.color = newColor;
+      if (newLevel !== 'UNCHANGED') annotation.level = newLevel; // 允许设置为null
+      if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
+      annotation.updatedAt = new Date().toISOString();
+
+      // 保存到文件
+      await this.saveAnnotationsToFile();
+
+      // 更新UI显示
+      this.updateProgressBarAnnotations();
+
+      // 更新大纲视图
+      this.updateOutlineView();
+
+      // 更新标记播放器数据
+      this.updateMarkerPlayerData();
+
+      return true;
     }
+    return false;
+  }
 
-    // 设置事件监听器
-    setupEventListeners() {
-        // 监听视频加载事件，自动加载打点文件
-        if (this.player) {
-            this.player.on('loadedmetadata', () => {
-                this.loadAnnotationsFromFile();
-            });
-        }
+  // 编辑打点（包含时间修改）
+  async editAnnotationWithTime(annotationId, newTime, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
+    const annotation = this.annotations.find(ann => ann.id === annotationId);
+    if (annotation) {
+      // 更新所有值（包括时间）
+      annotation.time = newTime;
+      annotation.title = newTitle.trim();
+      annotation.text = newText.trim();
+      if (newColor !== null) annotation.color = newColor;
+      if (newLevel !== 'UNCHANGED') annotation.level = this.normalizeLevel(newLevel);
+      if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
+      annotation.updatedAt = new Date().toISOString();
+
+      // 重新排序打点数组（因为时间可能改变了）
+      this.annotations.sort((a, b) => a.time - b.time);
+
+      // 保存到文件
+      await this.saveAnnotationsToFile();
+
+      // 更新UI显示
+      this.updateProgressBarAnnotations();
+
+      // 更新大纲视图
+      this.updateOutlineView();
+
+      // 更新标记播放器数据
+      this.updateMarkerPlayerData();
+
+      console.log('打点已编辑（包含时间修改）:', annotation);
+      return true;
     }
+    return false;
+  }
 
-    // 设置当前视频文件路径
-    setCurrentVideoFile(filePath) {
-        this.currentVideoFile = filePath;
-        this.annotations = [];
-        // 立即清理UI显示
-        this.updateProgressBarAnnotations();
-        this.updateOutlineView();
+  // 获取指定时间的打点
+  getAnnotationAtTime(time, tolerance = 0.5) {
+    return this.annotations.find(ann =>
+      Math.abs(ann.time - time) <= tolerance
+    );
+  }
+
+  // 获取所有打点
+  getAllAnnotations() {
+    return [...this.annotations];
+  }
+
+  // 跳转到指定打点
+  jumpToAnnotation(annotationId) {
+    const annotation = this.annotations.find(ann => ann.id === annotationId);
+    if (annotation && this.player) {
+      this.player.currentTime(annotation.time);
+      return true;
     }
+    return false;
+  }
 
-    // 添加打点
-    async addAnnotation(time, title = '', text = '', color = 'blue', level = null, duration = null) {
-        if (!this.currentVideoFile) {
-            return false;
-        }
+  // 生成打点文件路径
+  getAnnotationFilePath() {
+    if (!this.currentVideoFile) return null;
 
-        const annotation = {
-            id: Date.now().toString(),
-            time: Math.round(time * 100) / 100, // 保留2位小数
-            title: title.trim(),
-            text: text.trim(),
-            color: color,
-            level: level,
-            duration: duration ? Math.round(duration * 100) / 100 : null, // 时长，保留2位小数
-            createdAt: new Date().toISOString()
-        };
+    const pathParts = this.currentVideoFile.split('.');
+    pathParts.pop(); // 移除扩展名
+    return pathParts.join('.') + '.videotalker.json';
+  }
 
-        this.annotations.push(annotation);
-        this.annotations.sort((a, b) => a.time - b.time); // 按时间排序
+  // 从文件加载打点数据
+  async loadAnnotationsFromFile() {
+    if (!this.currentVideoFile || this.isLoading) return;
 
-        // 保存到文件
-        await this.saveAnnotationsToFile();
-        
-        // 更新UI显示
-        this.updateProgressBarAnnotations();
-        
-        // 更新大纲视图
-        this.updateOutlineView();
-        
-        // 更新标记播放器数据
-        this.updateMarkerPlayerData();
-        
-        return annotation;
-    }
-
-    // 删除打点
-    async deleteAnnotation(annotationId) {
-        const index = this.annotations.findIndex(ann => ann.id === annotationId);
-        if (index !== -1) {
-            // 先清理折叠状态
-            if (typeof window.removeCollapseState === 'function') {
-                window.removeCollapseState(annotationId);
-            }
-            
-            this.annotations.splice(index, 1);
-            
-            // 保存到文件
-            await this.saveAnnotationsToFile();
-            
-            // 更新UI显示
-            this.updateProgressBarAnnotations();
-            
-            // 更新大纲视图
-            this.updateOutlineView();
-            
-            // 更新标记播放器数据
-            this.updateMarkerPlayerData();
-            
-            return true;
-        }
-        return false;
-    }
-
-    // 编辑打点
-    async editAnnotation(annotationId, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
-        const annotation = this.annotations.find(ann => ann.id === annotationId);
-        if (annotation) {
-            annotation.title = newTitle.trim();
-            annotation.text = newText.trim();
-            if (newColor !== null) annotation.color = newColor;
-            if (newLevel !== 'UNCHANGED') annotation.level = newLevel; // 允许设置为null
-            if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
-            annotation.updatedAt = new Date().toISOString();
-            
-            // 保存到文件
-            await this.saveAnnotationsToFile();
-            
-            // 更新UI显示
-            this.updateProgressBarAnnotations();
-            
-            // 更新大纲视图
-            this.updateOutlineView();
-            
-            // 更新标记播放器数据
-            this.updateMarkerPlayerData();
-            
-            return true;
-        }
-        return false;
-    }
-
-    // 编辑打点（包含时间修改）
-    async editAnnotationWithTime(annotationId, newTime, newTitle = '', newText = '', newColor = null, newLevel = 'UNCHANGED', newDuration = 'UNCHANGED') {
-        const annotation = this.annotations.find(ann => ann.id === annotationId);
-        if (annotation) {
-            // 更新所有值（包括时间）
-            annotation.time = newTime;
-            annotation.title = newTitle.trim();
-            annotation.text = newText.trim();
-            if (newColor !== null) annotation.color = newColor;
-            if (newLevel !== 'UNCHANGED') annotation.level = this.normalizeLevel(newLevel);
-            if (newDuration !== 'UNCHANGED') annotation.duration = newDuration ? Math.round(newDuration * 100) / 100 : null;
-            annotation.updatedAt = new Date().toISOString();
-            
-            // 重新排序打点数组（因为时间可能改变了）
-            this.annotations.sort((a, b) => a.time - b.time);
-            
-            // 保存到文件
-            await this.saveAnnotationsToFile();
-            
-            // 更新UI显示
-            this.updateProgressBarAnnotations();
-            
-            // 更新大纲视图
-            this.updateOutlineView();
-            
-            // 更新标记播放器数据
-            this.updateMarkerPlayerData();
-            
-            console.log('打点已编辑（包含时间修改）:', annotation);
-            return true;
-        }
-        return false;
-    }
-
-    // 获取指定时间的打点
-    getAnnotationAtTime(time, tolerance = 0.5) {
-        return this.annotations.find(ann => 
-            Math.abs(ann.time - time) <= tolerance
-        );
-    }
-
-    // 获取所有打点
-    getAllAnnotations() {
-        return [...this.annotations];
-    }
-
-    // 跳转到指定打点
-    jumpToAnnotation(annotationId) {
-        const annotation = this.annotations.find(ann => ann.id === annotationId);
-        if (annotation && this.player) {
-            this.player.currentTime(annotation.time);
-            return true;
-        }
-        return false;
-    }
-
-    // 生成打点文件路径
-    getAnnotationFilePath() {
-        if (!this.currentVideoFile) return null;
-        
-        const pathParts = this.currentVideoFile.split('.');
-        pathParts.pop(); // 移除扩展名
-        return pathParts.join('.') + '.videotalker.json';
-    }
-
-    // 从文件加载打点数据
-    async loadAnnotationsFromFile() {
-        if (!this.currentVideoFile || this.isLoading) return;
-        
-        this.isLoading = true;
-        try {
-            const filePath = this.getAnnotationFilePath();
-            if (filePath) {
-                const data = await window.electronAPI.readAnnotationFile(filePath);
-                if (data) {
-                    this.annotations = Array.isArray(data.annotations) ? data.annotations : [];
-                    this.annotations.sort((a, b) => a.time - b.time);
-                    console.log(`加载了 ${this.annotations.length} 个打点`);
-                } else {
-                    // 文件存在但数据为空
-                    this.annotations = [];
-                    console.log('打点文件为空，初始化空数组');
-                }
-            } else {
-                // 无法生成文件路径
-                this.annotations = [];
-                console.log('无法生成打点文件路径，初始化空数组');
-            }
-        } catch (error) {
-            console.log('打点文件不存在或读取失败，将创建新的打点文件');
-            this.annotations = [];
-        } finally {
-            // 无论成功还是失败，都要更新UI显示
-            this.updateProgressBarAnnotations();
-            this.updateOutlineView();
-            
-            // 更新标记播放器数据
-            this.updateMarkerPlayerData();
-            
-            this.isLoading = false;
-        }
-    }
-
-    // 保存打点数据到文件
-    async saveAnnotationsToFile() {
-        if (!this.currentVideoFile) return false;
-        
-        try {
-            const filePath = this.getAnnotationFilePath();
-            const data = {
-                videoFile: this.currentVideoFile,
-                createdAt: new Date().toISOString(),
-                version: "1.0",
-                annotations: this.annotations
-            };
-            
-            await window.electronAPI.writeAnnotationFile(filePath, data);
-            console.log(`打点已保存到: ${filePath}`);
-            return true;
-        } catch (error) {
-            console.error('保存打点文件失败:', error);
-            return false;
-        }
-    }
-
-    // 更新进度条上的打点显示
-    updateProgressBarAnnotations() {
-        if (!this.player) return;
-
-        // 清除现有的打点显示
-        const existingContainers = document.querySelectorAll('.annotation-container');
-        existingContainers.forEach(container => container.remove());
-
-        const duration = this.player.duration();
-        if (!duration || duration <= 0) return;
-
-        const progressContainer = document.getElementById('progress-container');
-        if (!progressContainer) return;
-
-        // 计算动态级别高度映射
-        const levelHeightMap = this.calculateDynamicLevelHeights();
-
-        // 为每个打点创建圆点
-        this.annotations.forEach(annotation => {
-            const dot = this.createAnnotationDot(annotation, duration, levelHeightMap);
-            progressContainer.appendChild(dot);
-        });
-        
-        // 同时更新pan-track上的缩略打点
-        this.updatePanTrackAnnotations(duration);
-    }
-
-    // 更新pan-track上的缩略打点标记
-    updatePanTrackAnnotations(duration) {
-        const panTrack = document.querySelector('.pan-track');
-        if (!panTrack || !duration || duration <= 0) return;
-
-        // 清除现有的缩略打点
-        const existingThumbnails = panTrack.querySelectorAll('.pan-annotation-thumbnail');
-        existingThumbnails.forEach(thumbnail => thumbnail.remove());
-
-        // 为每个打点创建缩略标记
-        this.annotations.forEach(annotation => {
-            const thumbnail = this.createPanAnnotationThumbnail(annotation, duration);
-            panTrack.appendChild(thumbnail);
-        });
-    }
-
-    // 创建pan-track上的缩略打点标记
-    createPanAnnotationThumbnail(annotation, duration) {
-        const thumbnail = document.createElement('div');
-        thumbnail.className = 'pan-annotation-thumbnail';
-        
-        // 添加颜色类
-        if (annotation.color) {
-            thumbnail.classList.add(`color-${annotation.color}`);
-        }
-        
-        // 添加级别类
-        const normalizedLevel = this.normalizeLevel(annotation.level);
-        if (normalizedLevel === '1') {
-            thumbnail.classList.add('level-high');
-        } else if (normalizedLevel === '2') {
-            thumbnail.classList.add('level-medium');
-        } else if (normalizedLevel === '3') {
-            thumbnail.classList.add('level-low');
+    this.isLoading = true;
+    try {
+      const filePath = this.getAnnotationFilePath();
+      if (filePath) {
+        const data = await window.electronAPI.readAnnotationFile(filePath);
+        if (data) {
+          this.annotations = Array.isArray(data.annotations) ? data.annotations : [];
+          this.annotations.sort((a, b) => a.time - b.time);
+          console.log(`加载了 ${this.annotations.length} 个打点`);
         } else {
-            thumbnail.classList.add('level-default');
+          // 文件存在但数据为空
+          this.annotations = [];
+          console.log('打点文件为空，初始化空数组');
         }
-        
-        // 如果有时长，添加时长类并设置宽度
-        if (annotation.duration && annotation.duration > 0) {
-            thumbnail.classList.add('has-duration');
-            const widthPercentage = (annotation.duration / duration) * 100;
-            thumbnail.style.width = `${Math.max(0.1, widthPercentage)}%`; // 最小宽度0.1%
-        }
-        
-        // 计算并设置位置（这个必须用JS动态计算）
-        const percentage = (annotation.time / duration) * 100;
-        thumbnail.style.left = `${percentage}%`;
-        
-        return thumbnail;
+      } else {
+        // 无法生成文件路径
+        this.annotations = [];
+        console.log('无法生成打点文件路径，初始化空数组');
+      }
+    } catch (error) {
+      console.log('打点文件不存在或读取失败，将创建新的打点文件');
+      this.annotations = [];
+    } finally {
+      // 无论成功还是失败，都要更新UI显示
+      this.updateProgressBarAnnotations();
+      this.updateOutlineView();
+
+      // 更新标记播放器数据
+      this.updateMarkerPlayerData();
+
+      this.isLoading = false;
     }
+  }
+
+  // 保存打点数据到文件
+  async saveAnnotationsToFile() {
+    if (!this.currentVideoFile) return false;
+
+    try {
+      const filePath = this.getAnnotationFilePath();
+      const data = {
+        videoFile: this.currentVideoFile,
+        createdAt: new Date().toISOString(),
+        version: "1.0",
+        annotations: this.annotations
+      };
+
+      await window.electronAPI.writeAnnotationFile(filePath, data);
+      console.log(`打点已保存到: ${filePath}`);
+      return true;
+    } catch (error) {
+      console.error('保存打点文件失败:', error);
+      return false;
+    }
+  }
+
+  // 更新进度条上的打点显示
+  updateProgressBarAnnotations() {
+    if (!this.player) return;
+
+    // 清除现有的打点显示
+    const existingContainers = document.querySelectorAll('.annotation-container');
+    existingContainers.forEach(container => container.remove());
+
+    const duration = this.player.duration();
+    if (!duration || duration <= 0) return;
+
+    const progressContainer = document.getElementById('progress-container');
+    if (!progressContainer) return;
 
     // 计算动态级别高度映射
-    calculateDynamicLevelHeights() {
-        // 收集所有存在的级别
-        const existingLevels = new Set();
-        this.annotations.forEach(annotation => {
-            const normalizedLevel = this.normalizeLevel(annotation.level);
-            if (normalizedLevel === '1') existingLevels.add(1); // 高
-            else if (normalizedLevel === '2') existingLevels.add(2); // 中
-            else if (normalizedLevel === '3') existingLevels.add(3); // 低
-            else existingLevels.add(4); // 默认
-        });
+    const levelHeightMap = this.calculateDynamicLevelHeights();
 
-        // 如果没有打点，返回默认映射
-        if (existingLevels.size === 0) {
-            return { 1: 100, 2: 200, 3: 300, 4: 400 };
-        }
+    // 为每个打点创建圆点
+    this.annotations.forEach(annotation => {
+      const dot = this.createAnnotationDot(annotation, duration, levelHeightMap);
+      progressContainer.appendChild(dot);
+    });
 
-        // 将级别按从低到高排序：4(默认) < 3(低) < 2(中) < 1(高)
-        const sortedLevels = Array.from(existingLevels).sort((a, b) => b - a);
-        
-        // 为每个存在的级别分配连续的高度
-        const levelHeightMap = {};
-        sortedLevels.forEach((level, index) => {
-            // 从最低级别（默认）开始，分配高度：默认 -> 100%, 低 -> 200%, 中 -> 300%, 高 -> 400%
-            levelHeightMap[level] = (index + 1) * 100;
-        });
+    // 同时更新pan-track上的缩略打点
+    this.updatePanTrackAnnotations(duration);
+  }
 
-        return levelHeightMap;
+  // 更新pan-track上的缩略打点标记
+  updatePanTrackAnnotations(duration) {
+    const panTrack = document.querySelector('.pan-track');
+    if (!panTrack || !duration || duration <= 0) return;
+
+    // 清除现有的缩略打点
+    const existingThumbnails = panTrack.querySelectorAll('.pan-annotation-thumbnail');
+    existingThumbnails.forEach(thumbnail => thumbnail.remove());
+
+    // 为每个打点创建缩略标记
+    this.annotations.forEach(annotation => {
+      const thumbnail = this.createPanAnnotationThumbnail(annotation, duration);
+      panTrack.appendChild(thumbnail);
+    });
+  }
+
+  // 创建pan-track上的缩略打点标记
+  createPanAnnotationThumbnail(annotation, duration) {
+    const thumbnail = document.createElement('div');
+    thumbnail.className = 'pan-annotation-thumbnail';
+
+    // 添加颜色类
+    if (annotation.color) {
+      thumbnail.classList.add(`color-${annotation.color}`);
     }
 
-    // 创建打点圆点元素
-    createAnnotationDot(annotation, duration, levelHeightMap = null) {
-        // 创建容器元素
-        const container = document.createElement('div');
-        let className = 'annotation-container';
-        
-        // 添加颜色类
-        if (annotation.color) {
-            className += ` color-${annotation.color}`;
-        }
-        
-        // 不再添加CSS级别类，而是使用动态高度
-        // if (annotation.level) {
-        //     className += ` level-${annotation.level}`;
-        // }
-        
-        container.className = className;
-        container.dataset.annotationId = annotation.id;
-        
-        // 计算位置和宽度
-        const percentage = (annotation.time / duration) * 100;
-        container.style.left = `${percentage}%`;
-        container.style.position = 'absolute';
-        container.style.zIndex = '16';
-        
-        // 如果有时长，设置宽度；否则保持默认圆点样式
-        if (annotation.duration && annotation.duration > 0) {
-            const widthPercentage = (annotation.duration / duration) * 100;
-            container.style.width = `${widthPercentage}%`;
-            container.classList.add('has-duration');
-        } else {
-            const widthPercentage = 0;
-            container.style.width = `${widthPercentage}%`;
-            container.classList.remove('has-duration');
-        }
-        
-        // 创建圆点或条形
-        const dot = document.createElement('div');
-        dot.className = 'annotation-dot';
-        dot.style.cursor = 'pointer';
-        dot.style.transition = 'all 0.3s ease';
-        dot.style.position = 'relative';
-        
-        // 创建标题容器（用于定位popup，不设置overflow限制）
-        const title = document.createElement('div');
-        title.className = 'annotation-title';
-        
-        
-        // 应用动态高度
-        if (levelHeightMap) {
-            const normalizedLevel = this.normalizeLevel(annotation.level);
-            let levelKey;
-            if (normalizedLevel === '1') levelKey = 1; // 高
-            else if (normalizedLevel === '2') levelKey = 2; // 中
-            else if (normalizedLevel === '3') levelKey = 3; // 低
-            else levelKey = 4; // 默认
-            
-            const heightPercent = levelHeightMap[levelKey] || 100;
-            
-            title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
-        } else {
-            // 默认转换（向后兼容）
-            title.style.transform = 'translateX(-50%) translateY(-100%)';
-        }
-        
-        // 创建标题文本容器（处理文本溢出）
-        const titleText = document.createElement('div');
-        titleText.textContent = annotation.title || '';
-        titleText.style.padding = '2px 6px';
-        titleText.style.fontSize = '10px';
-        titleText.style.fontWeight = '500';
-        titleText.style.whiteSpace = 'nowrap';
-        titleText.style.maxWidth = '80px';
-        titleText.style.overflow = 'hidden';
-        titleText.style.textOverflow = 'ellipsis';
-        
-        // 如果没有标题，隐藏标题文本但保持可交互性
-        if (!annotation.title) {
-            titleText.style.opacity = '0';
-            // 对于annotation-title容器，设置透明背景和边框
-            title.style.background = 'transparent';
-            title.style.border = 'transparent';
-            title.style.backdropFilter = 'none';
-            // 保持 pointer events 以便hover触发popup
-        }
-        
-        // 创建popup元素并添加到标题容器内
-        const popup = this.createPopupElement(annotation);
-        
-        title.appendChild(titleText);
-        title.appendChild(popup);
-        
-        container.appendChild(title);
-        container.appendChild(dot);
-
-        // 圆点缩放效果（通过CSS hover处理popup显示）
-        container.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-        container.addEventListener('mouseenter', (e) => {
-            e.stopPropagation();
-        });
-
-        container.addEventListener('mouseleave', (e) => {
-            e.stopPropagation();
-        });
-
-        // 点击跳转
-        container.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.jumpToAnnotation(annotation.id);
-        });
-
-        // 初始化播放状态
-        if (this.player && typeof window.updateElementPlayedStatus === 'function') {
-            const currentTime = this.player.currentTime();
-            window.updateElementPlayedStatus(container, annotation, currentTime);
-        }
-
-        return container;
+    // 添加级别类
+    const normalizedLevel = this.normalizeLevel(annotation.level);
+    if (normalizedLevel === '1') {
+      thumbnail.classList.add('level-high');
+    } else if (normalizedLevel === '2') {
+      thumbnail.classList.add('level-medium');
+    } else if (normalizedLevel === '3') {
+      thumbnail.classList.add('level-low');
+    } else {
+      thumbnail.classList.add('level-default');
     }
 
-    // 创建popup元素
-    createPopupElement(annotation) {
-        const popup = document.createElement('div');
-        popup.className = 'annotation-popup';
-        
-        // 获取颜色配置
-        const colorConfig = this.getColorConfig(annotation.color);
-        const textColor = annotation.color === 'yellow' ? '#000' : 'white';
-        
-        // 生成时间信息（包含时长）
-        const timeInfo = annotation.duration && annotation.duration > 0 
-            ? `${this.formatTime(annotation.time)} ~ ${this.formatTime(annotation.time + annotation.duration)} (${this.formatTime(annotation.duration)})`
-            : this.formatTime(annotation.time);
-        
-        popup.innerHTML = `
+    // 如果有时长，添加时长类并设置宽度
+    if (annotation.duration && annotation.duration > 0) {
+      thumbnail.classList.add('has-duration');
+      const widthPercentage = (annotation.duration / duration) * 100;
+      thumbnail.style.width = `${Math.max(0.1, widthPercentage)}%`; // 最小宽度0.1%
+    }
+
+    // 计算并设置位置（这个必须用JS动态计算）
+    const percentage = (annotation.time / duration) * 100;
+    thumbnail.style.left = `${percentage}%`;
+
+    return thumbnail;
+  }
+
+  // 计算动态级别高度映射
+  calculateDynamicLevelHeights() {
+    // 收集所有存在的级别
+    const existingLevels = new Set();
+    this.annotations.forEach(annotation => {
+      const normalizedLevel = this.normalizeLevel(annotation.level);
+      if (normalizedLevel === '1') existingLevels.add(1); // 高
+      else if (normalizedLevel === '2') existingLevels.add(2); // 中
+      else if (normalizedLevel === '3') existingLevels.add(3); // 低
+      else existingLevels.add(4); // 默认
+    });
+
+    // 如果没有打点，返回默认映射
+    if (existingLevels.size === 0) {
+      return { 1: 100, 2: 200, 3: 300, 4: 400 };
+    }
+
+    // 将级别按从低到高排序：4(默认) < 3(低) < 2(中) < 1(高)
+    const sortedLevels = Array.from(existingLevels).sort((a, b) => b - a);
+
+    // 为每个存在的级别分配连续的高度
+    const levelHeightMap = {};
+    sortedLevels.forEach((level, index) => {
+      // 从最低级别（默认）开始，分配高度：默认 -> 100%, 低 -> 200%, 中 -> 300%, 高 -> 400%
+      levelHeightMap[level] = (index + 1) * 100;
+    });
+
+    return levelHeightMap;
+  }
+
+  // 创建打点圆点元素
+  createAnnotationDot(annotation, duration, levelHeightMap = null) {
+    // 创建容器元素
+    const container = document.createElement('div');
+    let className = 'annotation-container';
+
+    // 添加颜色类
+    if (annotation.color) {
+      className += ` color-${annotation.color}`;
+    }
+
+    // 不再添加CSS级别类，而是使用动态高度
+    // if (annotation.level) {
+    //     className += ` level-${annotation.level}`;
+    // }
+
+    container.className = className;
+    container.dataset.annotationId = annotation.id;
+
+    // 计算位置和宽度
+    const percentage = (annotation.time / duration) * 100;
+    container.style.left = `${percentage}%`;
+    container.style.position = 'absolute';
+    container.style.zIndex = '16';
+
+    // 如果有时长，设置宽度；否则保持默认圆点样式
+    if (annotation.duration && annotation.duration > 0) {
+      const widthPercentage = (annotation.duration / duration) * 100;
+      container.style.width = `${widthPercentage}%`;
+      container.classList.add('has-duration');
+    } else {
+      const widthPercentage = 0;
+      container.style.width = `${widthPercentage}%`;
+      container.classList.remove('has-duration');
+    }
+
+    // 创建圆点或条形
+    const dot = document.createElement('div');
+    dot.className = 'annotation-dot';
+    dot.style.cursor = 'pointer';
+    dot.style.transition = 'all 0.3s ease';
+    dot.style.position = 'relative';
+
+    // 创建标题容器（用于定位popup，不设置overflow限制）
+    const title = document.createElement('div');
+    title.className = 'annotation-title';
+
+
+    // 应用动态高度
+    if (levelHeightMap) {
+      const normalizedLevel = this.normalizeLevel(annotation.level);
+      let levelKey;
+      if (normalizedLevel === '1') levelKey = 1; // 高
+      else if (normalizedLevel === '2') levelKey = 2; // 中
+      else if (normalizedLevel === '3') levelKey = 3; // 低
+      else levelKey = 4; // 默认
+
+      const heightPercent = levelHeightMap[levelKey] || 100;
+
+      title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
+    } else {
+      // 默认转换（向后兼容）
+      title.style.transform = 'translateX(-50%) translateY(-100%)';
+    }
+
+    // 创建标题文本容器（处理文本溢出）
+    const titleText = document.createElement('div');
+    titleText.textContent = annotation.title || '';
+    titleText.style.padding = '2px 6px';
+    titleText.style.fontSize = '10px';
+    titleText.style.fontWeight = '500';
+    titleText.style.whiteSpace = 'nowrap';
+    titleText.style.maxWidth = '80px';
+    titleText.style.overflow = 'hidden';
+    titleText.style.textOverflow = 'ellipsis';
+
+    // 如果没有标题，隐藏标题文本但保持可交互性
+    if (!annotation.title) {
+      titleText.style.opacity = '0';
+      // 对于annotation-title容器，设置透明背景和边框
+      title.style.background = 'transparent';
+      title.style.border = 'transparent';
+      title.style.backdropFilter = 'none';
+      // 保持 pointer events 以便hover触发popup
+    }
+
+    // 创建popup元素并添加到标题容器内
+    const popup = this.createPopupElement(annotation);
+
+    title.appendChild(titleText);
+    title.appendChild(popup);
+
+    container.appendChild(title);
+    container.appendChild(dot);
+
+    // 圆点缩放效果（通过CSS hover处理popup显示）
+    container.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+    });
+    container.addEventListener('mouseenter', (e) => {
+      e.stopPropagation();
+    });
+
+    container.addEventListener('mouseleave', (e) => {
+      e.stopPropagation();
+    });
+
+    // 点击跳转
+    container.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.jumpToAnnotation(annotation.id);
+    });
+
+    // 初始化播放状态
+    if (this.player && typeof window.updateElementPlayedStatus === 'function') {
+      const currentTime = this.player.currentTime();
+      window.updateElementPlayedStatus(container, annotation, currentTime);
+    }
+
+    return container;
+  }
+
+  // 创建popup元素
+  createPopupElement(annotation) {
+    const popup = document.createElement('div');
+    popup.className = 'annotation-popup';
+
+    // 获取颜色配置
+    const colorConfig = this.getColorConfig(annotation.color);
+    const textColor = annotation.color === 'yellow' ? '#000' : 'white';
+
+    // 生成时间信息（包含时长）
+    const timeInfo = annotation.duration && annotation.duration > 0
+      ? `${this.formatTime(annotation.time)} ~ ${this.formatTime(annotation.time + annotation.duration)} (${this.formatTime(annotation.duration)})`
+      : this.formatTime(annotation.time);
+
+    popup.innerHTML = `
             <div class="annotation-popup-content">
                 <div class="annotation-time" style="color: ${colorConfig.primary};">${timeInfo}</div>
                 ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
@@ -540,94 +540,94 @@ class AnnotationManager {
                 </div>
             </div>
         `;
-        
-        // popup整体点击事件 - 进入编辑窗口
-        popup.addEventListener('click', (e) => {
-            e.stopPropagation(); // 阻止事件冒泡到进度条
-            // 如果点击的是按钮，不触发popup的编辑功能
-            if (e.target.closest('.popup-icon-btn')) {
-                return;
-            }
-            this.showAnnotationDetailModal(annotation.id);
-        });
 
-        // 阻止popup的其他鼠标事件冒泡到进度条
-        popup.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
+    // popup整体点击事件 - 进入编辑窗口
+    popup.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止事件冒泡到进度条
+      // 如果点击的是按钮，不触发popup的编辑功能
+      if (e.target.closest('.popup-icon-btn')) {
+        return;
+      }
+      this.showAnnotationDetailModal(annotation.id);
+    });
 
-        popup.addEventListener('mousemove', (e) => {
-            e.stopPropagation();
-        });
+    // 阻止popup的其他鼠标事件冒泡到进度条
+    popup.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+    });
 
-        popup.addEventListener('mouseup', (e) => {
-            e.stopPropagation();
-        });
+    popup.addEventListener('mousemove', (e) => {
+      e.stopPropagation();
+    });
 
-        // 绑定编辑按钮事件
-        const editBtn = popup.querySelector('.edit-btn');
-        if (editBtn) {
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showAnnotationDetailModal(annotation.id);
-            });
-            // 阻止按钮的其他鼠标事件
-            editBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-            editBtn.addEventListener('mouseup', (e) => e.stopPropagation());
-        }
+    popup.addEventListener('mouseup', (e) => {
+      e.stopPropagation();
+    });
 
-        // 绑定标记编辑按钮事件
-        const markerEditBtn = popup.querySelector('.marker-edit-btn');
-        if (markerEditBtn) {
-            markerEditBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // 如果打点没有marker数据，先初始化
-                if (!annotation.marker) {
-                    annotation.marker = {
-                        x: 25,      // 默认位置25%
-                        y: 25,      // 默认位置25%
-                        width: 20,  // 默认宽度20%
-                        height: 15, // 默认高度15%
-                        contentPosition: {
-                            horizontalPosition: 'inside',
-                            verticalPosition: 'inside',
-                            textAlign: 'left',
-                            verticalAlign: 'flex-start'
-                        }
-                    };
-                }
-                // 直接进入标记编辑模式
-                this.startMarkerEditingDirect(annotation);
-            });
-            // 阻止按钮的其他鼠标事件
-            markerEditBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-            markerEditBtn.addEventListener('mouseup', (e) => e.stopPropagation());
-        }
-
-        // 绑定删除按钮事件
-        const deleteBtn = popup.querySelector('.delete-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm('确定要删除这个打点吗？')) {
-                    await this.deleteAnnotation(annotation.id);
-                }
-            });
-            // 阻止按钮的其他鼠标事件
-            deleteBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-            deleteBtn.addEventListener('mouseup', (e) => e.stopPropagation());
-        }
-        
-        return popup;
+    // 绑定编辑按钮事件
+    const editBtn = popup.querySelector('.edit-btn');
+    if (editBtn) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showAnnotationDetailModal(annotation.id);
+      });
+      // 阻止按钮的其他鼠标事件
+      editBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+      editBtn.addEventListener('mouseup', (e) => e.stopPropagation());
     }
 
-    // 显示打点预览popup（已弃用，保留兼容性）
-    showAnnotationPopup(annotation, x, y) {
-        this.hideAnnotationPopup(); // 先隐藏现有popup
+    // 绑定标记编辑按钮事件
+    const markerEditBtn = popup.querySelector('.marker-edit-btn');
+    if (markerEditBtn) {
+      markerEditBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 如果打点没有marker数据，先初始化
+        if (!annotation.marker) {
+          annotation.marker = {
+            x: 25,      // 默认位置25%
+            y: 25,      // 默认位置25%
+            width: 20,  // 默认宽度20%
+            height: 15, // 默认高度15%
+            contentPosition: {
+              horizontalPosition: 'inside',
+              verticalPosition: 'inside',
+              textAlign: 'left',
+              verticalAlign: 'flex-start'
+            }
+          };
+        }
+        // 直接进入标记编辑模式
+        this.startMarkerEditingDirect(annotation);
+      });
+      // 阻止按钮的其他鼠标事件
+      markerEditBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+      markerEditBtn.addEventListener('mouseup', (e) => e.stopPropagation());
+    }
 
-        const popup = document.createElement('div');
-        popup.className = 'annotation-popup';
-        popup.innerHTML = `
+    // 绑定删除按钮事件
+    const deleteBtn = popup.querySelector('.delete-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm('确定要删除这个打点吗？')) {
+          await this.deleteAnnotation(annotation.id);
+        }
+      });
+      // 阻止按钮的其他鼠标事件
+      deleteBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+      deleteBtn.addEventListener('mouseup', (e) => e.stopPropagation());
+    }
+
+    return popup;
+  }
+
+  // 显示打点预览popup（已弃用，保留兼容性）
+  showAnnotationPopup(annotation, x, y) {
+    this.hideAnnotationPopup(); // 先隐藏现有popup
+
+    const popup = document.createElement('div');
+    popup.className = 'annotation-popup';
+    popup.innerHTML = `
             <div class="annotation-popup-content">
                 <div class="annotation-time">${this.formatTime(annotation.time)}</div>
                 ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
@@ -639,30 +639,30 @@ class AnnotationManager {
             </div>
         `;
 
-        // 设置popup样式
-        popup.style.position = 'fixed';
-        popup.style.left = x + 'px';
-        popup.style.top = (y - 10) + 'px';
-        popup.style.transform = 'translate(-50%, -100%)';
-        popup.style.background = 'rgba(0,0,0,0.3)';
-        popup.style.color = 'white';
-        popup.style.padding = '12px';
-        popup.style.borderRadius = '8px';
-        popup.style.fontSize = '12px';
-        popup.style.zIndex = '1000';
-        popup.style.maxWidth = '250px';
-        popup.style.border = '1px solid rgba(255,255,255,0.3)';
-        popup.style.backdropFilter = 'blur(15px)';
-        popup.style.webkitBackdropFilter = 'blur(1px)';
-        popup.style.pointerEvents = 'auto';
+    // 设置popup样式
+    popup.style.position = 'fixed';
+    popup.style.left = x + 'px';
+    popup.style.top = (y - 10) + 'px';
+    popup.style.transform = 'translate(-50%, -100%)';
+    popup.style.background = 'rgba(0,0,0,0.3)';
+    popup.style.color = 'white';
+    popup.style.padding = '12px';
+    popup.style.borderRadius = '8px';
+    popup.style.fontSize = '12px';
+    popup.style.zIndex = '1000';
+    popup.style.maxWidth = '250px';
+    popup.style.border = '1px solid rgba(255,255,255,0.3)';
+    popup.style.backdropFilter = 'blur(15px)';
+    popup.style.webkitBackdropFilter = 'blur(1px)';
+    popup.style.pointerEvents = 'auto';
 
-        // 获取颜色配置
-        const colorConfig = this.getColorConfig(annotation.color);
-        const textColor = annotation.color === 'yellow' ? '#000' : 'white';
+    // 获取颜色配置
+    const colorConfig = this.getColorConfig(annotation.color);
+    const textColor = annotation.color === 'yellow' ? '#000' : 'white';
 
-        // 添加样式到popup内容
-        const style = document.createElement('style');
-        style.textContent = `
+    // 添加样式到popup内容
+    const style = document.createElement('style');
+    style.textContent = `
             .annotation-popup-content .annotation-time {
                 color: ${colorConfig.primary};
                 font-weight: bold;
@@ -700,94 +700,94 @@ class AnnotationManager {
                 background: rgba(${colorConfig.rgba},1);
             }
         `;
-        popup.appendChild(style);
+    popup.appendChild(style);
 
-        // 绑定查看详情按钮事件
-        const viewBtn = popup.querySelector('.view-btn');
-        if (viewBtn) {
-            viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showAnnotationDetailModal(annotation.id);
-                this.hideAnnotationPopup();
-            });
-        }
-
-        // 添加popup的鼠标事件处理
-        popup.addEventListener('mouseenter', () => {
-            // 鼠标进入popup时，取消隐藏
-            this.cancelHidePopup();
-        });
-
-        popup.addEventListener('mouseleave', () => {
-            // 鼠标离开popup时，安排隐藏
-            this.scheduleHidePopup();
-        });
-
-        document.body.appendChild(popup);
-        
-        // 设置自动隐藏（增加时间到8秒，给用户更多时间）
-        setTimeout(() => {
-            if (popup.parentNode) {
-                this.hideAnnotationPopup();
-            }
-        }, 8000);
+    // 绑定查看详情按钮事件
+    const viewBtn = popup.querySelector('.view-btn');
+    if (viewBtn) {
+      viewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showAnnotationDetailModal(annotation.id);
+        this.hideAnnotationPopup();
+      });
     }
 
-    // 安排延迟隐藏popup
-    scheduleHidePopup() {
-        // 清除之前的定时器
-        if (this.hidePopupTimer) {
-            clearTimeout(this.hidePopupTimer);
-        }
-        
-        // 设置延迟隐藏（200ms后隐藏，给用户足够时间移动鼠标到popup）
-        this.hidePopupTimer = setTimeout(() => {
-            this.hideAnnotationPopup();
-        }, 200);
+    // 添加popup的鼠标事件处理
+    popup.addEventListener('mouseenter', () => {
+      // 鼠标进入popup时，取消隐藏
+      this.cancelHidePopup();
+    });
+
+    popup.addEventListener('mouseleave', () => {
+      // 鼠标离开popup时，安排隐藏
+      this.scheduleHidePopup();
+    });
+
+    document.body.appendChild(popup);
+
+    // 设置自动隐藏（增加时间到8秒，给用户更多时间）
+    setTimeout(() => {
+      if (popup.parentNode) {
+        this.hideAnnotationPopup();
+      }
+    }, 8000);
+  }
+
+  // 安排延迟隐藏popup
+  scheduleHidePopup() {
+    // 清除之前的定时器
+    if (this.hidePopupTimer) {
+      clearTimeout(this.hidePopupTimer);
     }
 
-    // 取消隐藏popup
-    cancelHidePopup() {
-        if (this.hidePopupTimer) {
-            clearTimeout(this.hidePopupTimer);
-            this.hidePopupTimer = null;
-        }
+    // 设置延迟隐藏（200ms后隐藏，给用户足够时间移动鼠标到popup）
+    this.hidePopupTimer = setTimeout(() => {
+      this.hideAnnotationPopup();
+    }, 200);
+  }
+
+  // 取消隐藏popup
+  cancelHidePopup() {
+    if (this.hidePopupTimer) {
+      clearTimeout(this.hidePopupTimer);
+      this.hidePopupTimer = null;
+    }
+  }
+
+  // 隐藏打点popup
+  hideAnnotationPopup() {
+    const existingPopup = document.querySelector('.annotation-popup');
+    if (existingPopup) {
+      existingPopup.remove();
     }
 
-    // 隐藏打点popup
-    hideAnnotationPopup() {
-        const existingPopup = document.querySelector('.annotation-popup');
-        if (existingPopup) {
-            existingPopup.remove();
-        }
-        
-        // 清除定时器
-        if (this.hidePopupTimer) {
-            clearTimeout(this.hidePopupTimer);
-            this.hidePopupTimer = null;
-        }
+    // 清除定时器
+    if (this.hidePopupTimer) {
+      clearTimeout(this.hidePopupTimer);
+      this.hidePopupTimer = null;
     }
+  }
 
-    // 显示打点编辑模态框（统一用于新建和编辑）
-    showAnnotationModal(currentTime, annotation = null) {
-        const isEdit = annotation !== null;
-        const modalTitle = isEdit ? `编辑打点 - ${this.formatTime(annotation.time)}` : `添加打点 - ${this.formatTime(currentTime)}`;
-        
-        // 获取默认值
-        const defaultTitle = isEdit ? annotation.title : '';
-        const defaultText = isEdit ? annotation.text : '';
-        const defaultColor = isEdit ? (annotation.color === 'gray' ? 'blue' : annotation.color || 'blue') : 'blue';
-        // 获取规范化的level值用于显示
-        const normalizedLevel = isEdit ? this.normalizeLevel(annotation.level) : null;
-        const defaultLevel = normalizedLevel || '';
-        const defaultDuration = isEdit ? annotation.duration || '' : '';
-        const defaultTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
-        
-        // 创建模态框
-        const modal = document.createElement('div');
-        modal.className = 'annotation-input-modal';
-        modal.tabIndex = 0; // 让模态框本身可以获取焦点
-        modal.innerHTML = `
+  // 显示打点编辑模态框（统一用于新建和编辑）
+  showAnnotationModal(currentTime, annotation = null) {
+    const isEdit = annotation !== null;
+    const modalTitle = isEdit ? `编辑打点 - ${this.formatTime(annotation.time)}` : `添加打点 - ${this.formatTime(currentTime)}`;
+
+    // 获取默认值
+    const defaultTitle = isEdit ? annotation.title : '';
+    const defaultText = isEdit ? annotation.text : '';
+    const defaultColor = isEdit ? (annotation.color === 'gray' ? 'blue' : annotation.color || 'blue') : 'blue';
+    // 获取规范化的level值用于显示
+    const normalizedLevel = isEdit ? this.normalizeLevel(annotation.level) : null;
+    const defaultLevel = normalizedLevel || '';
+    const defaultDuration = isEdit ? annotation.duration || '' : '';
+    const defaultTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
+
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.className = 'annotation-input-modal';
+    modal.tabIndex = 0; // 让模态框本身可以获取焦点
+    modal.innerHTML = `
             <div class="annotation-input-overlay"></div>
             <div class="annotation-input-content">
                 <div class="annotation-input-header">
@@ -918,282 +918,282 @@ class AnnotationManager {
             </div>
         `;
 
-        // 事件监听
-        const closeBtn = modal.querySelector('.annotation-input-close');
-        const overlay = modal.querySelector('.annotation-input-overlay');
-        const saveBtn = modal.querySelector('.annotation-input-btn-save');
-        const deleteBtn = modal.querySelector('#annotation-delete-btn');
-        const editMarkerBtn = modal.querySelector('#annotation-edit-marker-btn');
-        const timeInput = modal.querySelector('#annotation-input-time');
-        const titleInput = modal.querySelector('#annotation-input-title');
-        const textArea = modal.querySelector('#annotation-input-text');
-        const durationInput = modal.querySelector('#annotation-input-duration');
-        const colorSelect = modal.querySelector('#annotation-input-color');
-        const levelSelect = modal.querySelector('#annotation-input-level');
-        const setCurrentTimeBtn = modal.querySelector('#set-current-time-btn');
-        const setDurationToCurrentBtn = modal.querySelector('#set-duration-to-current-btn');
-        const clearDurationBtn = modal.querySelector('#clear-duration-btn');
+    // 事件监听
+    const closeBtn = modal.querySelector('.annotation-input-close');
+    const overlay = modal.querySelector('.annotation-input-overlay');
+    const saveBtn = modal.querySelector('.annotation-input-btn-save');
+    const deleteBtn = modal.querySelector('#annotation-delete-btn');
+    const editMarkerBtn = modal.querySelector('#annotation-edit-marker-btn');
+    const timeInput = modal.querySelector('#annotation-input-time');
+    const titleInput = modal.querySelector('#annotation-input-title');
+    const textArea = modal.querySelector('#annotation-input-text');
+    const durationInput = modal.querySelector('#annotation-input-duration');
+    const colorSelect = modal.querySelector('#annotation-input-color');
+    const levelSelect = modal.querySelector('#annotation-input-level');
+    const setCurrentTimeBtn = modal.querySelector('#set-current-time-btn');
+    const setDurationToCurrentBtn = modal.querySelector('#set-duration-to-current-btn');
+    const clearDurationBtn = modal.querySelector('#clear-duration-btn');
 
-        const closeModal = () => {
-            // 清理焦点陷阱事件监听器
-            if (modal._focusTrapCleanup) {
-                modal._focusTrapCleanup.forEach(cleanup => cleanup());
-                modal._focusTrapCleanup = null;
-            }
-            // 清理模态框快捷键事件监听器
-            if (modal._modalShortcutsCleanup) {
-                modal._modalShortcutsCleanup.forEach(cleanup => cleanup());
-                modal._modalShortcutsCleanup = null;
-            }
-            modal.remove();
-        };
+    const closeModal = () => {
+      // 清理焦点陷阱事件监听器
+      if (modal._focusTrapCleanup) {
+        modal._focusTrapCleanup.forEach(cleanup => cleanup());
+        modal._focusTrapCleanup = null;
+      }
+      // 清理模态框快捷键事件监听器
+      if (modal._modalShortcutsCleanup) {
+        modal._modalShortcutsCleanup.forEach(cleanup => cleanup());
+        modal._modalShortcutsCleanup = null;
+      }
+      modal.remove();
+    };
 
-        closeBtn.addEventListener('click', closeModal);
-        overlay.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
 
-        // 点击模态框内容区域时，让模态框获取焦点（确保快捷键能工作）
-        const modalContent = modal.querySelector('.annotation-input-content');
-        modalContent.addEventListener('click', (e) => {
-            // 如果点击的不是输入元素，则让模态框获取焦点
-            const clickedElement = e.target;
-            const isInputElement = clickedElement.tagName === 'INPUT' || 
-                                 clickedElement.tagName === 'TEXTAREA' || 
-                                 clickedElement.tagName === 'BUTTON' ||
-                                 clickedElement.closest('.annotation-color-group') ||
-                                 clickedElement.closest('.annotation-level-group');
-            
-            if (!isInputElement) {
-                modal.focus();
-            }
-        });
+    // 点击模态框内容区域时，让模态框获取焦点（确保快捷键能工作）
+    const modalContent = modal.querySelector('.annotation-input-content');
+    modalContent.addEventListener('click', (e) => {
+      // 如果点击的不是输入元素，则让模态框获取焦点
+      const clickedElement = e.target;
+      const isInputElement = clickedElement.tagName === 'INPUT' ||
+        clickedElement.tagName === 'TEXTAREA' ||
+        clickedElement.tagName === 'BUTTON' ||
+        clickedElement.closest('.annotation-color-group') ||
+        clickedElement.closest('.annotation-level-group');
 
-        // 为时间输入添加实时验证和标题更新
-        const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
-        const modalTitleElement = modal.querySelector('.annotation-input-header h3');
-        
-        const updateModalTitle = () => {
-            const timeStr = timeInput.value.trim();
-            const parsedTime = this.parseTimeString(timeStr);
-            
-            if (parsedTime !== null) {
-                // 有效时间，更新标题
-                const formattedTime = this.formatTime(parsedTime);
-                modalTitleElement.textContent = isEdit ? `编辑打点 - ${formattedTime}` : `添加打点 - ${formattedTime}`;
-            } else if (timeStr) {
-                // 无效时间格式，显示输入的文本
-                modalTitleElement.textContent = isEdit ? `编辑打点 - ${timeStr}` : `添加打点 - ${timeStr}`;
-            } else {
-                // 空输入，使用原始时间
-                const originalFormattedTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
-                modalTitleElement.textContent = isEdit ? `编辑打点 - ${originalFormattedTime}` : `添加打点 - ${originalFormattedTime}`;
-            }
-        };
-        
-        timeInput.addEventListener('input', () => {
-            this.validateTimeInput(timeInput, timeErrorContainer);
-            updateModalTitle();
-        });
+      if (!isInputElement) {
+        modal.focus();
+      }
+    });
 
-        timeInput.addEventListener('blur', () => {
-            this.validateTimeInput(timeInput, timeErrorContainer);
-            updateModalTitle();
-        });
+    // 为时间输入添加实时验证和标题更新
+    const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
+    const modalTitleElement = modal.querySelector('.annotation-input-header h3');
 
-        // 处理"从当前开始"按钮
-        setCurrentTimeBtn.addEventListener('click', () => {
-            if (this.player) {
-                const currentVideoTime = this.player.currentTime();
-                const formattedTime = this.formatTime(currentVideoTime);
-                timeInput.value = formattedTime;
-                
-                // 触发验证和标题更新
-                this.validateTimeInput(timeInput, timeErrorContainer);
-                updateModalTitle();
-                
-                // 触发input事件以确保所有监听器都能响应
-                timeInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        });
+    const updateModalTitle = () => {
+      const timeStr = timeInput.value.trim();
+      const parsedTime = this.parseTimeString(timeStr);
 
-        // 处理"到当前结束"按钮
-        setDurationToCurrentBtn.addEventListener('click', () => {
-            if (this.player) {
-                const currentVideoTime = this.player.currentTime();
-                
-                // 获取开始时间
-                const startTimeStr = timeInput.value.trim();
-                const startTime = this.parseTimeString(startTimeStr);
-                
-                if (startTime !== null && currentVideoTime > startTime) {
-                    // 计算时长：当前时间 - 开始时间
-                    const duration = currentVideoTime - startTime;
-                    // 保留一位小数
-                    const formattedDuration = Math.round(duration * 10) / 10;
-                    durationInput.value = formattedDuration;
-                    
-                    // 触发input事件
-                    durationInput.dispatchEvent(new Event('input', { bubbles: true }));
-                } else if (startTime === null) {
-                    // 开始时间格式无效，提示用户
-                    alert('请先输入有效的开始时间');
-                    timeInput.focus();
-                } else {
-                    // 当前时间早于或等于开始时间
-                    alert('当前播放时间需要晚于开始时间');
-                }
-            }
-        });
+      if (parsedTime !== null) {
+        // 有效时间，更新标题
+        const formattedTime = this.formatTime(parsedTime);
+        modalTitleElement.textContent = isEdit ? `编辑打点 - ${formattedTime}` : `添加打点 - ${formattedTime}`;
+      } else if (timeStr) {
+        // 无效时间格式，显示输入的文本
+        modalTitleElement.textContent = isEdit ? `编辑打点 - ${timeStr}` : `添加打点 - ${timeStr}`;
+      } else {
+        // 空输入，使用原始时间
+        const originalFormattedTime = isEdit ? this.formatTime(annotation.time) : this.formatTime(currentTime);
+        modalTitleElement.textContent = isEdit ? `编辑打点 - ${originalFormattedTime}` : `添加打点 - ${originalFormattedTime}`;
+      }
+    };
 
-        // 处理"清空时长"按钮
-        const updateClearButtonVisibility = () => {
-            const hasValue = durationInput.value.trim() !== '';
-            clearDurationBtn.style.display = hasValue ? 'flex' : 'none';
-        };
+    timeInput.addEventListener('input', () => {
+      this.validateTimeInput(timeInput, timeErrorContainer);
+      updateModalTitle();
+    });
 
-        clearDurationBtn.addEventListener('click', () => {
-            durationInput.value = '';
-            durationInput.dispatchEvent(new Event('input', { bubbles: true }));
-            updateClearButtonVisibility();
-            durationInput.focus();
-        });
+    timeInput.addEventListener('blur', () => {
+      this.validateTimeInput(timeInput, timeErrorContainer);
+      updateModalTitle();
+    });
 
-        // 监听时长输入变化，控制清空按钮显示
-        durationInput.addEventListener('input', updateClearButtonVisibility);
-        durationInput.addEventListener('change', updateClearButtonVisibility);
+    // 处理"从当前开始"按钮
+    setCurrentTimeBtn.addEventListener('click', () => {
+      if (this.player) {
+        const currentVideoTime = this.player.currentTime();
+        const formattedTime = this.formatTime(currentVideoTime);
+        timeInput.value = formattedTime;
 
-        // 初始化清空按钮显示状态
-        updateClearButtonVisibility();
+        // 触发验证和标题更新
+        this.validateTimeInput(timeInput, timeErrorContainer);
+        updateModalTitle();
 
-        // 删除按钮（仅编辑时显示）
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', async () => {
-                if (confirm('确定要删除这个打点吗？')) {
-                    await this.deleteAnnotation(annotation.id);
-                    closeModal();
-                }
-            });
-        }
+        // 触发input事件以确保所有监听器都能响应
+        timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
 
-        // 编辑标记按钮事件
-        if (editMarkerBtn) {
-            console.log('绑定编辑标记按钮事件', editMarkerBtn);
-            editMarkerBtn.addEventListener('click', () => {
-                console.log('编辑标记按钮被点击');
-                this.startMarkerEditing(annotation, modal);
-            });
+    // 处理"到当前结束"按钮
+    setDurationToCurrentBtn.addEventListener('click', () => {
+      if (this.player) {
+        const currentVideoTime = this.player.currentTime();
+
+        // 获取开始时间
+        const startTimeStr = timeInput.value.trim();
+        const startTime = this.parseTimeString(startTimeStr);
+
+        if (startTime !== null && currentVideoTime > startTime) {
+          // 计算时长：当前时间 - 开始时间
+          const duration = currentVideoTime - startTime;
+          // 保留一位小数
+          const formattedDuration = Math.round(duration * 10) / 10;
+          durationInput.value = formattedDuration;
+
+          // 触发input事件
+          durationInput.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (startTime === null) {
+          // 开始时间格式无效，提示用户
+          alert('请先输入有效的开始时间');
+          timeInput.focus();
         } else {
-            console.warn('未找到编辑标记按钮');
+          // 当前时间早于或等于开始时间
+          alert('当前播放时间需要晚于开始时间');
         }
+      }
+    });
 
-        // 保存打点
-        saveBtn.addEventListener('click', async () => {
-            // 验证时间输入
-            const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
-            const isTimeValid = this.validateTimeInput(timeInput, timeErrorContainer);
-            
-            if (!isTimeValid) {
-                // 时间格式错误，停止保存
-                timeInput.focus();
-                return;
-            }
-            
-            // 解析时间
-            const parsedTime = this.parseTimeString(timeInput.value.trim());
-            const actualTime = parsedTime !== null ? parsedTime : (isEdit ? annotation.time : currentTime);
-            
-            const title = titleInput.value.trim();
-            const text = textArea.value.trim();
-            const duration = durationInput.value ? parseFloat(durationInput.value) : null;
-            const colorRadio = document.querySelector('input[name="annotation-color"]:checked');
-            const levelRadio = document.querySelector('input[name="annotation-level"]:checked');
-            const color = colorRadio ? colorRadio.value : 'blue';
-            // 规范化level值：空字符串表示默认级别
-            const rawLevel = levelRadio ? levelRadio.value : '';
-            const level = rawLevel === '' ? null : rawLevel;
-            
-            if (isEdit) {
-                // 编辑模式 - 需要支持时间修改
-                if (parsedTime !== null && parsedTime !== annotation.time) {
-                    // 时间发生了改变，需要特殊处理
-                    await this.editAnnotationWithTime(annotation.id, actualTime, title, text, color, level, duration);
-                } else {
-                    // 时间未改变，使用原有逻辑
-                    await this.editAnnotation(annotation.id, title, text, color, level, duration);
-                }
-            } else {
-                // 新建模式
-                const newAnnotation = await this.addAnnotation(actualTime, title, text, color, level, duration);
-                if (newAnnotation) {
-                    console.log('打点已添加:', newAnnotation);
-                }
-            }
-            closeModal();
-        });
+    // 处理"清空时长"按钮
+    const updateClearButtonVisibility = () => {
+      const hasValue = durationInput.value.trim() !== '';
+      clearDurationBtn.style.display = hasValue ? 'flex' : 'none';
+    };
 
-        // ESC键关闭
-        const escHandler = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        };
-        document.addEventListener('keydown', escHandler);
+    clearDurationBtn.addEventListener('click', () => {
+      durationInput.value = '';
+      durationInput.dispatchEvent(new Event('input', { bubbles: true }));
+      updateClearButtonVisibility();
+      durationInput.focus();
+    });
 
-        // 获取radio group元素
-        const colorGroup = modal.querySelector('.annotation-color-group');
-        const levelGroup = modal.querySelector('.annotation-level-group');
+    // 监听时长输入变化，控制清空按钮显示
+    durationInput.addEventListener('input', updateClearButtonVisibility);
+    durationInput.addEventListener('change', updateClearButtonVisibility);
 
-        // 添加模态框快捷键支持
-        this.setupModalShortcuts(modal, colorGroup, levelGroup);
+    // 初始化清空按钮显示状态
+    updateClearButtonVisibility();
 
-        // 添加键盘导航支持
-        this.setupRadioGroupNavigation(modal);
-
-        // 设置颜色同步
-        this.setupColorSync(modal, colorGroup, levelGroup);
-
-        // 阻止模态框内的按键事件冒泡到视频界面
-        this.setupModalKeyboardIsolation(modal);
-
-        // 设置焦点陷阱
-        this.setupFocusTrap(modal);
-
-        document.body.appendChild(modal);
-        
-        // 自动聚焦到标题输入框，如果失败则让模态框获取焦点
-        setTimeout(() => {
-            if (titleInput) {
-                titleInput.focus();
-            } else {
-                modal.focus();
-            }
-        }, 100);
+    // 删除按钮（仅编辑时显示）
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        if (confirm('确定要删除这个打点吗？')) {
+          await this.deleteAnnotation(annotation.id);
+          closeModal();
+        }
+      });
     }
 
-    // 显示添加打点的输入模态框（保持兼容性）
-    showAddAnnotationModal(currentTime) {
-        this.showAnnotationModal(currentTime);
+    // 编辑标记按钮事件
+    if (editMarkerBtn) {
+      console.log('绑定编辑标记按钮事件', editMarkerBtn);
+      editMarkerBtn.addEventListener('click', () => {
+        console.log('编辑标记按钮被点击');
+        this.startMarkerEditing(annotation, modal);
+      });
+    } else {
+      console.warn('未找到编辑标记按钮');
     }
 
+    // 保存打点
+    saveBtn.addEventListener('click', async () => {
+      // 验证时间输入
+      const timeErrorContainer = modal.querySelector('.annotation-input-time-error');
+      const isTimeValid = this.validateTimeInput(timeInput, timeErrorContainer);
+
+      if (!isTimeValid) {
+        // 时间格式错误，停止保存
+        timeInput.focus();
+        return;
+      }
+
+      // 解析时间
+      const parsedTime = this.parseTimeString(timeInput.value.trim());
+      const actualTime = parsedTime !== null ? parsedTime : (isEdit ? annotation.time : currentTime);
+
+      const title = titleInput.value.trim();
+      const text = textArea.value.trim();
+      const duration = durationInput.value ? parseFloat(durationInput.value) : null;
+      const colorRadio = document.querySelector('input[name="annotation-color"]:checked');
+      const levelRadio = document.querySelector('input[name="annotation-level"]:checked');
+      const color = colorRadio ? colorRadio.value : 'blue';
+      // 规范化level值：空字符串表示默认级别
+      const rawLevel = levelRadio ? levelRadio.value : '';
+      const level = rawLevel === '' ? null : rawLevel;
+
+      if (isEdit) {
+        // 编辑模式 - 需要支持时间修改
+        if (parsedTime !== null && parsedTime !== annotation.time) {
+          // 时间发生了改变，需要特殊处理
+          await this.editAnnotationWithTime(annotation.id, actualTime, title, text, color, level, duration);
+        } else {
+          // 时间未改变，使用原有逻辑
+          await this.editAnnotation(annotation.id, title, text, color, level, duration);
+        }
+      } else {
+        // 新建模式
+        const newAnnotation = await this.addAnnotation(actualTime, title, text, color, level, duration);
+        if (newAnnotation) {
+          console.log('打点已添加:', newAnnotation);
+        }
+      }
+      closeModal();
+    });
+
+    // ESC键关闭
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // 获取radio group元素
+    const colorGroup = modal.querySelector('.annotation-color-group');
+    const levelGroup = modal.querySelector('.annotation-level-group');
+
+    // 添加模态框快捷键支持
+    this.setupModalShortcuts(modal, colorGroup, levelGroup);
+
+    // 添加键盘导航支持
+    this.setupRadioGroupNavigation(modal);
+
+    // 设置颜色同步
+    this.setupColorSync(modal, colorGroup, levelGroup);
+
+    // 阻止模态框内的按键事件冒泡到视频界面
+    this.setupModalKeyboardIsolation(modal);
+
+    // 设置焦点陷阱
+    this.setupFocusTrap(modal);
+
+    document.body.appendChild(modal);
+
+    // 自动聚焦到标题输入框，如果失败则让模态框获取焦点
+    setTimeout(() => {
+      if (titleInput) {
+        titleInput.focus();
+      } else {
+        modal.focus();
+      }
+    }, 100);
+  }
+
+  // 显示添加打点的输入模态框（保持兼容性）
+  showAddAnnotationModal(currentTime) {
+    this.showAnnotationModal(currentTime);
+  }
 
 
-    // 显示打点详情模态框（重定向到统一方法）
-    showAnnotationDetailModal(annotationId) {
-        const annotation = this.annotations.find(ann => ann.id === annotationId);
-        if (!annotation) return;
-        
-        this.showAnnotationModal(annotation.time, annotation);
-    }
 
-    // 旧的详情模态框代码（已弃用）
-    _showOldAnnotationDetailModal(annotationId) {
-        const annotation = this.annotations.find(ann => ann.id === annotationId);
-        if (!annotation) return;
+  // 显示打点详情模态框（重定向到统一方法）
+  showAnnotationDetailModal(annotationId) {
+    const annotation = this.annotations.find(ann => ann.id === annotationId);
+    if (!annotation) return;
 
-        // 创建模态框
-        const modal = document.createElement('div');
-        modal.className = 'annotation-modal';
-        modal.innerHTML = `
+    this.showAnnotationModal(annotation.time, annotation);
+  }
+
+  // 旧的详情模态框代码（已弃用）
+  _showOldAnnotationDetailModal(annotationId) {
+    const annotation = this.annotations.find(ann => ann.id === annotationId);
+    if (!annotation) return;
+
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.className = 'annotation-modal';
+    modal.innerHTML = `
             <div class="annotation-modal-overlay"></div>
             <div class="annotation-modal-content">
                 <div class="annotation-modal-header">
@@ -1232,65 +1232,65 @@ class AnnotationManager {
             </div>
         `;
 
-        // 添加模态框样式
-        this.addModalStyles();
-
-        // 事件监听
-        const closeBtn = modal.querySelector('.annotation-modal-close');
-        const overlay = modal.querySelector('.annotation-modal-overlay');
-        const jumpBtn = modal.querySelector('#annotation-jump-btn');
-        const deleteBtn = modal.querySelector('#annotation-delete-btn');
-        const saveBtn = modal.querySelector('#annotation-save-btn');
-        const titleInput = modal.querySelector('#annotation-edit-title');
-        const textArea = modal.querySelector('#annotation-edit-text');
-
-        const closeModal = () => modal.remove();
-
-        closeBtn.addEventListener('click', closeModal);
-        overlay.addEventListener('click', closeModal);
-        
-        jumpBtn.addEventListener('click', () => {
-            this.jumpToAnnotation(annotationId);
-            closeModal();
-        });
-
-        deleteBtn.addEventListener('click', async () => {
-            if (confirm('确定要删除这个打点吗？')) {
-                await this.deleteAnnotation(annotationId);
-                closeModal();
-            }
-        });
-
-        saveBtn.addEventListener('click', async () => {
-            const newTitle = titleInput.value.trim();
-            const newText = textArea.value.trim();
-            
-            // 如果标题或内容有变化，则保存（允许两者都为空）
-            if (newTitle !== annotation.title || newText !== annotation.text) {
-                await this.editAnnotation(annotationId, newTitle, newText);
-            }
-            closeModal();
-        });
-
-        // ESC键关闭
-        const escHandler = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        };
-        document.addEventListener('keydown', escHandler);
-
-        document.body.appendChild(modal);
-    }
-
     // 添加模态框样式
-    addModalStyles() {
-        if (document.querySelector('#annotation-modal-styles')) return;
+    this.addModalStyles();
 
-        const style = document.createElement('style');
-        style.id = 'annotation-modal-styles';
-        style.textContent = `
+    // 事件监听
+    const closeBtn = modal.querySelector('.annotation-modal-close');
+    const overlay = modal.querySelector('.annotation-modal-overlay');
+    const jumpBtn = modal.querySelector('#annotation-jump-btn');
+    const deleteBtn = modal.querySelector('#annotation-delete-btn');
+    const saveBtn = modal.querySelector('#annotation-save-btn');
+    const titleInput = modal.querySelector('#annotation-edit-title');
+    const textArea = modal.querySelector('#annotation-edit-text');
+
+    const closeModal = () => modal.remove();
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+
+    jumpBtn.addEventListener('click', () => {
+      this.jumpToAnnotation(annotationId);
+      closeModal();
+    });
+
+    deleteBtn.addEventListener('click', async () => {
+      if (confirm('确定要删除这个打点吗？')) {
+        await this.deleteAnnotation(annotationId);
+        closeModal();
+      }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const newTitle = titleInput.value.trim();
+      const newText = textArea.value.trim();
+
+      // 如果标题或内容有变化，则保存（允许两者都为空）
+      if (newTitle !== annotation.title || newText !== annotation.text) {
+        await this.editAnnotation(annotationId, newTitle, newText);
+      }
+      closeModal();
+    });
+
+    // ESC键关闭
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(modal);
+  }
+
+  // 添加模态框样式
+  addModalStyles() {
+    if (document.querySelector('#annotation-modal-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'annotation-modal-styles';
+    style.textContent = `
             .annotation-modal {
                 position: fixed;
                 top: 0;
@@ -1456,741 +1456,741 @@ class AnnotationManager {
                 background: #c82333;
             }
         `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
+  }
+
+  // 格式化时间显示
+  formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+  }
+
+  // HTML转义
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // 工具方法：解析时间字符串为秒数
+  parseTimeString(timeStr) {
+    if (!timeStr || typeof timeStr !== 'string') {
+      return null;
     }
 
-    // 格式化时间显示
-    formatTime(seconds) {
-        if (isNaN(seconds) || seconds < 0) return '00:00';
-        
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-        
-        if (hours > 0) {
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        } else {
-            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
+    const trimmed = timeStr.trim();
+    if (!trimmed) {
+      return null;
     }
 
-    // HTML转义
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    // 支持格式：mm:ss 或 hh:mm:ss
+    const parts = trimmed.split(':');
 
-    // 工具方法：解析时间字符串为秒数
-    parseTimeString(timeStr) {
-        if (!timeStr || typeof timeStr !== 'string') {
-            return null;
-        }
+    if (parts.length === 2) {
+      // mm:ss 格式
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseFloat(parts[1]);
 
-        const trimmed = timeStr.trim();
-        if (!trimmed) {
-            return null;
-        }
-
-        // 支持格式：mm:ss 或 hh:mm:ss
-        const parts = trimmed.split(':');
-        
-        if (parts.length === 2) {
-            // mm:ss 格式
-            const minutes = parseInt(parts[0], 10);
-            const seconds = parseFloat(parts[1]);
-            
-            if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
-                return null;
-            }
-            
-            return minutes * 60 + seconds;
-        } else if (parts.length === 3) {
-            // hh:mm:ss 格式
-            const hours = parseInt(parts[0], 10);
-            const minutes = parseInt(parts[1], 10);
-            const seconds = parseFloat(parts[2]);
-            
-            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) || 
-                hours < 0 || minutes < 0 || seconds < 0 || 
-                minutes >= 60 || seconds >= 60) {
-                return null;
-            }
-            
-            return hours * 3600 + minutes * 60 + seconds;
-        }
-        
+      if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
         return null;
+      }
+
+      return minutes * 60 + seconds;
+    } else if (parts.length === 3) {
+      // hh:mm:ss 格式
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      const seconds = parseFloat(parts[2]);
+
+      if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) ||
+        hours < 0 || minutes < 0 || seconds < 0 ||
+        minutes >= 60 || seconds >= 60) {
+        return null;
+      }
+
+      return hours * 3600 + minutes * 60 + seconds;
     }
 
-    // 工具方法：验证时间输入并显示错误
-    validateTimeInput(timeInput, errorContainer = null) {
-        const timeStr = timeInput.value.trim();
-        const parsedTime = this.parseTimeString(timeStr);
-        
-        // 清除之前的错误样式
-        timeInput.classList.remove('error');
-        if (errorContainer) {
-            errorContainer.textContent = '';
-            errorContainer.style.display = 'none';
+    return null;
+  }
+
+  // 工具方法：验证时间输入并显示错误
+  validateTimeInput(timeInput, errorContainer = null) {
+    const timeStr = timeInput.value.trim();
+    const parsedTime = this.parseTimeString(timeStr);
+
+    // 清除之前的错误样式
+    timeInput.classList.remove('error');
+    if (errorContainer) {
+      errorContainer.textContent = '';
+      errorContainer.style.display = 'none';
+    }
+
+    if (timeStr && parsedTime === null) {
+      // 有输入但格式错误
+      timeInput.classList.add('error');
+      if (errorContainer) {
+        errorContainer.textContent = '时间格式不正确，请使用 mm:ss 或 hh:mm:ss 格式';
+        errorContainer.style.display = 'block';
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  // 获取颜色配置
+  getColorConfig(color = 'blue') {
+    const colors = {
+      red: { primary: '#dc3545', rgba: '220, 53, 69' },
+      orange: { primary: '#fd7e14', rgba: '253, 126, 20' },
+      yellow: { primary: '#ffc107', rgba: '255, 193, 7' },
+      green: { primary: '#28a745', rgba: '40, 167, 69' },
+      blue: { primary: '#007bff', rgba: '0, 123, 255' },
+      purple: { primary: '#6f42c1', rgba: '111, 66, 193' }
+    };
+    return colors[color] || colors.blue;
+  }
+
+  // 设置radio group的键盘导航
+  setupRadioGroupNavigation(modal) {
+    const colorGroup = modal.querySelector('.annotation-color-group');
+    const levelGroup = modal.querySelector('.annotation-level-group');
+
+    [colorGroup, levelGroup].forEach(group => {
+      if (!group) return;
+
+      const radios = group.querySelectorAll('input[type="radio"]');
+
+      // 键盘事件监听
+      group.addEventListener('keydown', (e) => {
+        // 如果是Ctrl+Enter或Cmd+Enter，让事件继续冒泡以便触发保存
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          return; // 不阻止事件，让它冒泡到外层的保存处理器
         }
-        
-        if (timeStr && parsedTime === null) {
-            // 有输入但格式错误
-            timeInput.classList.add('error');
-            if (errorContainer) {
-                errorContainer.textContent = '时间格式不正确，请使用 mm:ss 或 hh:mm:ss 格式';
-                errorContainer.style.display = 'block';
-            }
-            return false;
+
+        // 如果是Alt+箭头键，让事件继续冒泡到模态框快捷键处理器
+        if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          return; // 不阻止事件，让它冒泡到模态框快捷键处理器
         }
-        
-        return true;
-    }
 
-    // 获取颜色配置
-    getColorConfig(color = 'blue') {
-        const colors = {
-            red: { primary: '#dc3545', rgba: '220, 53, 69' },
-            orange: { primary: '#fd7e14', rgba: '253, 126, 20' },
-            yellow: { primary: '#ffc107', rgba: '255, 193, 7' },
-            green: { primary: '#28a745', rgba: '40, 167, 69' },
-            blue: { primary: '#007bff', rgba: '0, 123, 255' },
-            purple: { primary: '#6f42c1', rgba: '111, 66, 193' }
-        };
-        return colors[color] || colors.blue;
-    }
-
-    // 设置radio group的键盘导航
-    setupRadioGroupNavigation(modal) {
-        const colorGroup = modal.querySelector('.annotation-color-group');
-        const levelGroup = modal.querySelector('.annotation-level-group');
-
-        [colorGroup, levelGroup].forEach(group => {
-            if (!group) return;
-
-            const radios = group.querySelectorAll('input[type="radio"]');
-            
-            // 键盘事件监听
-            group.addEventListener('keydown', (e) => {
-                // 如果是Ctrl+Enter或Cmd+Enter，让事件继续冒泡以便触发保存
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    return; // 不阻止事件，让它冒泡到外层的保存处理器
-                }
-                
-                // 如果是Alt+箭头键，让事件继续冒泡到模态框快捷键处理器
-                if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                    return; // 不阻止事件，让它冒泡到模态框快捷键处理器
-                }
-                
-                const currentChecked = group.querySelector('input[type="radio"]:checked');
-                const radioArray = Array.from(radios);
-                const currentIndex = currentChecked ? radioArray.indexOf(currentChecked) : 0;
-                
-                let newIndex = currentIndex;
-                
-                switch(e.key) {
-                    case 'ArrowLeft':
-                    case 'ArrowUp':
-                        e.preventDefault();
-                        newIndex = currentIndex > 0 ? currentIndex - 1 : radioArray.length - 1;
-                        break;
-                    case 'ArrowRight':
-                    case 'ArrowDown':
-                        e.preventDefault();
-                        newIndex = currentIndex < radioArray.length - 1 ? currentIndex + 1 : 0;
-                        break;
-                    case ' ':
-                    case 'Enter':
-                        e.preventDefault();
-                        if (currentChecked) {
-                            currentChecked.click();
-                        }
-                        return;
-                    default:
-                        return;
-                }
-                
-                // 选中新的radio按钮
-                radioArray[newIndex].checked = true;
-                radioArray[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
-            });
-
-            // 聚焦时高亮当前选中项
-            group.addEventListener('focus', () => {
-                group.classList.add('focused');
-            });
-
-            group.addEventListener('blur', () => {
-                group.classList.remove('focused');
-            });
-        });
-    }
-
-    // 切换radio选项的通用方法
-    switchRadioOption(group, direction, enableCycle = true) {
-        const radios = Array.from(group.querySelectorAll('input[type="radio"]'));
         const currentChecked = group.querySelector('input[type="radio"]:checked');
-        
-        if (radios.length === 0) return;
-        
-        let currentIndex = currentChecked ? radios.indexOf(currentChecked) : 0;
-        let newIndex;
-        
-        if (direction > 0) {
-            // 向下/向右：下一个选项
-            if (enableCycle) {
-                newIndex = currentIndex < radios.length - 1 ? currentIndex + 1 : 0;
-            } else {
-                newIndex = Math.min(currentIndex + 1, radios.length - 1);
+        const radioArray = Array.from(radios);
+        const currentIndex = currentChecked ? radioArray.indexOf(currentChecked) : 0;
+
+        let newIndex = currentIndex;
+
+        switch (e.key) {
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            e.preventDefault();
+            newIndex = currentIndex > 0 ? currentIndex - 1 : radioArray.length - 1;
+            break;
+          case 'ArrowRight':
+          case 'ArrowDown':
+            e.preventDefault();
+            newIndex = currentIndex < radioArray.length - 1 ? currentIndex + 1 : 0;
+            break;
+          case ' ':
+          case 'Enter':
+            e.preventDefault();
+            if (currentChecked) {
+              currentChecked.click();
             }
-        } else {
-            // 向上/向左：上一个选项
-            if (enableCycle) {
-                newIndex = currentIndex > 0 ? currentIndex - 1 : radios.length - 1;
-            } else {
-                newIndex = Math.max(currentIndex - 1, 0);
-            }
-        }
-        
-        // 如果索引没有变化（已到边界且不循环），则不执行切换
-        if (newIndex === currentIndex && !enableCycle) {
+            return;
+          default:
             return;
         }
-        
+
         // 选中新的radio按钮
-        radios[newIndex].checked = true;
-        radios[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // 给一个简短的视觉反馈
-        const label = group.querySelector(`label[for="${radios[newIndex].id}"]`);
-        if (label) {
-            label.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                label.style.transform = '';
-            }, 150);
-        }
+        radioArray[newIndex].checked = true;
+        radioArray[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      // 聚焦时高亮当前选中项
+      group.addEventListener('focus', () => {
+        group.classList.add('focused');
+      });
+
+      group.addEventListener('blur', () => {
+        group.classList.remove('focused');
+      });
+    });
+  }
+
+  // 切换radio选项的通用方法
+  switchRadioOption(group, direction, enableCycle = true) {
+    const radios = Array.from(group.querySelectorAll('input[type="radio"]'));
+    const currentChecked = group.querySelector('input[type="radio"]:checked');
+
+    if (radios.length === 0) return;
+
+    let currentIndex = currentChecked ? radios.indexOf(currentChecked) : 0;
+    let newIndex;
+
+    if (direction > 0) {
+      // 向下/向右：下一个选项
+      if (enableCycle) {
+        newIndex = currentIndex < radios.length - 1 ? currentIndex + 1 : 0;
+      } else {
+        newIndex = Math.min(currentIndex + 1, radios.length - 1);
+      }
+    } else {
+      // 向上/向左：上一个选项
+      if (enableCycle) {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : radios.length - 1;
+      } else {
+        newIndex = Math.max(currentIndex - 1, 0);
+      }
     }
 
-    // 设置模态框快捷键
-    setupModalShortcuts(modal, colorGroup, levelGroup) {
-        const saveBtn = modal.querySelector('.annotation-input-btn-save');
-        
-        const handleModalShortcuts = (e) => {
-            // Ctrl+Enter或Cmd+Enter保存
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                if (saveBtn) {
-                    saveBtn.click();
-                }
-                return;
-            }
+    // 如果索引没有变化（已到边界且不循环），则不执行切换
+    if (newIndex === currentIndex && !enableCycle) {
+      return;
+    }
 
-            // Alt+箭头键切换选项
-            if (e.altKey) {
-                switch(e.key) {
-                    case 'ArrowUp':
-                    case 'ArrowDown':
-                        // Alt+上下箭头切换level（上箭头=向后，下箭头=向前，不循环）
-                        if (levelGroup) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            this.switchRadioOption(levelGroup, e.key === 'ArrowUp' ? -1 : 1, false);
-                        }
-                        break;
-                        
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        // Alt+左右箭头切换color（循环）
-                        if (colorGroup) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            this.switchRadioOption(colorGroup, e.key === 'ArrowLeft' ? -1 : 1, true);
-                        }
-                        break;
-                }
+    // 选中新的radio按钮
+    radios[newIndex].checked = true;
+    radios[newIndex].dispatchEvent(new Event('change', { bubbles: true }));
+
+    // 给一个简短的视觉反馈
+    const label = group.querySelector(`label[for="${radios[newIndex].id}"]`);
+    if (label) {
+      label.style.transform = 'scale(1.05)';
+      setTimeout(() => {
+        label.style.transform = '';
+      }, 150);
+    }
+  }
+
+  // 设置模态框快捷键
+  setupModalShortcuts(modal, colorGroup, levelGroup) {
+    const saveBtn = modal.querySelector('.annotation-input-btn-save');
+
+    const handleModalShortcuts = (e) => {
+      // Ctrl+Enter或Cmd+Enter保存
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (saveBtn) {
+          saveBtn.click();
+        }
+        return;
+      }
+
+      // Alt+箭头键切换选项
+      if (e.altKey) {
+        switch (e.key) {
+          case 'ArrowUp':
+          case 'ArrowDown':
+            // Alt+上下箭头切换level（上箭头=向后，下箭头=向前，不循环）
+            if (levelGroup) {
+              e.preventDefault();
+              e.stopPropagation();
+              this.switchRadioOption(levelGroup, e.key === 'ArrowUp' ? -1 : 1, false);
             }
+            break;
+
+          case 'ArrowLeft':
+          case 'ArrowRight':
+            // Alt+左右箭头切换color（循环）
+            if (colorGroup) {
+              e.preventDefault();
+              e.stopPropagation();
+              this.switchRadioOption(colorGroup, e.key === 'ArrowLeft' ? -1 : 1, true);
+            }
+            break;
+        }
+      }
+    };
+
+    // 在模态框上添加事件监听器
+    modal.addEventListener('keydown', handleModalShortcuts);
+
+    // 存储清理函数
+    if (!modal._modalShortcutsCleanup) {
+      modal._modalShortcutsCleanup = [];
+    }
+    modal._modalShortcutsCleanup.push(() => {
+      modal.removeEventListener('keydown', handleModalShortcuts);
+    });
+  }
+
+  // 设置焦点陷阱，让Tab键只在模态框内循环
+  setupFocusTrap(modal) {
+    // 获取模态框内所有可聚焦的元素
+    const getFocusableElements = () => {
+      const focusableSelectors = [
+        'input:not([disabled]):not([tabindex="-1"])',
+        'textarea:not([disabled]):not([tabindex="-1"])',
+        'button:not([disabled]):not([tabindex="-1"])',
+        'select:not([disabled]):not([tabindex="-1"])',
+        '[tabindex]:not([tabindex="-1"])',
+        'a[href]'
+      ].join(', ');
+
+      return Array.from(modal.querySelectorAll(focusableSelectors))
+        .filter(el => {
+          // 过滤掉不可见的元素
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+    };
+
+    // Tab键处理函数
+    const handleTabKey = (e) => {
+      if (e.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const currentElement = document.activeElement;
+
+      if (e.shiftKey) {
+        // Shift+Tab - 向前循环
+        if (currentElement === firstElement || !focusableElements.includes(currentElement)) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        // Tab - 向后循环
+        if (currentElement === lastElement || !focusableElements.includes(currentElement)) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    // 添加事件监听器
+    modal.addEventListener('keydown', handleTabKey);
+
+    // 存储清理函数到模态框对象上，以便后续清理
+    if (!modal._focusTrapCleanup) {
+      modal._focusTrapCleanup = [];
+    }
+    modal._focusTrapCleanup.push(() => {
+      modal.removeEventListener('keydown', handleTabKey);
+    });
+  }
+
+  // 设置颜色同步：当颜色组变化时，同步更新级别组的颜色
+  setupColorSync(modal, colorGroup, levelGroup) {
+    if (!colorGroup || !levelGroup) return;
+
+    // 更新level-group的颜色类名
+    const updateLevelGroupColor = () => {
+      const checkedColor = colorGroup.querySelector('input[type="radio"]:checked');
+      if (!checkedColor) return;
+
+      const colorValue = checkedColor.value;
+
+      // 移除所有现有的颜色类
+      const colorClasses = ['color-red', 'color-orange', 'color-yellow', 'color-green', 'color-blue', 'color-purple'];
+      colorClasses.forEach(cls => levelGroup.classList.remove(cls));
+
+      // 添加当前选中的颜色类
+      if (colorValue) {
+        levelGroup.classList.add(`color-${colorValue}`);
+      }
+    };
+
+    // 监听颜色组的变化
+    colorGroup.addEventListener('change', updateLevelGroupColor);
+
+    // 初始化时也更新一次
+    updateLevelGroupColor();
+  }
+
+  // 设置模态框的键盘事件隔离
+  setupModalKeyboardIsolation(modal) {
+    // 需要阻止冒泡的按键列表（对应视频播放器的快捷键）
+    const videoShortcutKeys = [
+      'Space',           // 播放/暂停
+      'ArrowLeft',       // 快退
+      'ArrowRight',      // 快进
+      'ArrowUp',         // 音量+
+      'ArrowDown',       // 音量-
+      'KeyF',            // 全屏
+      'KeyM',            // 静音
+      'Enter'            // 添加打点（避免重复触发）
+    ];
+
+    // 在模态框上添加keydown事件监听器来阻止冒泡
+    modal.addEventListener('keydown', (e) => {
+      // 如果是视频快捷键，阻止事件冒泡
+      if (videoShortcutKeys.includes(e.code)) {
+        e.stopPropagation();
+
+        // 对于某些特殊键，还需要阻止默认行为
+        if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+          // 但是要允许在文本框中的正常使用
+          const target = e.target;
+          const isInInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+          if (!isInInputField) {
+            e.preventDefault();
+          }
+        }
+      }
+    });
+
+    // 同时阻止keyup事件冒泡（某些快捷键可能在keyup时触发）
+    modal.addEventListener('keyup', (e) => {
+      if (videoShortcutKeys.includes(e.code)) {
+        e.stopPropagation();
+      }
+    });
+
+    // 阻止keypress事件冒泡
+    modal.addEventListener('keypress', (e) => {
+      // 对于字符键，检查是否是快捷键相关的
+      if (e.key === ' ' || e.key === 'f' || e.key === 'm') {
+        e.stopPropagation();
+      }
+    });
+  }
+
+  // 更新大纲视图
+  updateOutlineView() {
+    // 检查是否存在renderer.js中定义的updateOutlineView函数
+    if (typeof window.updateOutlineView === 'function') {
+      window.updateOutlineView();
+    }
+    // 打点数据变更后更新折叠状态显示
+    if (typeof window.updateOutlineCollapseDisplay === 'function') {
+      window.updateOutlineCollapseDisplay();
+    }
+  }
+
+  // 开始标记编辑（重构版本，支持独立编辑）
+  startMarkerEditing(annotation, modal = null) {
+    console.log('开始标记编辑', annotation);
+
+    // 如果没有marker字段，初始化默认值
+    if (!annotation.marker) {
+      annotation.marker = {
+        x: 25,      // 默认位置25%
+        y: 25,      // 默认位置25%
+        width: 20,  // 默认宽度20%
+        height: 15, // 默认高度15%
+        contentPosition: {
+          horizontalPosition: 'inside',    // 水平位置：left-outside, inside, right-outside  
+          verticalPosition: 'inside',      // 垂直位置：top-outside, inside, bottom-outside
+          textAlign: 'left',               // 文本对齐：left, center, right
+          verticalAlign: 'flex-start'      // 垂直对齐：flex-start, space-evenly, flex-end
+        }
+      };
+      console.log('初始化marker默认值', annotation.marker);
+    }
+
+    // 确保contentPosition存在且格式正确（简化兼容逻辑）
+    if (!annotation.marker.contentPosition ||
+      !annotation.marker.contentPosition.horizontalPosition ||
+      annotation.marker.contentPosition.horizontal) {
+      // 直接重置为默认值
+      annotation.marker.contentPosition = {
+        horizontalPosition: 'inside',
+        verticalPosition: 'inside',
+        textAlign: 'left',
+        verticalAlign: 'flex-start'
+      };
+    }
+
+    // 如果有modal，隐藏编辑窗口
+    if (modal) {
+      modal.style.display = 'none';
+      console.log('隐藏编辑窗口');
+    }
+
+    // 显示videomarker容器
+    if (window.videoMarker) {
+      console.log('找到window.videoMarker', window.videoMarker);
+      const overlay = window.videoMarker.overlay;
+      if (overlay) {
+        console.log('找到overlay', overlay);
+        overlay.classList.add('editing');
+        console.log('添加editing类');
+
+        // 设置marker-player-overlay为模糊状态
+        const markerPlayerOverlay = document.getElementById('marker-player-overlay');
+        if (markerPlayerOverlay) {
+          markerPlayerOverlay.classList.add('blurred');
+          console.log('添加marker-player-overlay模糊效果');
+        }
+
+        // 清除现有标记，创建编辑标记
+        window.videoMarker.clearMarkers();
+        console.log('清除现有标记');
+
+        // 创建编辑标记
+        const marker = {
+          id: 'editing',
+          x: annotation.marker.x,
+          y: annotation.marker.y,
+          width: annotation.marker.width,
+          height: annotation.marker.height,
+          text: annotation.title || '编辑中',
+          color: this.getColorValue(annotation.color) || '#ff6b6b',
+          contentPosition: annotation.marker.contentPosition || {
+            horizontalPosition: 'inside',
+            verticalPosition: 'inside',
+            textAlign: 'left',
+            verticalAlign: 'flex-start'
+          }
         };
+        console.log('创建编辑标记', marker);
 
-        // 在模态框上添加事件监听器
-        modal.addEventListener('keydown', handleModalShortcuts);
+        window.videoMarker.markers.set('editing', marker);
+        this.renderEditingMarker(marker, annotation, modal);
 
-        // 存储清理函数
-        if (!modal._modalShortcutsCleanup) {
-            modal._modalShortcutsCleanup = [];
-        }
-        modal._modalShortcutsCleanup.push(() => {
-            modal.removeEventListener('keydown', handleModalShortcuts);
-        });
+        // 延迟更新字体大小，确保DOM已渲染完成
+        setTimeout(() => {
+          if (window.videoMarker) {
+            window.videoMarker.updateFontSize();
+          }
+        }, 50);
+
+        // 再次延迟更新，确保CSS transition完成
+        setTimeout(() => {
+          if (window.videoMarker) {
+            window.videoMarker.updateFontSize();
+          }
+        }, 350); // 等待CSS transition(0.3s)完成
+
+        console.log('渲染编辑标记完成');
+      } else {
+        console.error('未找到overlay');
+      }
+    } else {
+      console.error('未找到window.videoMarker');
     }
+  }
 
-    // 设置焦点陷阱，让Tab键只在模态框内循环
-    setupFocusTrap(modal) {
-        // 获取模态框内所有可聚焦的元素
-        const getFocusableElements = () => {
-            const focusableSelectors = [
-                'input:not([disabled]):not([tabindex="-1"])',
-                'textarea:not([disabled]):not([tabindex="-1"])',
-                'button:not([disabled]):not([tabindex="-1"])',
-                'select:not([disabled]):not([tabindex="-1"])',
-                '[tabindex]:not([tabindex="-1"])',
-                'a[href]'
-            ].join(', ');
-            
-            return Array.from(modal.querySelectorAll(focusableSelectors))
-                .filter(el => {
-                    // 过滤掉不可见的元素
-                    const style = window.getComputedStyle(el);
-                    return style.display !== 'none' && style.visibility !== 'hidden';
-                });
-        };
+  // 渲染编辑中的标记（包含保存/取消按钮）
+  renderEditingMarker(marker, annotation, modal) {
+    if (!window.videoMarker || !window.videoMarker.overlay) return;
 
-        // Tab键处理函数
-        const handleTabKey = (e) => {
-            if (e.key !== 'Tab') return;
+    const overlay = window.videoMarker.overlay;
 
-            const focusableElements = getFocusableElements();
-            if (focusableElements.length === 0) return;
-
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-            const currentElement = document.activeElement;
-
-            if (e.shiftKey) {
-                // Shift+Tab - 向前循环
-                if (currentElement === firstElement || !focusableElements.includes(currentElement)) {
-                    e.preventDefault();
-                    lastElement.focus();
-                }
-            } else {
-                // Tab - 向后循环
-                if (currentElement === lastElement || !focusableElements.includes(currentElement)) {
-                    e.preventDefault();
-                    firstElement.focus();
-                }
-            }
-        };
-
-        // 添加事件监听器
-        modal.addEventListener('keydown', handleTabKey);
-
-        // 存储清理函数到模态框对象上，以便后续清理
-        if (!modal._focusTrapCleanup) {
-            modal._focusTrapCleanup = [];
-        }
-        modal._focusTrapCleanup.push(() => {
-            modal.removeEventListener('keydown', handleTabKey);
-        });
-    }
-
-    // 设置颜色同步：当颜色组变化时，同步更新级别组的颜色
-    setupColorSync(modal, colorGroup, levelGroup) {
-        if (!colorGroup || !levelGroup) return;
-
-        // 更新level-group的颜色类名
-        const updateLevelGroupColor = () => {
-            const checkedColor = colorGroup.querySelector('input[type="radio"]:checked');
-            if (!checkedColor) return;
-
-            const colorValue = checkedColor.value;
-            
-            // 移除所有现有的颜色类
-            const colorClasses = ['color-red', 'color-orange', 'color-yellow', 'color-green', 'color-blue', 'color-purple'];
-            colorClasses.forEach(cls => levelGroup.classList.remove(cls));
-            
-            // 添加当前选中的颜色类
-            if (colorValue) {
-                levelGroup.classList.add(`color-${colorValue}`);
-            }
-        };
-
-        // 监听颜色组的变化
-        colorGroup.addEventListener('change', updateLevelGroupColor);
-
-        // 初始化时也更新一次
-        updateLevelGroupColor();
-    }
-
-    // 设置模态框的键盘事件隔离
-    setupModalKeyboardIsolation(modal) {
-        // 需要阻止冒泡的按键列表（对应视频播放器的快捷键）
-        const videoShortcutKeys = [
-            'Space',           // 播放/暂停
-            'ArrowLeft',       // 快退
-            'ArrowRight',      // 快进
-            'ArrowUp',         // 音量+
-            'ArrowDown',       // 音量-
-            'KeyF',            // 全屏
-            'KeyM',            // 静音
-            'Enter'            // 添加打点（避免重复触发）
-        ];
-
-        // 在模态框上添加keydown事件监听器来阻止冒泡
-        modal.addEventListener('keydown', (e) => {
-            // 如果是视频快捷键，阻止事件冒泡
-            if (videoShortcutKeys.includes(e.code)) {
-                e.stopPropagation();
-                
-                // 对于某些特殊键，还需要阻止默认行为
-                if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
-                    // 但是要允许在文本框中的正常使用
-                    const target = e.target;
-                    const isInInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-                    
-                    if (!isInInputField) {
-                        e.preventDefault();
-                    }
-                }
-            }
-        });
-
-        // 同时阻止keyup事件冒泡（某些快捷键可能在keyup时触发）
-        modal.addEventListener('keyup', (e) => {
-            if (videoShortcutKeys.includes(e.code)) {
-                e.stopPropagation();
-            }
-        });
-
-        // 阻止keypress事件冒泡
-        modal.addEventListener('keypress', (e) => {
-            // 对于字符键，检查是否是快捷键相关的
-            if (e.key === ' ' || e.key === 'f' || e.key === 'm') {
-                e.stopPropagation();
-            }
-        });
-    }
-
-    // 更新大纲视图
-    updateOutlineView() {
-        // 检查是否存在renderer.js中定义的updateOutlineView函数
-        if (typeof window.updateOutlineView === 'function') {
-            window.updateOutlineView();
-        }
-        // 打点数据变更后更新折叠状态显示
-        if (typeof window.updateOutlineCollapseDisplay === 'function') {
-            window.updateOutlineCollapseDisplay();
-        }
-    }
-
-    // 开始标记编辑（重构版本，支持独立编辑）
-    startMarkerEditing(annotation, modal = null) {
-        console.log('开始标记编辑', annotation);
-        
-        // 如果没有marker字段，初始化默认值
-        if (!annotation.marker) {
-            annotation.marker = {
-                x: 25,      // 默认位置25%
-                y: 25,      // 默认位置25%
-                width: 20,  // 默认宽度20%
-                height: 15, // 默认高度15%
-                contentPosition: {
-                    horizontalPosition: 'inside',    // 水平位置：left-outside, inside, right-outside  
-                    verticalPosition: 'inside',      // 垂直位置：top-outside, inside, bottom-outside
-                    textAlign: 'left',               // 文本对齐：left, center, right
-                    verticalAlign: 'flex-start'      // 垂直对齐：flex-start, space-evenly, flex-end
-                }
-            };
-            console.log('初始化marker默认值', annotation.marker);
-        }
-        
-        // 确保contentPosition存在且格式正确（简化兼容逻辑）
-        if (!annotation.marker.contentPosition || 
-            !annotation.marker.contentPosition.horizontalPosition ||
-            annotation.marker.contentPosition.horizontal) {
-            // 直接重置为默认值
-            annotation.marker.contentPosition = {
-                horizontalPosition: 'inside',    
-                verticalPosition: 'inside',      
-                textAlign: 'left',               
-                verticalAlign: 'flex-start'      
-            };
-        }
-
-        // 如果有modal，隐藏编辑窗口
-        if (modal) {
-            modal.style.display = 'none';
-            console.log('隐藏编辑窗口');
-        }
-
-        // 显示videomarker容器
-        if (window.videoMarker) {
-            console.log('找到window.videoMarker', window.videoMarker);
-            const overlay = window.videoMarker.overlay;
-            if (overlay) {
-                console.log('找到overlay', overlay);
-                overlay.classList.add('editing');
-                console.log('添加editing类');
-                
-                // 设置marker-player-overlay为模糊状态
-                const markerPlayerOverlay = document.getElementById('marker-player-overlay');
-                if (markerPlayerOverlay) {
-                    markerPlayerOverlay.classList.add('blurred');
-                    console.log('添加marker-player-overlay模糊效果');
-                }
-                
-                // 清除现有标记，创建编辑标记
-                window.videoMarker.clearMarkers();
-                console.log('清除现有标记');
-                
-                // 创建编辑标记
-                const marker = {
-                    id: 'editing',
-                    x: annotation.marker.x,
-                    y: annotation.marker.y,
-                    width: annotation.marker.width,
-                    height: annotation.marker.height,
-                    text: annotation.title || '编辑中',
-                    color: this.getColorValue(annotation.color) || '#ff6b6b',
-                contentPosition: annotation.marker.contentPosition || {
-                    horizontalPosition: 'inside',
-                    verticalPosition: 'inside',
-                    textAlign: 'left',
-                    verticalAlign: 'flex-start'
-                }
-                };
-                console.log('创建编辑标记', marker);
-                
-                window.videoMarker.markers.set('editing', marker);
-                this.renderEditingMarker(marker, annotation, modal);
-                
-                // 延迟更新字体大小，确保DOM已渲染完成
-                setTimeout(() => {
-                    if (window.videoMarker) {
-                        window.videoMarker.updateFontSize();
-                    }
-                }, 50);
-                
-                // 再次延迟更新，确保CSS transition完成
-                setTimeout(() => {
-                    if (window.videoMarker) {
-                        window.videoMarker.updateFontSize();
-                    }
-                }, 350); // 等待CSS transition(0.3s)完成
-                
-                console.log('渲染编辑标记完成');
-            } else {
-                console.error('未找到overlay');
-            }
-        } else {
-            console.error('未找到window.videoMarker');
-        }
-    }
-
-    // 渲染编辑中的标记（包含保存/取消按钮）
-    renderEditingMarker(marker, annotation, modal) {
-        if (!window.videoMarker || !window.videoMarker.overlay) return;
-        
-        const overlay = window.videoMarker.overlay;
-        
-        // 创建标记元素
-        const markerElement = document.createElement('div');
-        markerElement.className = `video-marker editing-marker color-${annotation.color}`;
-        markerElement.dataset.markerId = marker.id;
-        markerElement.style.cssText = `
+    // 创建标记元素
+    const markerElement = document.createElement('div');
+    markerElement.className = `video-marker editing-marker color-${annotation.color}`;
+    markerElement.dataset.markerId = marker.id;
+    markerElement.style.cssText = `
             position: absolute;
             left: ${marker.x}%;
             top: ${marker.y}%;
             width: ${marker.width}%;
             height: ${marker.height}%;
         `;
-        
-        // 添加文本内容区域
-        const contentArea = document.createElement('div');
-        contentArea.className = 'marker-content';
 
-        // 创建行内内容
-        if (annotation.title || annotation.text) {
-            const inlineContent = document.createElement('div');
-            inlineContent.className = 'marker-inline-content';
-            
-            let contentHTML = '';
-            
-            // 添加标题
-            if (annotation.title) {
-                contentHTML += `<span class="marker-title">${this.escapeHtml(annotation.title)}</span>`;
-            }
-            
-            // 如果既有标题又有描述，添加换行
-            if (annotation.title && annotation.text) {
-                contentHTML += '<br>';
-            }
-            
-            // 添加描述
-            if (annotation.text) {
-                contentHTML += `<span class="marker-description">${this.escapeHtml(annotation.text)}</span>`;
-            }
-            
-            inlineContent.innerHTML = contentHTML;
-            contentArea.appendChild(inlineContent);
-        }
+    // 添加文本内容区域
+    const contentArea = document.createElement('div');
+    contentArea.className = 'marker-content';
 
-        markerElement.appendChild(contentArea);
-        
-        // 添加调整大小的控制点
-        window.videoMarker.addResizeHandles(markerElement);
-        
-        // 添加位置控制
-        window.videoMarker.addPositionControls(markerElement, marker);
-        
-        // 添加保存/取消按钮
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'marker-actions';
-        actionsDiv.innerHTML = `
+    // 创建行内内容
+    if (annotation.title || annotation.text) {
+      const inlineContent = document.createElement('div');
+      inlineContent.className = 'marker-inline-content';
+
+      let contentHTML = '';
+
+      // 添加标题
+      if (annotation.title) {
+        contentHTML += `<span class="marker-title">${this.escapeHtml(annotation.title)}</span>`;
+      }
+
+      // 如果既有标题又有描述，添加换行
+      if (annotation.title && annotation.text) {
+        contentHTML += '<br>';
+      }
+
+      // 添加描述
+      if (annotation.text) {
+        contentHTML += `<span class="marker-description">${this.escapeHtml(annotation.text)}</span>`;
+      }
+
+      inlineContent.innerHTML = contentHTML;
+      contentArea.appendChild(inlineContent);
+    }
+
+    markerElement.appendChild(contentArea);
+
+    // 添加调整大小的控制点
+    window.videoMarker.addResizeHandles(markerElement);
+
+    // 添加位置控制
+    window.videoMarker.addPositionControls(markerElement, marker);
+
+    // 添加保存/取消按钮
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'marker-actions';
+    actionsDiv.innerHTML = `
             <button class="action-btn save-btn" title="保存标记">✓</button>
             <button class="action-btn cancel-btn" title="取消编辑">✕</button>
         `;
-        markerElement.appendChild(actionsDiv);
-        
-        // 绑定标记编辑事件
-        this.bindEditingMarkerEvents(markerElement, marker, annotation, modal);
-        
-        overlay.appendChild(markerElement);
-        
-        // 选中标记
-        window.videoMarker.selectMarker('editing');
-    }
+    markerElement.appendChild(actionsDiv);
 
-    // 绑定编辑标记的事件
-    bindEditingMarkerEvents(markerElement, marker, annotation, modal) {
-        // 标记主体的拖拽
-        markerElement.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('resize-handle') || 
-                e.target.classList.contains('action-btn') ||
-                e.target.classList.contains('matrix-position-btn') ||
-                e.target.closest('.marker-position-controls')) return;
-            window.videoMarker.startDragging(e, marker);
-        });
-        
-        // 调整大小控制点事件
-        const resizeHandles = markerElement.querySelectorAll('.resize-handle');
-        resizeHandles.forEach(handle => {
-            handle.addEventListener('mousedown', (e) => {
-                window.videoMarker.startResizing(e, marker, handle.classList[1]);
-            });
-        });
-        
-        // 保存按钮事件
-        const saveBtn = markerElement.querySelector('.save-btn');
-        saveBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await this.saveMarkerEditing(marker, annotation, modal);
-        });
-        
-        // 取消按钮事件
-        const cancelBtn = markerElement.querySelector('.cancel-btn');
-        cancelBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.cancelMarkerEditing(modal);
-        });
-    }
+    // 绑定标记编辑事件
+    this.bindEditingMarkerEvents(markerElement, marker, annotation, modal);
 
-    // 保存标记编辑（重构版本，支持独立编辑）
-    async saveMarkerEditing(marker, annotation, modal = null) {
-        // 更新annotation的marker数据
-        annotation.marker = {
-            x: marker.x,
-            y: marker.y,
-            width: marker.width,
-            height: marker.height,
-            contentPosition: marker.contentPosition || {
-                horizontalPosition: 'inside',
-                verticalPosition: 'inside',
-                textAlign: 'left',
-                verticalAlign: 'flex-start'
-            }
-        };
-        
-        // 更新时间戳
-        annotation.updatedAt = new Date().toISOString();
-        
-        console.log('标记已保存:', annotation.marker);
-        
-        // 保存到文件
-        await this.saveAnnotationsToFile();
-        
-        // 更新UI显示
-        this.updateProgressBarAnnotations();
-        
-        // 更新大纲视图
-        this.updateOutlineView();
-        
-        // 更新标记播放器数据
-        this.updateMarkerPlayerData();
-        
-        // 退出编辑模式
-        this.exitMarkerEditing(modal);
-    }
+    overlay.appendChild(markerElement);
 
-    // 取消标记编辑
-    cancelMarkerEditing(modal = null) {
-        console.log('取消标记编辑');
-        this.exitMarkerEditing(modal);
-    }
+    // 选中标记
+    window.videoMarker.selectMarker('editing');
+  }
 
-    // 退出标记编辑模式（重构版本，支持独立编辑）
-    exitMarkerEditing(modal = null) {
-        // 隐藏videomarker容器
-        if (window.videoMarker && window.videoMarker.overlay) {
-            window.videoMarker.overlay.classList.remove('editing');
-            window.videoMarker.clearMarkers();
-        }
-        
-        // 移除marker-player-overlay的模糊效果
-        const markerPlayerOverlay = document.getElementById('marker-player-overlay');
-        if (markerPlayerOverlay) {
-            markerPlayerOverlay.classList.remove('blurred');
-            console.log('移除marker-player-overlay模糊效果');
-        }
-        
-        // 如果有modal，显示编辑窗口
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    }
+  // 绑定编辑标记的事件
+  bindEditingMarkerEvents(markerElement, marker, annotation, modal) {
+    // 标记主体的拖拽
+    markerElement.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('resize-handle') ||
+        e.target.classList.contains('action-btn') ||
+        e.target.classList.contains('matrix-position-btn') ||
+        e.target.closest('.marker-position-controls')) return;
+      window.videoMarker.startDragging(e, marker);
+    });
 
-    // 获取颜色值
-    getColorValue(colorName) {
-        const colorMap = {
-            'red': '#ff6b6b',
-            'blue': '#4ecdc4',
-            'green': '#95e1d3',
-            'yellow': '#fce38a',
-            'purple': '#c7a6ff',
-            'orange': '#ffb347'
-        };
-        return colorMap[colorName] || '#ff6b6b';
-    }
+    // 调整大小控制点事件
+    const resizeHandles = markerElement.querySelectorAll('.resize-handle');
+    resizeHandles.forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        window.videoMarker.startResizing(e, marker, handle.classList[1]);
+      });
+    });
 
-    // 转义HTML字符
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
+    // 保存按钮事件
+    const saveBtn = markerElement.querySelector('.save-btn');
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.saveMarkerEditing(marker, annotation, modal);
+    });
 
-    // 直接编辑标记（从popup调用，不依赖modal）
-    startMarkerEditingDirect(annotation) {
-        console.log('直接开始标记编辑', annotation);
-        
-        // 关闭任何打开的popup
-        this.hideAnnotationPopup();
-        
-        // 直接调用标记编辑（无modal）
-        this.startMarkerEditing(annotation, null);
-    }
+    // 取消按钮事件
+    const cancelBtn = markerElement.querySelector('.cancel-btn');
+    cancelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.cancelMarkerEditing(modal);
+    });
+  }
+
+  // 保存标记编辑（重构版本，支持独立编辑）
+  async saveMarkerEditing(marker, annotation, modal = null) {
+    // 更新annotation的marker数据
+    annotation.marker = {
+      x: marker.x,
+      y: marker.y,
+      width: marker.width,
+      height: marker.height,
+      contentPosition: marker.contentPosition || {
+        horizontalPosition: 'inside',
+        verticalPosition: 'inside',
+        textAlign: 'left',
+        verticalAlign: 'flex-start'
+      }
+    };
+
+    // 更新时间戳
+    annotation.updatedAt = new Date().toISOString();
+
+    console.log('标记已保存:', annotation.marker);
+
+    // 保存到文件
+    await this.saveAnnotationsToFile();
+
+    // 更新UI显示
+    this.updateProgressBarAnnotations();
+
+    // 更新大纲视图
+    this.updateOutlineView();
 
     // 更新标记播放器数据
-    updateMarkerPlayerData() {
-        if (window.markerPlayer) {
-            window.markerPlayer.setAnnotations(this.annotations);
-        }
+    this.updateMarkerPlayerData();
+
+    // 退出编辑模式
+    this.exitMarkerEditing(modal);
+  }
+
+  // 取消标记编辑
+  cancelMarkerEditing(modal = null) {
+    console.log('取消标记编辑');
+    this.exitMarkerEditing(modal);
+  }
+
+  // 退出标记编辑模式（重构版本，支持独立编辑）
+  exitMarkerEditing(modal = null) {
+    // 隐藏videomarker容器
+    if (window.videoMarker && window.videoMarker.overlay) {
+      window.videoMarker.overlay.classList.remove('editing');
+      window.videoMarker.clearMarkers();
     }
+
+    // 移除marker-player-overlay的模糊效果
+    const markerPlayerOverlay = document.getElementById('marker-player-overlay');
+    if (markerPlayerOverlay) {
+      markerPlayerOverlay.classList.remove('blurred');
+      console.log('移除marker-player-overlay模糊效果');
+    }
+
+    // 如果有modal，显示编辑窗口
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  // 获取颜色值
+  getColorValue(colorName) {
+    const colorMap = {
+      'red': '#ff6b6b',
+      'blue': '#4ecdc4',
+      'green': '#95e1d3',
+      'yellow': '#fce38a',
+      'purple': '#c7a6ff',
+      'orange': '#ffb347'
+    };
+    return colorMap[colorName] || '#ff6b6b';
+  }
+
+  // 转义HTML字符
+  escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+  }
+
+  // 直接编辑标记（从popup调用，不依赖modal）
+  startMarkerEditingDirect(annotation) {
+    console.log('直接开始标记编辑', annotation);
+
+    // 关闭任何打开的popup
+    this.hideAnnotationPopup();
+
+    // 直接调用标记编辑（无modal）
+    this.startMarkerEditing(annotation, null);
+  }
+
+  // 更新标记播放器数据
+  updateMarkerPlayerData() {
+    if (window.markerPlayer) {
+      window.markerPlayer.setAnnotations(this.annotations);
+    }
+  }
 }
 
 // 创建全局打点管理器实例

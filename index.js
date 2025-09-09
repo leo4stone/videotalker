@@ -33,17 +33,17 @@ const createWindow = () => {
   // 添加快捷键支持
   win.webContents.on('before-input-event', (event, input) => {
     // F12 或 Cmd/Ctrl+Shift+I 打开开发者工具
-    if (input.key === 'F12' || 
-        (input.control && input.shift && input.key === 'I') ||
-        (input.meta && input.shift && input.key === 'I')) {
+    if (input.key === 'F12' ||
+      (input.control && input.shift && input.key === 'I') ||
+      (input.meta && input.shift && input.key === 'I')) {
       win.webContents.toggleDevTools()
     }
-    
+
     // Cmd/Ctrl+R 刷新页面
     if ((input.control || input.meta) && input.key === 'r') {
       win.reload()
     }
-    
+
     // Cmd/Ctrl+Shift+R 强制刷新
     if ((input.control || input.meta) && input.shift && input.key === 'R') {
       win.webContents.reloadIgnoringCache()

@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <!-- Content Security Policy - 消除Electron警告，避免unsafe-eval -->
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' data: blob: filesystem:; script-src * 'unsafe-inline' data: blob:; style-src * 'unsafe-inline' data: blob:; img-src * data: blob: filesystem:; font-src * data: blob: filesystem:; connect-src * data: blob: filesystem:; media-src * data: blob: filesystem:; object-src *; child-src *; frame-src *; worker-src * blob:; form-action *;">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src * 'unsafe-inline' data: blob: filesystem:; script-src * 'unsafe-inline' data: blob:; style-src * 'unsafe-inline' data: blob:; img-src * data: blob: filesystem:; font-src * data: blob: filesystem:; connect-src * data: blob: filesystem:; media-src * data: blob: filesystem:; object-src *; child-src *; frame-src *; worker-src * blob:; form-action *;">
   <title>VideoTalker - 视频播放器</title>
 
   <!-- Video.js CSS -->
@@ -19,17 +20,17 @@
 </head>
 
 <body>
-     <!-- 左侧大纲切换按钮 -->
-   <button id="outline-toggle-btn" class="outline-toggle-btn" title="打点大纲">
-     <!-- 列表图标 -->
-     <svg class="list-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-       <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-     </svg>
-     <!-- 关闭图标 -->
-     <svg class="close-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-       <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-     </svg>
-   </button>
+  <!-- 左侧大纲切换按钮 -->
+  <button id="outline-toggle-btn" class="outline-toggle-btn" title="打点大纲">
+    <!-- 列表图标 -->
+    <svg class="list-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+    </svg>
+    <!-- 关闭图标 -->
+    <svg class="close-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+    </svg>
+  </button>
 
 
   <!-- 主内容区域 -->
@@ -62,7 +63,7 @@
               <div class="resize-handle right-handle" id="right-handle"></div>
               <div class="thumb-time-display left-time" id="thumb-start-time">00:00</div>
               <div class="thumb-time-display right-time" id="thumb-end-time">00:00</div>
-                          <div class="pan-thumb-controls">
+              <div class="pan-thumb-controls">
                 <button id="pan-thumb-follow-btn" class="pan-thumb-follow-btn" data-following="false">
                   <span class="btn-text">自由</span>
                 </button>
@@ -210,23 +211,28 @@
     <div class="outline-panel-header">
       <h3>打点大纲</h3>
       <div class="outline-panel-actions">
-        <button id="outline-toggle-high-btn" class="outline-level-toggle-btn level-high" title="展开/折叠所有高级别项" data-level="high">
+        <button id="outline-toggle-high-btn" class="outline-level-toggle-btn level-high" title="展开/折叠所有高级别项"
+          data-level="high">
           <span class="level-text">高</span>
         </button>
-        <button id="outline-toggle-medium-btn" class="outline-level-toggle-btn level-medium" title="展开/折叠所有中级别项" data-level="medium">
+        <button id="outline-toggle-medium-btn" class="outline-level-toggle-btn level-medium" title="展开/折叠所有中级别项"
+          data-level="medium">
           <span class="level-text">中</span>
         </button>
-        <button id="outline-toggle-low-btn" class="outline-level-toggle-btn level-low" title="展开/折叠所有低级别项" data-level="low">
+        <button id="outline-toggle-low-btn" class="outline-level-toggle-btn level-low" title="展开/折叠所有低级别项"
+          data-level="low">
           <span class="level-text">低</span>
         </button>
         <button id="outline-expand-all-btn" class="outline-expand-all-btn" data-state="expand" title="展开所有项">
           <!-- 展开状态图标（上下箭头） -->
-          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
             <polyline points="7,11 12,6 17,11"></polyline>
             <polyline points="7,13 12,18 17,13"></polyline>
           </svg>
           <!-- 折叠状态图标（左右箭头） -->
-          <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+          <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" style="display: none;">
             <polyline points="11,7 6,12 11,17"></polyline>
             <polyline points="13,7 18,12 13,17"></polyline>
           </svg>
@@ -243,18 +249,18 @@
     <div class="outline-resize-handle" id="outline-resize-handle"></div>
   </div>
 
-  
+
   <!-- 视频总时长显示 -->
   <div class="video-duration-display" id="video-duration-display">
     <span class="duration-text">00:00</span>
   </div>
 
   <!-- Video.js JavaScript -->
-    <script src="./lib/video.js/8.23.3/video.min.js"></script>
-    <script src="annotations.js"></script>
-    <script src="video-marker.js"></script>
-    <script src="marker-player.js"></script>
-    <script src="renderer.js"></script>
+  <script src="./lib/video.js/8.23.3/video.min.js"></script>
+  <script src="annotations.js"></script>
+  <script src="video-marker.js"></script>
+  <script src="marker-player.js"></script>
+  <script src="renderer.js"></script>
 </body>
 
 </html>

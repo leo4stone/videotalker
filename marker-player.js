@@ -316,35 +316,22 @@ class MarkerPlayer {
         markerElement.appendChild(contentArea);
         
         // 创建悬停编辑按钮
-        const editButton = document.createElement('button');
+        const editButton = document.createElement('div');
         editButton.className = 'player-marker-edit-btn';
         editButton.title = '编辑标记';
         editButton.dataset.annotationId = annotation.id;
         editButton.innerHTML = `
             <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0C5.829 0 4.058 1.771 4.058 3.942c0 3.386 3.942 8.958 3.942 8.958s3.942-5.572 3.942-8.958C11.942 1.771 10.171 0 8 0zm0 6c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"/>
-                <rect x="2" y="14" width="12" height="2" rx="1"/>
+                <rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,1"/>
+                <circle cx="2" cy="2" r="1.5" fill="currentColor"/>
+                <circle cx="14" cy="2" r="1.5" fill="currentColor"/>
+                <circle cx="2" cy="14" r="1.5" fill="currentColor"/>
+                <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
             </svg>
         `;
         
         markerElement.appendChild(editButton);
         
-        // 添加悬停事件
-        markerElement.addEventListener('mouseenter', () => {
-            editButton.style.display = 'flex';
-            setTimeout(() => {
-                editButton.style.opacity = '1';
-            }, 10);
-        });
-        
-        markerElement.addEventListener('mouseleave', () => {
-            editButton.style.opacity = '0';
-            setTimeout(() => {
-                if (editButton.style.opacity === '0') {
-                    editButton.style.display = 'none';
-                }
-            }, 200);
-        });
         
         // 复用annotation-popup的编辑按钮事件逻辑
         editButton.addEventListener('click', (e) => {
