@@ -5,13 +5,13 @@
 // 基础变量定义
 // ===============================
 @primary-bg: #000;
-@secondary-bg: rgba(0,0,0,0.9);
-@overlay-bg: rgba(0,0,0,0.8);
-@glass-bg: rgba(0,0,0,0.3);
+@secondary-bg: rgba(0, 0, 0, 0.9);
+@overlay-bg: rgba(0, 0, 0, 0.8);
+@glass-bg: rgba(0, 0, 0, 0.3);
 
 @primary-text: white;
-@secondary-text: rgba(255,255,255,0.6);
-@muted-text: rgba(255,255,255,0.4);
+@secondary-text: rgba(255, 255, 255, 0.6);
+@muted-text: rgba(255, 255, 255, 0.4);
 
 @primary-blue: #007bff;
 @success-green: #28a745;
@@ -20,9 +20,9 @@
 @warning-yellow: #ffc107;
 @info-purple: #6f42c1;
 
-@border-light: rgba(255,255,255,0.1);
-@border-medium: rgba(255,255,255,0.2);
-@border-strong: rgba(255,255,255,0.3);
+@border-light: rgba(255, 255, 255, 0.1);
+@border-medium: rgba(255, 255, 255, 0.2);
+@border-strong: rgba(255, 255, 255, 0.3);
 
 @sidebar-width: 350px;
 @progress-height: 48px;
@@ -94,11 +94,11 @@ body {
   // 展开状态
   &.expanded {
     left: calc(var(--outline-panel-width, 320px) + 10px); // 面板宽度 + 原始left值
-    
+
     .list-icon {
       opacity: 0;
     }
-    
+
     .close-icon {
       opacity: 1;
     }
@@ -144,15 +144,15 @@ body {
     top: 0;
     right: 0;
     width: 4px;
-  height: 100%;
+    height: 100%;
     background: transparent;
     cursor: col-resize;
     z-index: 20;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.3);
     }
-    
+
     &:active {
       background: rgba(255, 255, 255, 0.5);
     }
@@ -343,269 +343,272 @@ body {
         font-style: italic;
       }
 
-              // 打点条目
-        .outline-item {
-          padding-left: 18px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          transition: @transition-fast;
+      // 打点条目
+      .outline-item {
+        padding-left: 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: @transition-fast;
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+
+          .outline-actions {
+            opacity: 1;
+          }
+        }
+
+
+        // 操作按钮区域
+        .outline-actions {
+          position: absolute;
+          right: 2px;
+          top: 2px;
+          display: flex;
+          gap: 4px;
+          align-items: flex-start;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          margin-top: 2px;
+          flex-shrink: 0;
+
+          // 操作按钮
+          .outline-action-btn {
+            width: 16px;
+            height: 16px;
+            padding: 0px;
+            border: none;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: @primary-text;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: @transition-fast;
+
+            svg {
+              width: 10px;
+              height: 10px;
+              pointer-events: none;
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.2);
+              transform: scale(1.05);
+            }
+
+            &:active {
+              transform: scale(0.95);
+            }
+
+            &.edit-btn:hover {
+              background: rgba(40, 167, 69, 0.8);
+            }
+
+            &.delete-btn:hover {
+              background: rgba(220, 53, 69, 0.8);
+            }
+          }
+        }
+
+        // 内容区域包装器 - 包含左侧竖线、内容和按钮
+        .outline-content-wrapper {
+          flex: 1;
           position: relative;
           display: flex;
+          padding-left: 0px;
           align-items: flex-start;
           gap: 12px;
 
-          &:hover {
-            background: rgba(255, 255, 255, 0.05);
-            
-            .outline-actions {
-              opacity: 1;
+          // 时间显示 - 固定在最左侧，带颜色，可点击跳转
+          .outline-time {
+            position: absolute;
+            top: 12px;
+            right: calc(100% + 16px);
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+            flex-shrink: 0;
+            backdrop-filter: blur(100px);
+            text-align: right;
+            z-index: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: @transition-fast;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.1);
             }
           }
 
-
-          // 操作按钮区域
-          .outline-actions {
+          // 左侧竖线 - 会根据级别缩进，可点击折叠/展开
+          .outline-color-indicator {
             position: absolute;
-            right: 2px;
-            top: 2px;
-            display: flex;
-            gap: 4px;
-            align-items: flex-start;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            margin-top: 2px;
+            width: 6px;
+            height: 100%;
+            left: 0px;
+            top: 50%;
+            border-radius: 1.5px;
             flex-shrink: 0;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            transition: @transition-fast;
+            z-index: 1;
 
-            // 操作按钮
-            .outline-action-btn {
+            &:hover {
+              opacity: 0.8;
+              transform: translate(-50%, -50%) scale(1.2, 1);
+            }
+
+            // 折叠状态指示
+            &::after {
+              content: '';
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 0;
+              height: 0;
+              border-left: 2px solid transparent;
+              border-right: 2px solid transparent;
+              border-top: 3px solid rgba(255, 255, 255, 0.8);
+              opacity: 0;
+              transition: @transition-fast;
+            }
+
+            // 隐藏数量显示
+            &::before {
+              content: attr(data-hidden-count);
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              font-size: 10px;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9);
               width: 16px;
               height: 16px;
-              padding: 0px;
-              border: none;
-              border-radius: 4px;
-              background: rgba(255, 255, 255, 0.1);
-              color: @primary-text;
-              cursor: pointer;
               display: flex;
               align-items: center;
               justify-content: center;
+              opacity: 0;
               transition: @transition-fast;
-              
-              svg {
-                width: 10px;
-                height: 10px;
-                pointer-events: none;
-              }
+              pointer-events: none;
+            }
+
+            // 有下级内容时显示折叠指示器
+            &.has-children::after {
+              opacity: 1;
+            }
+
+            // 折叠状态
+            &.collapsed {
+              width: 24px;
+              height: 24px;
+              border-radius: 8px;
 
               &:hover {
-                background: rgba(255, 255, 255, 0.2);
-                transform: scale(1.05);
+                transform: translate(-50%, -50%) scale(1.2, 1.2);
               }
 
-              &:active {
-                transform: scale(0.95);
+              &::after {
+                transform: translate(-50%, -50%) rotate(-90deg);
               }
 
-              &.edit-btn:hover {
-                background: rgba(40, 167, 69, 0.8);
+              // 折叠时显示隐藏数量
+              &::before {
+                opacity: 1;
               }
 
-              &.delete-btn:hover {
-                background: rgba(220, 53, 69, 0.8);
+              // 折叠时隐藏箭头
+              &::after {
+                opacity: 0;
               }
             }
           }
 
-          // 内容区域包装器 - 包含左侧竖线、内容和按钮
-          .outline-content-wrapper {
+          // 内容区域
+          .outline-content {
             flex: 1;
-            position: relative;
-            display: flex;
-            padding-left: 0px;
-            align-items: flex-start;
-            gap: 12px;
+            min-width: 0;
+            padding: 10px 10px 10px 20px;
 
-            // 时间显示 - 固定在最左侧，带颜色，可点击跳转
-            .outline-time {
-              position: absolute;
-              top: 12px;
-              right: calc(100% + 16px);
-              font-size: 12px;
-              font-weight: 600;
-              font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
-              flex-shrink: 0;
-              backdrop-filter: blur(100px);
-              text-align: right;
-              z-index: 1;
+            // 标题 - 可点击编辑
+            .outline-title {
+              color: @primary-text;
+              font-size: 14px;
+              font-weight: 500;
+              margin-bottom: 2px;
+              line-height: 1.3;
+              word-wrap: break-word;
+              word-break: break-word;
               cursor: pointer;
               padding: 2px 4px;
               border-radius: 4px;
               transition: @transition-fast;
 
               &:hover {
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.08);
+                color: lighten(@primary-text, 10%);
               }
             }
-            // 左侧竖线 - 会根据级别缩进，可点击折叠/展开
-            .outline-color-indicator {
-              position: absolute;
-              width: 6px;
-              height: 100%;
-              left: 0px;
-              top: 50%;
-              border-radius: 1.5px;
-              flex-shrink: 0;
+
+            // 内容预览 - 可点击编辑
+            .outline-text {
+              color: @secondary-text;
+              font-size: 12px;
+              line-height: 1.4;
+              word-wrap: break-word;
+              word-break: break-word;
               cursor: pointer;
-              transform: translate(-50%,-50%);
+              padding: 2px 4px;
+              border-radius: 4px;
               transition: @transition-fast;
-              z-index: 1;
 
               &:hover {
-                opacity: 0.8;
-                transform: translate(-50%,-50%) scale(1.2, 1);
-              }
-
-              // 折叠状态指示
-              &::after {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 0;
-                height: 0;
-                border-left: 2px solid transparent;
-                border-right: 2px solid transparent;
-                border-top: 3px solid rgba(255, 255, 255, 0.8);
-                opacity: 0;
-                transition: @transition-fast;
-              }
-
-              // 隐藏数量显示
-              &::before {
-                content: attr(data-hidden-count);
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 10px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
-                width: 16px;
-                height: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                opacity: 0;
-                transition: @transition-fast;
-                pointer-events: none;
-              }
-
-              // 有下级内容时显示折叠指示器
-              &.has-children::after {
-                opacity: 1;
-              }
-
-              // 折叠状态
-              &.collapsed {
-                width: 24px;
-                height: 24px;
-                border-radius: 8px;
-
-                &:hover {
-                  transform: translate(-50%,-50%) scale(1.2, 1.2);
-                }
-                &::after {
-                  transform: translate(-50%, -50%) rotate(-90deg);
-                }
-                
-                // 折叠时显示隐藏数量
-                &::before {
-                  opacity: 1;
-                }
-                
-                // 折叠时隐藏箭头
-                &::after {
-                  opacity: 0;
-                }
+                background: rgba(255, 255, 255, 0.08);
+                color: lighten(@secondary-text, 15%);
               }
             }
-
-            // 内容区域
-            .outline-content {
-              flex: 1;
-              min-width: 0;
-              padding: 10px 10px 10px 20px;
-
-              // 标题 - 可点击编辑
-              .outline-title {
-                color: @primary-text;
-                font-size: 14px;
-                font-weight: 500;
-                margin-bottom: 2px;
-                line-height: 1.3;
-                word-wrap: break-word;
-                word-break: break-word;
-                cursor: pointer;
-                padding: 2px 4px;
-                border-radius: 4px;
-                transition: @transition-fast;
-
-                &:hover {
-                  background: rgba(255, 255, 255, 0.08);
-                  color: lighten(@primary-text, 10%);
-                }
-              }
-
-              // 内容预览 - 可点击编辑
-              .outline-text {
-                color: @secondary-text;
-                font-size: 12px;
-                line-height: 1.4;
-                word-wrap: break-word;
-                word-break: break-word;
-                cursor: pointer;
-                padding: 2px 4px;
-                border-radius: 4px;
-                transition: @transition-fast;
-
-                &:hover {
-                  background: rgba(255, 255, 255, 0.08);
-                  color: lighten(@secondary-text, 15%);
-                }
-              }
-            }
-
           }
 
-          // 级别缩进样式 - 只影响content-wrapper
-          &.level-high .outline-content-wrapper {
-            margin-left: 70px; // 高级别：无缩进
-          }
+        }
 
-          &.level-medium .outline-content-wrapper {
-            margin-left: 80px; // 中级别：20px缩进
-          }
+        // 级别缩进样式 - 只影响content-wrapper
+        &.level-high .outline-content-wrapper {
+          margin-left: 70px; // 高级别：无缩进
+        }
 
-          &.level-low .outline-content-wrapper {
-            margin-left: 90px; // 低级别：40px缩进
-          }
+        &.level-medium .outline-content-wrapper {
+          margin-left: 80px; // 中级别：20px缩进
+        }
 
-          &.level-default .outline-content-wrapper {
-            margin-left: 100px; // 默认级别：60px缩进
-          }
+        &.level-low .outline-content-wrapper {
+          margin-left: 90px; // 低级别：40px缩进
+        }
+
+        &.level-default .outline-content-wrapper {
+          margin-left: 100px; // 默认级别：60px缩进
+        }
 
         // 时长标识
         &.has-duration {
-          .outline-content-wrapper{
+          .outline-content-wrapper {
             .outline-time {
+
               // margin-top: -6px;
-              .duration{
+              .duration {
                 position: absolute;
                 top: 100%;
                 right: 4px;
-                transform: translate(0%,-2px);
+                transform: translate(0%, -2px);
                 font-size: 8px;
-                color: rgba(255,255,255,.8);
+                color: rgba(255, 255, 255, .8);
                 pointer-events: none;
               }
             }
@@ -624,19 +627,21 @@ body {
         // 已播放完成的打点样式
         &.played {
           opacity: 0.6;
-          
-          .outline-content-wrapper{
+
+          .outline-content-wrapper {
             .outline-time {
               color: rgba(123, 123, 123, 0.8) !important;
             }
+
             .outline-color-indicator {
               opacity: 0.4;
             }
-            .outline-content{
+
+            .outline-content {
               .outline-title {
                 color: rgba(255, 255, 255, 0.5);
               }
-              
+
               .outline-text {
                 color: rgba(255, 255, 255, 0.3);
               }
@@ -648,10 +653,11 @@ body {
 
         // 颜色主题mixin - 应用到时间和竖线
         .outline-color-theme(@color) {
-          .outline-content-wrapper{
+          .outline-content-wrapper {
             .outline-time {
               color: @color;
             }
+
             .outline-color-indicator {
               background: @color;
             }
@@ -659,12 +665,29 @@ body {
         }
 
         // 颜色主题样式
-        &.color-red { .outline-color-theme(@danger-red); }
-        &.color-orange { .outline-color-theme(@warning-orange); }
-        &.color-yellow { .outline-color-theme(@warning-yellow); }
-        &.color-green { .outline-color-theme(@success-green); }
-        &.color-blue { .outline-color-theme(@primary-blue); }
-        &.color-purple { .outline-color-theme(@info-purple); }
+        &.color-red {
+          .outline-color-theme(@danger-red);
+        }
+
+        &.color-orange {
+          .outline-color-theme(@warning-orange);
+        }
+
+        &.color-yellow {
+          .outline-color-theme(@warning-yellow);
+        }
+
+        &.color-green {
+          .outline-color-theme(@success-green);
+        }
+
+        &.color-blue {
+          .outline-color-theme(@primary-blue);
+        }
+
+        &.color-purple {
+          .outline-color-theme(@info-purple);
+        }
 
         // 隐藏状态（被折叠）
         &.hidden-by-collapse {
@@ -704,7 +727,8 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    video{
+
+    video {
       outline: none;
     }
 
@@ -727,8 +751,8 @@ body {
         height: 1.5em;
         width: 3em;
         border-radius: 50%;
-        background-color: rgba(255,255,255,0.15);
-        border: 3px solid rgba(255,255,255,0.8);
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 3px solid rgba(255, 255, 255, 0.8);
         margin-left: -1.5em;
         margin-top: -0.75em;
         backdrop-filter: @blur-small;
@@ -736,7 +760,7 @@ body {
         transition: @transition-medium;
 
         &:hover {
-          background-color: rgba(255,255,255,0.25);
+          background-color: rgba(255, 255, 255, 0.25);
           transform: scale(1.1);
         }
       }
@@ -780,14 +804,14 @@ body {
   position: fixed;
   top: 20px;
   right: 20px;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   color: #fff;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
@@ -811,8 +835,8 @@ body {
   &.persistent {
     opacity: 1;
     visibility: visible;
-    background: rgba(255,165,0,0.9); // 橙色背景表示非正常倍速
-    border-color: rgba(255,165,0,0.5);
+    background: rgba(255, 165, 0, 0.9); // 橙色背景表示非正常倍速
+    border-color: rgba(255, 165, 0, 0.5);
   }
 
   // 临时显示状态（调节时的闪现）
@@ -870,7 +894,7 @@ body {
         // div.pan-track (胶片带)
         .pan-track {
           position: absolute;
-  box-sizing: border-box;
+          box-sizing: border-box;
           top: 0;
           left: 0;
           width: 100%;
@@ -878,7 +902,7 @@ body {
           background: white;
           border-radius: 2px;
           border: 1px solid #1a1a1a;
-          
+
           // 缩略打点标记
           .pan-annotation-thumbnail {
             position: absolute;
@@ -888,34 +912,51 @@ body {
             z-index: 5;
             pointer-events: none;
             background-color: @primary-blue; // 默认颜色
-            
+
             // 有时长的打点（条形）
             &.has-duration {
               // 有时长的打点保持默认样式
               opacity: 0.9;
             }
-            
+
             // 不同级别的缩略标记
             &.level-high {
               margin-top: -24px;
             }
-            
+
             &.level-medium {
               margin-top: -16px;
             }
-            
+
             &.level-low {
               margin-top: -12px;
             }
-            
-            
+
+
             // 不同颜色的缩略标记
-            &.color-red { background-color: @danger-red; }
-            &.color-orange { background-color: @warning-orange; }
-            &.color-yellow { background-color: @warning-yellow; }
-            &.color-green { background-color: @success-green; }
-            &.color-blue { background-color: @primary-blue; }
-            &.color-purple { background-color: @info-purple; }
+            &.color-red {
+              background-color: @danger-red;
+            }
+
+            &.color-orange {
+              background-color: @warning-orange;
+            }
+
+            &.color-yellow {
+              background-color: @warning-yellow;
+            }
+
+            &.color-green {
+              background-color: @success-green;
+            }
+
+            &.color-blue {
+              background-color: @primary-blue;
+            }
+
+            &.color-purple {
+              background-color: @info-purple;
+            }
           }
         }
 
@@ -941,14 +982,15 @@ body {
             // 提示线
             .playback-tooltip-line {
               position: absolute;
-  bottom: 0;
+              bottom: 0;
               left: 50%;
               transform: translateX(-50%);
               width: 1px;
               height: 30px;
-              background: rgba(255,255,255,0.8);
+              background: rgba(255, 255, 255, 0.8);
               border-radius: 0.5px;
             }
+
             // 缩略图画布
             .playback-thumbnail-canvas {
               position: absolute;
@@ -957,17 +999,18 @@ body {
               transform: translateX(-50%);
               width: 160px;
               height: 90px;
-              border: 2px solid rgba(255,255,255,0.8);
+              border: 2px solid rgba(255, 255, 255, 0.8);
               border-radius: 4px;
               background: #1a1a1a;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             }
+
             // 提示文本
             .playback-tooltip-text {
               position: absolute;
               bottom: 35px;
               right: -75px;
-              background: rgba(0,0,0,0.8);
+              background: rgba(0, 0, 0, 0.8);
               color: #fff;
               padding: 2px 6px;
               border-radius: 3px;
@@ -975,7 +1018,7 @@ body {
               white-space: nowrap;
               font-weight: 500;
               backdrop-filter: blur(10px);
-              border: 1px solid rgba(255,255,255,0.2);
+              border: 1px solid rgba(255, 255, 255, 0.2);
             }
           }
 
@@ -984,6 +1027,7 @@ body {
             opacity: 1;
           }
         }
+
         // div.pan-thumb (视窗)
         .pan-thumb {
           position: absolute;
@@ -991,17 +1035,17 @@ body {
           right: 0;
           top: 50%;
           height: 1000%;
-          border: 1px solid rgba(255,255,255,.7);
+          border: 1px solid rgba(255, 255, 255, .7);
           border-radius: 4px;
           opacity: 0;
           transform: translateY(-50%);
-          transition: border .5s ease,opacity .5s ease,;
+          transition: border .5s ease, opacity .5s ease, ;
           cursor: grab;
-          
+
           &:active {
             cursor: grabbing;
           }
-          
+
 
           // 时间显示 (胶片标签风格)
           .thumb-time-display {
@@ -1009,7 +1053,7 @@ body {
             bottom: 5px;
             font-size: 9px;
             color: #000;
-            background: rgba(255,255,255,.6);
+            background: rgba(255, 255, 255, .6);
             backdrop-filter: blur(10px);
             padding: 3px 6px;
             border-radius: 4px;
@@ -1017,57 +1061,57 @@ body {
             pointer-events: none; // 避免误触
             z-index: 3;
             border: 1px solid #ffffff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4),;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), ;
             // font-family: 'Courier New', monospace;
             // font-weight: 500;
             // letter-spacing: 0.5px;
-  
+
             // 左侧时间
             &.left-time {
               left: 0;
               margin-left: 0px;
-              transform: translate(-50%,0%);
+              transform: translate(-50%, 0%);
             }
-  
+
             // 右侧时间
             &.right-time {
               right: 0;
               margin-right: 0px;
-              transform: translate(50%,0%);
+              transform: translate(50%, 0%);
             }
           }
 
-                     // 拖拽手柄 (视窗边框控制)
-           .resize-handle {
-             position: absolute;
-             top: 0px;
-             height: 100%;
-             width: 8px;
-             cursor: ew-resize;
-             background: rgba(255,255,255,1);
-             transition: all 0.2s ease;
-             z-index: 2;
-             opacity: 0;
-             
-             &:active {
-               cursor: ew-resize;
-             }
-  
+          // 拖拽手柄 (视窗边框控制)
+          .resize-handle {
+            position: absolute;
+            top: 0px;
+            height: 100%;
+            width: 8px;
+            cursor: ew-resize;
+            background: rgba(255, 255, 255, 1);
+            transition: all 0.2s ease;
+            z-index: 2;
+            opacity: 0;
+
+            &:active {
+              cursor: ew-resize;
+            }
+
             &:hover {
-              background: rgba(64,150,255,1);
-              border-color: rgba(64,150,255,1);
-              box-shadow: 0 0 8px rgba(64,150,255,0.6);
+              background: rgba(64, 150, 255, 1);
+              border-color: rgba(64, 150, 255, 1);
+              box-shadow: 0 0 8px rgba(64, 150, 255, 0.6);
               opacity: 0;
             }
-  
-  
+
+
             // 左侧手柄
             &.left-handle {
               left: -6px;
               // border-radius: 3px 0 0 3px;
               border-right: none;
             }
-  
+
             // 右侧手柄
             &.right-handle {
               right: -6px;
@@ -1076,6 +1120,7 @@ body {
             }
           }
         }
+
         .playback-indicator {
           position: absolute;
           top: 0;
@@ -1098,7 +1143,7 @@ body {
           border: 1px solid #fff;
           border-radius: 50%;
           transform: translate(-50%, -50%);
-          box-shadow: inset 0 0  0 1px rgba(0,0,0,1);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 1);
           opacity: 1;
           cursor: pointer;
           pointer-events: auto;
@@ -1107,7 +1152,8 @@ body {
 
           &:hover {
             transform: translate(-50%, -50%) scale(1.2);
-            .playback-handle-time{
+
+            .playback-handle-time {
               transform: translate(-50%, -66%) scale(0.84);
             }
           }
@@ -1118,7 +1164,7 @@ body {
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             color: #fff;
             padding: 2px 4px;
             border-radius: 3px;
@@ -1126,7 +1172,7 @@ body {
             white-space: nowrap;
             font-weight: 500;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             transform: translate(-50%, -50%) scale(1);
             transition: transform .2s ease;
             pointer-events: none;
@@ -1138,7 +1184,7 @@ body {
             opacity: 1;
           }
         }
-          
+
         // Pan-thumb内的控制面板
         .pan-thumb-controls {
           position: absolute;
@@ -1216,42 +1262,43 @@ body {
           opacity: 1;
           pointer-events: auto;
         }
-        
+
         // 禁用状态
         &.disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-
-        .pan-thumb {
-          cursor: not-allowed;
-          background: rgba(0,123,255,0.3);
-        }
-
-        .resize-handle {
-          cursor: not-allowed;
-          background: rgba(255,255,255,0.2);
-        }
-
-        .thumb-time-display {
-          opacity: 0.5;
-        }
-
-        .playback-indicator {
-          pointer-events: none;
           opacity: 0.3;
-        }
+          cursor: not-allowed;
+
+          .pan-thumb {
+            cursor: not-allowed;
+            background: rgba(0, 123, 255, 0.3);
+          }
+
+          .resize-handle {
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.2);
+          }
+
+          .thumb-time-display {
+            opacity: 0.5;
+          }
+
+          .playback-indicator {
+            pointer-events: none;
+            opacity: 0.3;
+          }
         }
       }
     }
   }
-  &:hover .progress-zoom-control{
-    .pan-section{
-      .custom-pan-slider{
-        .pan-thumb{
+
+  &:hover .progress-zoom-control {
+    .pan-section {
+      .custom-pan-slider {
+        .pan-thumb {
           border-color: rgba(255, 255, 255, .7);
           opacity: 1;
 
-          &.following{
+          &.following {
             border-color: #007bff;
           }
         }
@@ -1259,53 +1306,55 @@ body {
     }
 
   }
+
   .progress-container {
     position: absolute;
     box-sizing: border-box;
     bottom: 90px;
     width: 100%;
     height: 48px;
-  cursor: pointer;
-  border-radius: 9999px;
-  user-select: none;
+    cursor: pointer;
+    border-radius: 9999px;
+    user-select: none;
     transition: left 0.3s ease, width 0.3s ease;
 
-  &,
-  &::before,
-  &::after,
-  *,
-  *::before,
-  *::after {
-    transition: @transition-fast;
-  }
+    &,
+    &::before,
+    &::after,
+    *,
+    *::before,
+    *::after {
+      transition: @transition-fast;
+    }
 
-  // 进度条背景轨道
-  &::before {
-    content: "";
-    position: absolute;
+    // 进度条背景轨道
+    &::before {
+      content: "";
+      position: absolute;
       height: 48px;
       left: -50px;
       right: -50px;
       top: 50%;
-      transform: translate(0,-50%);
-    cursor: pointer;
-    border-radius: 999px;
+      transform: translate(0, -50%);
+      cursor: pointer;
+      border-radius: 999px;
       // background: rgba(0,0,0,0.4);
-  }
-  // 进度条悬停背景
-  &::after {
-    content: "";
-    position: absolute;
-    height: 4px;
+    }
+
+    // 进度条悬停背景
+    &::after {
+      content: "";
+      position: absolute;
+      height: 4px;
       left: -4px;
       right: -4px;
-    bottom: 0%;
-      transform: translate(0,15%);
-    cursor: pointer;
-    border-radius: 999px;
-      border: 2px solid rgba(0,0,0,0);
-      background: rgba(0,0,0,0.4);
-    opacity: 0;
+      bottom: 0%;
+      transform: translate(0, 15%);
+      cursor: pointer;
+      border-radius: 999px;
+      border: 2px solid rgba(0, 0, 0, 0);
+      background: rgba(0, 0, 0, 0.4);
+      opacity: 0;
       // z-index: 1;
     }
 
@@ -1322,132 +1371,194 @@ body {
       opacity: 0;
       z-index: 1; // 在背景之上，进度条之下
       transform: translateY(-100%);
-    }
-  // div.progress-bar
-  .progress-bar {
-      position: relative;
-    height: 100%;
-    width: 0%;
-    display: flex;
-    align-items: center;
-    z-index: 2;
-    transform: none;
-      opacity: 1;
 
-    // div.progress-line
-    .progress-line {
-      position: absolute;
-      left: 0;
-      right: 0;
-        top: 100%;
-        height: 4px;
-      background: @primary-blue;
-      transform: translateY(-100%);
-        border-radius: 99px;
-        opacity: 0;
-    }
-
-    // 当前时间指示器 & 打点添加按钮
-    .progress-handle {
-      position: absolute;
-      right: -1px;
-        top: 15%;
-      width: 2px;
-      height: 16px;
-      transform: translate(0, -50%);
-      border-radius: 1px;
-
-      // div.current-time-display
-      .current-time-display {
+      // 鼠标时间指示器
+      .progress-tooltip {
         position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%,-50%);
-          opacity: 1;
+        bottom: 50%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 111;
 
-        // 当前时间
-        .time-text {
-          display: block;
-          background: rgba(0,0,0,.6);
-          border-radius: 50px;
-          color: @primary-text;
-          padding: 2px 4px;
-          font-size: 12px;
-          font-weight: 500;
-          white-space: nowrap;
-            margin-top: 0px;
+        // div.tooltip-line
+        .tooltip-line {
+          position: absolute;
+          bottom: -4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 1px;
+          height: 35px;
+          background: #fff;
+          border-radius: 1px;
         }
 
-        // 添加打点
-        .add-annotation-btn {
+        // 主进度条缩略图画布
+        .main-thumbnail-canvas {
           position: absolute;
-            width: 64px;
-            height: 24px;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 160px;
+          height: 90px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          border-radius: 4px;
+          background: #1a1a1a;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        // div.tooltip-text
+        .tooltip-text {
+          position: absolute;
+          bottom: 35px;
+          right: -80px;
+          background: @overlay-bg;
+          color: @primary-text;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+          font-weight: 500;
+          backdrop-filter: @blur-small;
+          -webkit-backdrop-filter: @blur-small;
+          border: 1px solid @border-light;
+        }
+      }
+
+      &:hover .progress-tooltip {
+        opacity: 1;
+      }
+    }
+
+    // div.progress-bar
+    .progress-bar {
+      position: relative;
+      height: 100%;
+      width: 0%;
+      display: flex;
+      align-items: center;
+      z-index: 2;
+      transform: none;
+      opacity: 1;
+      pointer-events: none;
+
+      // div.progress-line
+      .progress-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        height: 4px;
+        background: @primary-blue;
+        transform: translateY(-100%);
+        border-radius: 99px;
+        opacity: 0;
+      }
+
+      // 当前时间指示器 & 打点添加按钮
+      .progress-handle {
+        position: absolute;
+        right: -1px;
+        top: 15%;
+        width: 2px;
+        height: 16px;
+        transform: translate(0, -50%);
+        border-radius: 1px;
+
+        // div.current-time-display
+        .current-time-display {
+          position: absolute;
           left: 50%;
           top: 50%;
-          transform: translate(-50%,-50%);
-            opacity: 1;
-          background: rgba(0,0,0,0.5);
-          border: 2px solid @primary-text;
-          color: @primary-text;
-            border-radius: 999px;
-          cursor: pointer;
-          font-size: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          //箭头
-          &::before {
-            content: '';
+          transform: translate(-50%, -50%);
+          opacity: 1;
+
+          // 当前时间
+          .time-text {
+            display: block;
+            background: rgba(0, 0, 0, .6);
+            border-radius: 50px;
+            color: @primary-text;
+            padding: 2px 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            margin-top: 0px;
+          }
+
+          // 添加打点
+          .add-annotation-btn {
             position: absolute;
-            width: 0;
-            height: 0;
+            width: 64px;
+            height: 24px;
             left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid @primary-text;
+            color: @primary-text;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            pointer-events: all;
+
+            //箭头
+            &::before {
+              content: '';
+              position: absolute;
+              width: 0;
+              height: 0;
+              left: 50%;
               top: -45%;
-            transform: translate(-50%,0%);
+              transform: translate(-50%, 0%);
               border-left: 4px solid transparent;
               border-right: 4px solid transparent;
               border-top: 0px solid @primary-text;
               border-bottom: 8px solid @primary-text;
-          }
-
-          &:hover {
-            background: rgba(255,255,255,0);
-            color: black;
-
-            &::before {
-              border-top-color: @primary-blue;
             }
-          }
 
-          &::after {
-            content: '';
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%,-50%);
-            background-color: @primary-blue;
-            border-radius: 50%;
+            &:hover {
+              background: rgba(255, 255, 255, 0);
+              color: black;
+
+              &::before {
+                border-top-color: @primary-blue;
+              }
+            }
+
+            &::after {
+              content: '';
+              position: absolute;
+              width: 6px;
+              height: 6px;
+              left: 50%;
+              top: 50%;
+              transform: translate(-50%, -50%);
+              background-color: @primary-blue;
+              border-radius: 50%;
               opacity: 0;
+            }
           }
         }
       }
     }
-  }
 
   }
+
   // 悬停状态下的进度条和句柄样式
-  &:hover .progress-container{
+  &:hover .progress-container {
     &::after {
       left: -22px;
       right: -22px;
       bottom: 50%;
-      transform: translate(0,50%);
-      border: 20px solid rgba(0,0,0,.4);
-      background: rgba(0,0,0,0);
+      transform: translate(0, 50%);
+      border: 20px solid rgba(0, 0, 0, .4);
+      background: rgba(0, 0, 0, 0);
       opacity: 1;
       backdrop-filter: blur(10px);
       outline: 1px solid rgba(255, 255, 255, .1);
@@ -1461,37 +1572,43 @@ body {
       top: 50%;
       transform: translateY(-50%);
     }
+
     // 悬停状态下的进度条和句柄样式
-    .progress-bar{
+    .progress-bar {
       opacity: 1;
+
       .progress-line {
         opacity: 1;
         top: 50%;
         transform: translateY(-50%);
-    }
+      }
 
-    .progress-handle {
-      opacity: 1;
-        top: 50%;
-      height: 30px;
-      .current-time-display {
+      .progress-handle {
         opacity: 1;
+        top: 50%;
+        height: 30px;
 
-        .time-text {
-          margin-top: 29px;
-          font-size: 10px;
-        }
-        .add-annotation-btn {
+        .current-time-display {
+          opacity: 1;
+
+          .time-text {
+            margin-top: 29px;
+            font-size: 10px;
+          }
+
+          .add-annotation-btn {
             width: 16px;
             height: 16px;
-          opacity: 1;
-            &::before{
+            opacity: 1;
+
+            &::before {
               top: -80%;
               border-top: 8px solid @primary-text;
               border-bottom: 0px solid @primary-text;
             }
+
             &::before,
-            &::after{
+            &::after {
               opacity: 1;
             }
           }
@@ -1507,60 +1624,6 @@ body {
 .progress-container {
 
 
-  // 鼠标时间指示器
-  .progress-tooltip {
-    position: absolute;
-    bottom: 50%;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 111;
-
-    // div.tooltip-line
-    .tooltip-line {
-      position: absolute;
-      bottom: -4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 35px;
-      background: #fff;
-      border-radius: 1px;
-    }
-    // 主进度条缩略图画布
-    .main-thumbnail-canvas {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 160px;
-      height: 90px;
-      border: 2px solid rgba(255,255,255,0.9);
-      border-radius: 4px;
-      background: #1a1a1a;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-    }
-    // div.tooltip-text
-    .tooltip-text {
-      position: absolute;
-      bottom: 35px;
-      right: -80px;
-      background: @overlay-bg;
-      color: @primary-text;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      white-space: nowrap;
-      font-weight: 500;
-      backdrop-filter: @blur-small;
-      -webkit-backdrop-filter: @blur-small;
-      border: 1px solid @border-light;
-    }
-  }
-
-  &:hover .progress-tooltip {
-    opacity: 1;
-  }
 
 
   // ===============================
@@ -1582,6 +1645,7 @@ body {
       background: #f00;
       // border: 1px solid @border-strong;
       transform: translateX(-50%) translateY(-100%);
+
       &::before {
         content: '';
         position: absolute;
@@ -1589,7 +1653,7 @@ body {
         height: 0;
         left: 50%;
         top: 100%;
-        transform: translate(-50%,0px);
+        transform: translate(-50%, 0px);
         border-left: 5px solid transparent;
         border-right: 5px solid transparent;
         border-top: 7px solid @primary-text;
@@ -1620,11 +1684,12 @@ body {
         transition: opacity .5s ease;
 
         &:hover {
-          background: rgba(0,0,0,0.4);
+          background: rgba(0, 0, 0, 0.4);
         }
 
         // div.annotation-popup-content
         .annotation-popup-content {
+
           // div.annotation-time
           .annotation-time {
             font-weight: bold;
@@ -1643,7 +1708,7 @@ body {
           .annotation-text {
             margin-bottom: 8px;
             line-height: 1.4;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.9);
           }
 
           // div.annotation-empty
@@ -1677,7 +1742,7 @@ body {
               height: 24px;
               border: none;
               border-radius: 4px;
-              background: rgba(255,255,255,0.2);
+              background: rgba(255, 255, 255, 0.2);
               color: @primary-text;
               cursor: pointer;
               display: flex;
@@ -1685,12 +1750,12 @@ body {
               justify-content: center;
 
               &:hover {
-                background: rgba(255,255,255,0.3);
+                background: rgba(255, 255, 255, 0.3);
                 transform: scale(1.1);
               }
 
               &.delete-btn {
-                background: rgba(220,53,69,0.8);
+                background: rgba(220, 53, 69, 0.8);
 
                 &:hover {
                   background: @danger-red;
@@ -1712,6 +1777,7 @@ body {
         visibility: visible;
       }
     }
+
     // 悬停容器时显示popup
     &:hover .annotation-title .annotation-popup {
       opacity: 1;
@@ -1720,44 +1786,48 @@ body {
 
     // div.annotation-dot
     .annotation-dot {
-      width: 100% ;
-      height: 100% ;
+      width: 100%;
+      height: 100%;
       position: relative;
       background-color: #6c757d;
+
       // border: 2px solid rgba(108, 117, 125, 0.8);
       &::before,
-      &::after{
-        content:"";
+      &::after {
+        content: "";
         position: absolute;
         width: 4px;
         height: 4px;
         background-color: #f00;
         left: 0;
         top: 50%;
-        transform: translate(-50%,-50%);
+        transform: translate(-50%, -50%);
         border-radius: 50%;
         border: 2px solid transparent;
       }
-      &::after{
+
+      &::after {
         background-color: #f00;
         left: 100%;
       }
 
     }
 
-    &:hover .annotation-dot{
-      &::before{
+    &:hover .annotation-dot {
+      &::before {
         width: 8px;
         height: 8px;
         background-color: #fff !important;
         z-index: 1;
       }
-      &::after{
-        background-color: rgba(255,255,255,0.8);
+
+      &::after {
+        background-color: rgba(255, 255, 255, 0.8);
       }
     }
-    &:active .annotation-dot{
-      &::before{
+
+    &:active .annotation-dot {
+      &::before {
         width: 12px;
         height: 12px;
         border-width: 6px;
@@ -1768,47 +1838,71 @@ body {
     .annotation-color(@color, @title-text-color: white) {
       .annotation-dot {
         background-color: @color;
+
         &::before,
-        &::after{
+        &::after {
           background-color: @color;
           border: 2px solid @color;
         }
 
       }
+
       .annotation-title {
         background: fade(@color, 90%);
         color: @title-text-color;
-        &::before{
-          border-top-color:fade(@color, 90%);
+
+        &::before {
+          border-top-color: fade(@color, 90%);
         }
       }
-      &.played{
+
+      &.played {
         .annotation-dot {
           background-color: darken(@color, 30%);
+
           &::before,
-          &::after{
+          &::after {
             background-color: darken(@color, 30%);
             border: 2px solid darken(@color, 30%);
           }
-  
+
         }
+
         .annotation-title {
           background: darken(@color, 30%);
           color: darken(@title-text-color, 30%);
-          &::before{
-            border-top-color:darken(@color, 30%);
+
+          &::before {
+            border-top-color: darken(@color, 30%);
           }
         }
 
       }
     }
 
-    &.color-red { .annotation-color(@danger-red); }
-    &.color-orange { .annotation-color(@warning-orange); }
-    &.color-yellow { .annotation-color(@warning-yellow, #000); }
-    &.color-green { .annotation-color(@success-green); }
-    &.color-blue { .annotation-color(@primary-blue); }
-    &.color-purple { .annotation-color(@info-purple); }
+    &.color-red {
+      .annotation-color(@danger-red);
+    }
+
+    &.color-orange {
+      .annotation-color(@warning-orange);
+    }
+
+    &.color-yellow {
+      .annotation-color(@warning-yellow, #000);
+    }
+
+    &.color-green {
+      .annotation-color(@success-green);
+    }
+
+    &.color-blue {
+      .annotation-color(@primary-blue);
+    }
+
+    &.color-purple {
+      .annotation-color(@info-purple);
+    }
 
     // 有时长的打点，条形样式
     // &.has-duration .annotation-dot {
@@ -1820,9 +1914,11 @@ body {
     &.level-1 .annotation-title {
       transform: translateX(-50%) translateY(-400%);
     }
+
     &.level-2 .annotation-title {
       transform: translateX(-50%) translateY(-300%);
     }
+
     &.level-3 .annotation-title {
       transform: translateX(-50%) translateY(-200%);
     }
@@ -1837,7 +1933,7 @@ body {
   position: fixed;
   right: 10px;
   top: 50%;
-  transform: translate(0%,-50%);
+  transform: translate(0%, -50%);
   width: 50px;
   height: 50px;
   background: @overlay-bg;
@@ -1857,16 +1953,17 @@ body {
 
 
   &:hover {
-    background: rgba(0,0,0,0.9);
-    border-color: rgba(255,255,255,0.5);
-    transform: translate(0%,-50%) scale(1.1);
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translate(0%, -50%) scale(1.1);
     opacity: 1;
   }
 
   &.sidebar-open {
     right: @sidebar-width + 10px;
+
     &:hover {
-      transform: translate(0%,-50%) scale(1.1);
+      transform: translate(0%, -50%) scale(1.1);
     }
   }
 
@@ -1886,7 +1983,7 @@ body {
   width: 60px;
   height: 60px;
   background: @overlay-bg;
-  border: 2px solid rgba(255,255,255,0.8);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   color: @primary-text;
   cursor: pointer;
@@ -1898,7 +1995,7 @@ body {
   backdrop-filter: @blur-small;
   -webkit-backdrop-filter: @blur-small;
   opacity: 0;
-  transform: translate(-50%,0);
+  transform: translate(-50%, 0);
   pointer-events: none;
 
   &.show {
@@ -1907,9 +2004,9 @@ body {
   }
 
   &:hover {
-    background: rgba(0,0,0,0.9);
-    border-color: rgba(255,255,255,1);
-    transform: translate(-50%,0) scale(1.1);
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 1);
+    transform: translate(-50%, 0) scale(1.1);
     opacity: 1;
   }
 
@@ -1951,12 +2048,12 @@ body {
   // opacity: 0;
   pointer-events: none;
   padding-bottom: 4px;
-  transform: translate(50%,0);
+  transform: translate(50%, 0);
 
   // span.duration-text
   .duration-text {
     display: block;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     border-radius: 4px;
     color: @primary-text;
     padding: 2px 4px;
@@ -2039,7 +2136,7 @@ body {
       // button.btn
       .btn {
         padding: 14px 20px;
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
         color: @primary-text;
         border: 1px solid @border-medium;
         border-radius: 8px;
@@ -2053,12 +2150,12 @@ body {
         justify-content: space-between;
 
         &:hover {
-          background: rgba(255,255,255,0.2);
-          border-color: rgba(255,255,255,0.4);
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.4);
         }
 
         &.primary {
-          background: rgba(0,123,255,0.8);
+          background: rgba(0, 123, 255, 0.8);
           border-color: @primary-blue;
 
           &:hover {
@@ -2089,7 +2186,7 @@ body {
             color: @primary-text;
 
             .checkmark {
-              border-color: rgba(255,255,255,0.4);
+              border-color: rgba(255, 255, 255, 0.4);
             }
           }
 
@@ -2097,8 +2194,8 @@ body {
           input[type="checkbox"] {
             display: none;
 
-            &:checked + .checkmark {
-              background: rgba(0,123,255,0.8);
+            &:checked+.checkmark {
+              background: rgba(0, 123, 255, 0.8);
               border-color: @primary-blue;
 
               &::after {
@@ -2113,7 +2210,7 @@ body {
             position: relative;
             width: 16px;
             height: 16px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border: 1px solid @border-medium;
             border-radius: 3px;
             margin-right: 8px;
@@ -2234,7 +2331,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   // 移除焦点时的默认轮廓
   &:focus {
     outline: none;
@@ -2247,14 +2344,14 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(3px);
   }
 
   // div.annotation-input-content
   .annotation-input-content {
     position: relative;
-    background: rgba(20,20,20,0.95);
+    background: rgba(20, 20, 20, 0.95);
     border-radius: 12px;
     border: 1px solid @border-medium;
     min-width: 400px;
@@ -2294,24 +2391,24 @@ body {
         transition: @transition-fast;
 
         &:hover {
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.1);
           color: @primary-text;
         }
 
-              &:focus {
-        outline: 2px solid @primary-blue;
-        outline-offset: 2px;
-      }
+        &:focus {
+          outline: 2px solid @primary-blue;
+          outline-offset: 2px;
+        }
 
-      &.error {
-        border-color: #dc3545;
-        background-color: rgba(220, 53, 69, 0.1);
-      }
+        &.error {
+          border-color: #dc3545;
+          background-color: rgba(220, 53, 69, 0.1);
+        }
 
-      &.error:focus {
-        outline: 2px solid #dc3545;
-        outline-offset: 2px;
-      }
+        &.error:focus {
+          outline: 2px solid #dc3545;
+          outline-offset: 2px;
+        }
       }
     }
 
@@ -2423,7 +2520,7 @@ body {
         .annotation-marker-edit-wrapper {
           display: flex;
           align-items: center;
-          
+
           .annotation-input-btn {
             padding: 8px 12px;
             font-size: 13px;
@@ -2434,7 +2531,7 @@ body {
         // label.annotation-input-label
         .annotation-input-label {
           display: block;
-          color: rgba(255,255,255,0.8);
+          color: rgba(255, 255, 255, 0.8);
           font-size: 12px;
           font-weight: 500;
           text-transform: uppercase;
@@ -2445,7 +2542,7 @@ body {
         // input.annotation-input-field-input
         .annotation-input-field-input {
           width: 100%;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.1);
           border: 1px solid @border-medium;
           border-radius: 6px;
           color: @primary-text;
@@ -2457,7 +2554,7 @@ body {
           &:focus {
             outline: 2px solid @primary-blue;
             outline-offset: 2px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
           }
 
           &::placeholder {
@@ -2468,7 +2565,7 @@ body {
         // textarea.annotation-input-textarea
         .annotation-input-textarea {
           width: 100%;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.1);
           border: 1px solid @border-medium;
           border-radius: 6px;
           color: @primary-text;
@@ -2482,7 +2579,7 @@ body {
           &:focus {
             outline: 2px solid @primary-blue;
             outline-offset: 2px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
           }
 
           &::placeholder {
@@ -2493,7 +2590,7 @@ body {
         // select.annotation-input-select
         .annotation-input-select {
           width: 100%;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.1);
           border: 1px solid @border-medium;
           border-radius: 6px;
           color: @primary-text;
@@ -2506,7 +2603,7 @@ body {
           &:focus {
             outline: 2px solid @primary-blue;
             outline-offset: 2px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
           }
 
           option {
@@ -2543,15 +2640,15 @@ body {
           gap: 20px;
           align-items: flex-start;
 
-            .annotation-input-field {
-              flex: 2; // 开始时间和时长使用较大比例
-              min-width: 0; // 允许收缩
-              
-              // 标记字段使用较小的宽度
-              &:last-child {
-                flex: 1; // 标记列使用较小比例
-              }
+          .annotation-input-field {
+            flex: 2; // 开始时间和时长使用较大比例
+            min-width: 0; // 允许收缩
+
+            // 标记字段使用较小的宽度
+            &:last-child {
+              flex: 1; // 标记列使用较小比例
             }
+          }
         }
 
         // div.annotation-input-field-half
@@ -2561,6 +2658,7 @@ body {
 
         }
       }
+
       // div.annotation-color-group
       .annotation-color-group {
         display: flex;
@@ -2576,14 +2674,14 @@ body {
         }
 
         &.focused {
-          background: rgba(0,123,255,0.1);
+          background: rgba(0, 123, 255, 0.1);
         }
 
         // input[type="radio"]
         input[type="radio"] {
           display: none;
 
-          &:checked + .color-button {
+          &:checked+.color-button {
             border-color: #fff;
             // box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
             // transform: scale(1.1);
@@ -2597,7 +2695,7 @@ body {
               color: @primary-text;
               font-weight: bold;
               font-size: 16px;
-              text-shadow: 0 0 2px rgba(0,0,0,0.8);
+              text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
             }
           }
         }
@@ -2618,12 +2716,29 @@ body {
             border-color: @border-strong;
           }
 
-          &.color-red { background: @danger-red; }
-          &.color-orange { background: @warning-orange; }
-          &.color-yellow { background: @warning-yellow; }
-          &.color-green { background: @success-green; }
-          &.color-blue { background: @primary-blue; }
-          &.color-purple { background: @info-purple; }
+          &.color-red {
+            background: @danger-red;
+          }
+
+          &.color-orange {
+            background: @warning-orange;
+          }
+
+          &.color-yellow {
+            background: @warning-yellow;
+          }
+
+          &.color-green {
+            background: @success-green;
+          }
+
+          &.color-blue {
+            background: @primary-blue;
+          }
+
+          &.color-purple {
+            background: @info-purple;
+          }
         }
       }
 
@@ -2655,10 +2770,10 @@ body {
         input[type="radio"] {
           display: none;
 
-          &:checked + .level-button {
+          &:checked+.level-button {
             background: rgba(255, 255, 255, 0.8);
             color: @primary-text;
-            
+
             &::after {
               opacity: 1;
             }
@@ -2666,32 +2781,32 @@ body {
         }
 
         // 颜色主题样式 - 当level-group有对应颜色类时应用
-        &.color-red input[type="radio"]:checked + .level-button {
+        &.color-red input[type="radio"]:checked+.level-button {
           background: @danger-red;
           color: white;
         }
 
-        &.color-orange input[type="radio"]:checked + .level-button {
+        &.color-orange input[type="radio"]:checked+.level-button {
           background: @warning-orange;
           color: white;
         }
 
-        &.color-yellow input[type="radio"]:checked + .level-button {
+        &.color-yellow input[type="radio"]:checked+.level-button {
           background: @warning-yellow;
           color: black;
         }
 
-        &.color-green input[type="radio"]:checked + .level-button {
+        &.color-green input[type="radio"]:checked+.level-button {
           background: @success-green;
           color: white;
         }
 
-        &.color-blue input[type="radio"]:checked + .level-button {
+        &.color-blue input[type="radio"]:checked+.level-button {
           background: @primary-blue;
           color: white;
         }
 
-        &.color-purple input[type="radio"]:checked + .level-button {
+        &.color-purple input[type="radio"]:checked+.level-button {
           background: @info-purple;
           color: white;
         }
@@ -2702,7 +2817,7 @@ body {
           border: none;
           border-bottom: 1px solid @border-strong;
           border-radius: 0;
-          background: rgba(255,255,255,0.05);
+          background: rgba(255, 255, 255, 0.05);
           color: @primary-text;
           cursor: pointer;
           transition: @transition-fast;
@@ -2721,7 +2836,7 @@ body {
           }
 
           &:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
           }
 
           // 选中状态的指示器
@@ -2764,11 +2879,11 @@ body {
         }
 
         &.annotation-input-btn-cancel {
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.1);
           color: @primary-text;
 
           &:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
           }
         }
 
@@ -2781,7 +2896,7 @@ body {
           }
 
           &:disabled {
-            background: rgba(40,167,69,0.5);
+            background: rgba(40, 167, 69, 0.5);
             cursor: not-allowed;
           }
         }
@@ -2820,16 +2935,19 @@ body {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  aspect-ratio: 16 / 9; /* 默认16:9比例，会通过JS动态更新 */
+  aspect-ratio: 16 / 9;
+  /* 默认16:9比例，会通过JS动态更新 */
   z-index: 10;
   pointer-events: all;
   background: transparent;
-  display: none; /* 默认隐藏 */
-  
+  display: none;
+  /* 默认隐藏 */
+
   /* JavaScript会根据video-container的实际宽高比动态设置width/height为auto */
-  
+
   &.editing {
-    display: block; /* 编辑时显示 */
+    display: block;
+    /* 编辑时显示 */
   }
 }
 
@@ -2843,13 +2961,16 @@ body {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  aspect-ratio: 16 / 9; /* 默认16:9比例，会通过JS动态更新 */
-  z-index: 8; /* 比编辑器低一层 */
-  pointer-events: none; /* 不阻止视频播放控制 */
+  aspect-ratio: 16 / 9;
+  /* 默认16:9比例，会通过JS动态更新 */
+  z-index: 8;
+  /* 比编辑器低一层 */
+  pointer-events: none;
+  /* 不阻止视频播放控制 */
   background: transparent;
-  
+
   /* JavaScript会根据video-container的实际宽高比动态设置width/height为auto */
-  
+
 
   // 播放器标记样式（只读显示） - 与annotation-title主题一致
   .player-marker {
@@ -2861,7 +2982,7 @@ body {
     pointer-events: all;
     transition: opacity 0.3s ease;
     border-radius: 4px;
-    
+
     .player-marker-content {
       position: absolute;
       width: 100%;
@@ -2873,7 +2994,7 @@ body {
       border-radius: 0.1em;
       display: flex;
       flex-direction: column;
-      
+
       // 黑字白边效果
       // text-shadow: 
       //   -1px -1px 0 white,
@@ -2884,7 +3005,7 @@ body {
       //   0px 1px 0 white,
       //   -1px 0px 0 white,
       //   1px 0px 0 white;
-      
+
       .player-marker-title,
       .player-marker-description {
         padding: 0.15em 0.3em;
@@ -2893,42 +3014,64 @@ body {
         box-decoration-break: clone;
 
       }
+
       .player-marker-title {
         font-weight: bold;
         font-size: 1em;
       }
-      
+
       .player-marker-description {
-        font-size: 0.85em;;
+        font-size: 0.85em;
+        ;
       }
     }
-    
+
     // 播放器标记颜色系统 - 使用与annotation-title相同的颜色规则
     .player-marker-color(@color, @text-color: white) {
       border-color: @color;
       background: fade(@color, 10%); // 半透明背景
-      
+
       .player-marker-content {
+
         .player-marker-title,
         .player-marker-description {
           background: fade(@color, 100%); // 半透明背景
           color: @text-color;
         }
+
         .player-marker-description {
           background: fade(@color, 90%); // 半透明背景
         }
+
         // background: fade(@color, 10%); // 与annotation-title相同的背景透明度
         // 使用黑字白边，不覆盖color属性
       }
     }
-    
+
     // 不同颜色主题
-    &.color-red { .player-marker-color(@danger-red); }
-    &.color-orange { .player-marker-color(@warning-orange); }
-    &.color-yellow { .player-marker-color(@warning-yellow, #000); }
-    &.color-green { .player-marker-color(@success-green); }
-    &.color-blue { .player-marker-color(@primary-blue); }
-    &.color-purple { .player-marker-color(@info-purple); }
+    &.color-red {
+      .player-marker-color(@danger-red);
+    }
+
+    &.color-orange {
+      .player-marker-color(@warning-orange);
+    }
+
+    &.color-yellow {
+      .player-marker-color(@warning-yellow, #000);
+    }
+
+    &.color-green {
+      .player-marker-color(@success-green);
+    }
+
+    &.color-blue {
+      .player-marker-color(@primary-blue);
+    }
+
+    &.color-purple {
+      .player-marker-color(@info-purple);
+    }
 
 
     .player-marker-edit-btn {
@@ -2949,20 +3092,20 @@ body {
       opacity: 0;
       transition: opacity 0.2s ease, transform 0.2s ease;
       cursor: pointer;
-      
+
       &:hover {
         background: #0056b3;
         border-color: #004494;
         transform: scale(1.1);
       }
-      
+
       svg {
         width: 10px;
         height: 10px;
         fill: currentColor;
       }
     }
-    
+
     &:hover .player-marker-edit-btn {
       display: flex !important;
       opacity: 1 !important;
@@ -2979,13 +3122,13 @@ body {
   min-width: 20px;
   min-height: 20px;
   transition: border-color 0.2s ease;
-  
-  
+
+
   &:hover {
     border-color: #ff5252;
     background: rgba(255, 107, 107, 0.2);
   }
-  
+
   // 标记内容区域
   .marker-content {
     position: absolute;
@@ -2998,8 +3141,8 @@ body {
     border-radius: 0.1em;
     display: flex;
     flex-direction: column;
-    
-    
+
+
     .marker-title,
     .marker-description {
       padding: 0.15em 0.3em;
@@ -3008,46 +3151,68 @@ body {
       box-decoration-break: clone;
 
     }
+
     .marker-title {
       font-weight: bold;
       font-size: 1em;
     }
-    
+
     .marker-description {
-      font-size: 0.85em;;
+      font-size: 0.85em;
+      ;
     }
 
   }
 
 
-    // 播放器标记颜色系统 - 使用与annotation-title相同的颜色规则
+  // 播放器标记颜色系统 - 使用与annotation-title相同的颜色规则
   .player-marker-color(@color, @text-color: white) {
     border-color: @color;
     background: fade(@color, 10%); // 半透明背景
-    
+
     .marker-content {
+
       .marker-title,
       .marker-description {
         background: fade(@color, 100%); // 半透明背景
         color: @text-color;
       }
+
       .marker-description {
         background: fade(@color, 90%); // 半透明背景
       }
+
       // background: fade(@color, 10%); // 与annotation-title相同的背景透明度
       // 使用黑字白边，不覆盖color属性
     }
   }
-  
+
   // 不同颜色主题
-  &.color-red { .player-marker-color(@danger-red); }
-  &.color-orange { .player-marker-color(@warning-orange); }
-  &.color-yellow { .player-marker-color(@warning-yellow, #735353); }
-  &.color-green { .player-marker-color(@success-green); }
-  &.color-blue { .player-marker-color(@primary-blue); }
-  &.color-purple { .player-marker-color(@info-purple); }
-  
-  .marker-position-controls{
+  &.color-red {
+    .player-marker-color(@danger-red);
+  }
+
+  &.color-orange {
+    .player-marker-color(@warning-orange);
+  }
+
+  &.color-yellow {
+    .player-marker-color(@warning-yellow, #735353);
+  }
+
+  &.color-green {
+    .player-marker-color(@success-green);
+  }
+
+  &.color-blue {
+    .player-marker-color(@primary-blue);
+  }
+
+  &.color-purple {
+    .player-marker-color(@info-purple);
+  }
+
+  .marker-position-controls {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -3055,14 +3220,16 @@ body {
     top: 0em;
     z-index: 10;
     pointer-events: none;
-    .matrix-grid{
+
+    .matrix-grid {
       position: absolute;
       width: 100%;
       height: 100%;
       left: 0;
       top: 0;
     }
-    .matrix-position-btn{
+
+    .matrix-position-btn {
       position: absolute;
       width: .8em;
       height: .8em;
@@ -3079,8 +3246,9 @@ body {
       cursor: pointer;
       z-index: 1;
       opacity: .8;
-      &::before{
-        content:"";
+
+      &::before {
+        content: "";
         position: absolute;
         left: 50%;
         top: 50%;
@@ -3091,71 +3259,87 @@ body {
         // border-left: 0.3em solid transparent;
         // border-right: 0.3em solid transparent;
         // border-bottom: 0.5em solid white;
-        transform: translate(-50%,-50%);
+        transform: translate(-50%, -50%);
       }
-      &.selected{
+
+      &.selected {
         opacity: 0;
       }
     }
-    .horizontal-buttons{
-      .horizontal-position-btn{
-        &[data-value="left-outside"]{
+
+    .horizontal-buttons {
+      .horizontal-position-btn {
+        &[data-value="left-outside"] {
           left: 0;
-          transform: translate(-100%,-50%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(-90deg);
+          transform: translate(-100%, -50%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(-90deg);
           }
         }
-        &[data-value="left-inside"]{
+
+        &[data-value="left-inside"] {
           left: 0;
-          transform: translate(0%,-50%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(90deg);
+          transform: translate(0%, -50%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(90deg);
           }
         }
-        &[data-value="right-inside"]{
+
+        &[data-value="right-inside"] {
           left: 100%;
-          transform: translate(-100%,-50%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(-90deg);
+          transform: translate(-100%, -50%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(-90deg);
           }
         }
-        &[data-value="right-outside"]{
+
+        &[data-value="right-outside"] {
           left: 100%;
-          transform: translate(0%,-50%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(90deg);
+          transform: translate(0%, -50%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(90deg);
           }
         }
       }
     }
-    .vertical-buttons{
-      .vertical-position-btn{
-        &[data-value="top-outside"]{
+
+    .vertical-buttons {
+      .vertical-position-btn {
+        &[data-value="top-outside"] {
           top: 0;
-          transform: translate(-50%,-100%);
+          transform: translate(-50%, -100%);
         }
-        &[data-value="top-inside"]{
+
+        &[data-value="top-inside"] {
           top: 0;
-          transform: translate(-50%,0%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(180deg);
+          transform: translate(-50%, 0%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(180deg);
           }
         }
-        &[data-value="bottom-inside"]{
+
+        &[data-value="bottom-inside"] {
           top: 100%;
-          transform: translate(-50%,-100%);
+          transform: translate(-50%, -100%);
         }
-        &[data-value="bottom-outside"]{
+
+        &[data-value="bottom-outside"] {
           top: 100%;
-          transform: translate(-50%,0%);
-          &::before{
-            transform: translate(-50%,-50%) rotate(180deg);
+          transform: translate(-50%, 0%);
+
+          &::before {
+            transform: translate(-50%, -50%) rotate(180deg);
           }
         }
       }
     }
   }
+
   // 保持向后兼容的marker-label样式
   .marker-label {
     position: absolute;
@@ -3170,12 +3354,12 @@ body {
     pointer-events: none;
     font-weight: 500;
     z-index: 1;
-    
+
     .selected & {
       background: rgba(0, 123, 255, 0.8);
     }
   }
-  
+
   .resize-handle {
     position: absolute;
     width: 8px;
@@ -3185,54 +3369,54 @@ body {
     z-index: 1;
     opacity: 0;
     transition: opacity 0.2s ease;
-    
+
     &.resize-nw {
       top: -4px;
       left: -4px;
       cursor: nw-resize;
     }
-    
+
     &.resize-ne {
       top: -4px;
       right: -4px;
       cursor: ne-resize;
     }
-    
+
     &.resize-sw {
       bottom: -4px;
       left: -4px;
       cursor: sw-resize;
     }
-    
+
     &.resize-se {
       bottom: -4px;
       right: -4px;
       cursor: se-resize;
     }
   }
-  
+
   &:hover .resize-handle,
   &.selected .resize-handle {
     opacity: 1;
   }
-  
+
   &.selected .resize-handle {
     background: #007bff;
     border-color: #fff;
   }
-  
+
   // 标记操作按钮
   .marker-actions {
     position: absolute;
     left: 50%;
     top: 50%;
     width: 100%;
-    transform: translate(-50%,-50%);
+    transform: translate(-50%, -50%);
     display: flex;
     gap: 0.3em;
     z-index: 22;
     justify-content: space-around;
-    
+
     .action-btn {
       width: 1em;
       height: 1em;
@@ -3246,21 +3430,21 @@ body {
       font-weight: bold;
       transition: all 0.2s ease;
       box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.3);
-      
+
       &.save-btn {
         background: #28a745;
         color: white;
-        
+
         &:hover {
           background: #218838;
           transform: scale(1.1);
         }
       }
-      
+
       &.cancel-btn {
         background: #dc3545;
         color: white;
-        
+
         &:hover {
           background: #c82333;
           transform: scale(1.1);
@@ -3275,21 +3459,21 @@ body {
   background: white;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   min-width: 120px;
   font-size: 14px;
-  
+
   div {
     padding: 8px 12px;
     cursor: pointer;
     border-radius: 4px;
     transition: background-color 0.2s ease;
-    
+
     &:hover {
       background: #f0f0f0;
     }
-    
+
     &:active {
       background: #e0e0e0;
     }
