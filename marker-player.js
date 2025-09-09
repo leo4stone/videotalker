@@ -315,6 +315,65 @@ class MarkerPlayer {
         
         markerElement.appendChild(contentArea);
         
+        // 创建悬停编辑按钮
+        const editButton = document.createElement('button');
+        editButton.className = 'player-marker-edit-btn';
+        editButton.title = '编辑标记';
+        editButton.dataset.annotationId = annotation.id;
+        editButton.innerHTML = `
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C5.829 0 4.058 1.771 4.058 3.942c0 3.386 3.942 8.958 3.942 8.958s3.942-5.572 3.942-8.958C11.942 1.771 10.171 0 8 0zm0 6c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"/>
+                <rect x="2" y="14" width="12" height="2" rx="1"/>
+            </svg>
+        `;
+        
+        markerElement.appendChild(editButton);
+        
+        // 添加悬停事件
+        markerElement.addEventListener('mouseenter', () => {
+            editButton.style.display = 'flex';
+            setTimeout(() => {
+                editButton.style.opacity = '1';
+            }, 10);
+        });
+        
+        markerElement.addEventListener('mouseleave', () => {
+            editButton.style.opacity = '0';
+            setTimeout(() => {
+                if (editButton.style.opacity === '0') {
+                    editButton.style.display = 'none';
+                }
+            }, 200);
+        });
+        
+        // 复用annotation-popup的编辑按钮事件逻辑
+        editButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // 如果打点没有marker数据，先初始化
+            if (!annotation.marker) {
+                annotation.marker = {
+                    x: 25,      // 默认位置25%
+                    y: 25,      // 默认位置25%
+                    width: 20,  // 默认宽度20%
+                    height: 15, // 默认高度15%
+                    contentPosition: {
+                        horizontalPosition: 'inside',
+                        verticalPosition: 'inside',
+                        textAlign: 'left',
+                        verticalAlign: 'flex-start'
+                    }
+                };
+            }
+            // 直接进入标记编辑模式（需要从annotations.js获取方法）
+            if (window.annotationManager) {
+                window.annotationManager.startMarkerEditingDirect(annotation);
+            }
+        });
+        
+        // 阻止按钮的其他鼠标事件
+        editButton.addEventListener('mousedown', (e) => e.stopPropagation());
+        editButton.addEventListener('mouseup', (e) => e.stopPropagation());
+        
         return markerElement;
     }
     
@@ -405,6 +464,42 @@ class MarkerPlayer {
                 defaultText.textContent = '标记';
                 contentArea.appendChild(defaultText);
             }
+        }
+        
+        // 更新编辑按钮的annotation数据
+        const editButton = markerElement.querySelector('.player-marker-edit-btn');
+        if (editButton) {
+            editButton.dataset.annotationId = annotation.id;
+            // 重新绑定点击事件以确保使用最新的annotation数据
+            const newEditButton = editButton.cloneNode(true);
+            editButton.parentNode.replaceChild(newEditButton, editButton);
+            
+            newEditButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 如果打点没有marker数据，先初始化
+                if (!annotation.marker) {
+                    annotation.marker = {
+                        x: 25,      // 默认位置25%
+                        y: 25,      // 默认位置25%
+                        width: 20,  // 默认宽度20%
+                        height: 15, // 默认高度15%
+                        contentPosition: {
+                            horizontalPosition: 'inside',
+                            verticalPosition: 'inside',
+                            textAlign: 'left',
+                            verticalAlign: 'flex-start'
+                        }
+                    };
+                }
+                // 直接进入标记编辑模式
+                if (window.annotationManager) {
+                    window.annotationManager.startMarkerEditingDirect(annotation);
+                }
+            });
+            
+            // 阻止按钮的其他鼠标事件
+            newEditButton.addEventListener('mousedown', (e) => e.stopPropagation());
+            newEditButton.addEventListener('mouseup', (e) => e.stopPropagation());
         }
     }
 
