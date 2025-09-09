@@ -1709,6 +1709,7 @@ body {
             margin-bottom: 8px;
             line-height: 1.4;
             color: rgba(255, 255, 255, 0.9);
+            white-space: pre-line;
           }
 
           // div.annotation-empty
@@ -3022,7 +3023,9 @@ body {
       //   0px 1px 0 white,
       //   -1px 0px 0 white,
       //   1px 0px 0 white;
-
+      .player-marker-inline-content{
+        white-space: pre-line;
+      }
       .player-marker-title,
       .player-marker-description {
         padding: 0.15em 0.3em;
@@ -3195,6 +3198,9 @@ body {
     border-radius: 0.1em;
     display: flex;
     flex-direction: column;
+    .marker-inline-content{
+      white-space: pre-line;
+    }
 
 
     .marker-title,
