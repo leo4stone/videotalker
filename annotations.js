@@ -798,7 +798,7 @@ class AnnotationManager {
                     <button class="annotation-input-close">&times;</button>
                 </div>
                 <div class="annotation-input-body">
-                    <div class="annotation-input-row annotation-time-duration-row">
+                    <div class="annotation-input-row annotation-time-duration-row${isEdit ? ' has-marker-field' : ''}">
                         <div class="annotation-input-field">
                             <div class="annotation-input-label-with-button">
                                 <label class="annotation-input-label">开始时间</label>
@@ -841,6 +841,7 @@ class AnnotationManager {
                                 设置时长后，打点会显示为时间段；不设置则显示为时间点
                             </small>
                         </div>
+                        ${isEdit ? `
                         <div class="annotation-input-field">
                             <div class="annotation-input-label-with-button">
                                 <label class="annotation-input-label">标记（可选）</label>
@@ -852,6 +853,7 @@ class AnnotationManager {
                                 在视频画面上添加矩形标记
                             </small>
                         </div>
+                        ` : ''}
                     </div>
                     <div class="annotation-input-field">
                         <label class="annotation-input-label">打点标题（可选）</label>
@@ -1077,15 +1079,11 @@ class AnnotationManager {
       });
     }
 
-    // 编辑标记按钮事件
-    if (editMarkerBtn) {
-      console.log('绑定编辑标记按钮事件', editMarkerBtn);
+    // 编辑标记按钮事件（只在编辑模式下存在）
+    if (isEdit && editMarkerBtn) {
       editMarkerBtn.addEventListener('click', () => {
-        console.log('编辑标记按钮被点击');
         this.startMarkerEditing(annotation, modal);
       });
-    } else {
-      console.warn('未找到编辑标记按钮');
     }
 
     // 保存打点
@@ -1878,7 +1876,6 @@ class AnnotationManager {
 
   // 开始标记编辑（重构版本，支持独立编辑）
   startMarkerEditing(annotation, modal = null) {
-    console.log('开始标记编辑', annotation);
 
     // 如果没有marker字段，初始化默认值
     if (!annotation.marker) {
@@ -1940,7 +1937,6 @@ class AnnotationManager {
 
         // 清除现有标记，创建编辑标记
         window.videoMarker.clearMarkers();
-        console.log('清除现有标记');
 
         // 创建编辑标记
         const marker = {
@@ -1959,7 +1955,6 @@ class AnnotationManager {
           },
           contentFontSize: annotation.marker.contentFontSize || 1
         };
-        console.log('创建编辑标记', marker);
 
         window.videoMarker.markers.set('editing', marker);
         this.renderEditingMarker(marker, annotation, modal);
@@ -1978,7 +1973,6 @@ class AnnotationManager {
           }
         }, 350); // 等待CSS transition(0.3s)完成
 
-        console.log('渲染编辑标记完成');
       } else {
         console.error('未找到overlay');
       }
@@ -2180,7 +2174,6 @@ class AnnotationManager {
     // 更新时间戳
     annotation.updatedAt = new Date().toISOString();
 
-    console.log('标记已保存:', annotation.marker);
 
     // 保存到文件
     await this.saveAnnotationsToFile();
@@ -2200,7 +2193,6 @@ class AnnotationManager {
 
   // 取消标记编辑
   cancelMarkerEditing(modal = null) {
-    console.log('取消标记编辑');
     this.exitMarkerEditing(modal);
   }
 
@@ -2252,7 +2244,6 @@ class AnnotationManager {
 
   // 直接编辑标记（从popup调用，不依赖modal）
   startMarkerEditingDirect(annotation) {
-    console.log('直接开始标记编辑', annotation);
 
     // 关闭任何打开的popup
     this.hideAnnotationPopup();

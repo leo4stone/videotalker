@@ -2649,12 +2649,21 @@ body {
           align-items: flex-start;
 
           .annotation-input-field {
-            flex: 2; // 开始时间和时长使用较大比例
+            flex: 1; // 默认等分宽度（两列时）
             min-width: 0; // 允许收缩
+          }
 
-            // 标记字段使用较小的宽度
-            &:last-child {
-              flex: 1; // 标记列使用较小比例
+          // 当有三列时（编辑模式下有标记列）
+          &.has-marker-field {
+            .annotation-input-field {
+              &:nth-child(1),
+              &:nth-child(2) {
+                flex: 2; // 开始时间和时长使用较大比例
+              }
+
+              &:nth-child(3) {
+                flex: 1; // 标记列使用较小比例
+              }
             }
           }
         }
