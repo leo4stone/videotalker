@@ -118,7 +118,7 @@ class VideoMarker {
         // 检查overlay是否可见
         const computedStyle = getComputedStyle(this.overlay);
         if (computedStyle.display === 'none') {
-            console.warn('updateFontSize: overlay未显示，跳过字体大小计算');
+            console.log('updateFontSize: overlay未显示，跳过字体大小计算');
             return;
         }
         
