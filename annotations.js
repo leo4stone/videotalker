@@ -283,10 +283,10 @@ class AnnotationManager {
     // 计算动态级别高度映射
     const levelHeightMap = this.calculateDynamicLevelHeights();
 
-    // 为每个打点创建圆点
+    // 为每个打点数据创建dom
     this.annotations.forEach(annotation => {
-      const dot = this.createAnnotationDot(annotation, duration, levelHeightMap);
-      progressContainer.appendChild(dot);
+      const annotationContainer = this.createAnnotationContainer(annotation, duration, levelHeightMap);
+      progressContainer.appendChild(annotationContainer);
     });
 
     // 同时更新pan-track上的缩略打点
@@ -376,7 +376,7 @@ class AnnotationManager {
   }
 
   // 创建打点圆点元素
-  createAnnotationDot(annotation, duration, levelHeightMap = null) {
+  createAnnotationContainer(annotation, duration, levelHeightMap = null) {
     // 创建容器元素
     const container = document.createElement('div');
     let className = 'annotation-container';
@@ -414,9 +414,6 @@ class AnnotationManager {
     // 创建圆点或条形
     const dot = document.createElement('div');
     dot.className = 'annotation-dot';
-    dot.style.cursor = 'pointer';
-    dot.style.transition = 'all 0.3s ease';
-    dot.style.position = 'relative';
 
     // 创建标题容器（用于定位popup，不设置overflow限制）
     const title = document.createElement('div');
@@ -434,22 +431,16 @@ class AnnotationManager {
 
       const heightPercent = levelHeightMap[levelKey] || 100;
 
-      title.style.transform = `translateX(-50%) translateY(-${heightPercent}%)`;
+      container.style.height = 64+12*(4-levelKey) + 'px'
     } else {
       // 默认转换（向后兼容）
-      title.style.transform = 'translateX(-50%) translateY(-100%)';
+      container.style.height = 64+12*0/100 + 'px'
     }
 
     // 创建标题文本容器（处理文本溢出）
     const titleText = document.createElement('div');
+    titleText.className = 'annotation-title-text';
     titleText.textContent = annotation.title || '';
-    titleText.style.padding = '2px 6px';
-    titleText.style.fontSize = '10px';
-    titleText.style.fontWeight = '500';
-    titleText.style.whiteSpace = 'nowrap';
-    titleText.style.maxWidth = '80px';
-    titleText.style.overflow = 'hidden';
-    titleText.style.textOverflow = 'ellipsis';
 
     // 如果没有标题，隐藏标题文本但保持可交互性
     if (!annotation.title) {
@@ -468,7 +459,7 @@ class AnnotationManager {
     title.appendChild(popup);
 
     container.appendChild(title);
-    container.appendChild(dot);
+    title.appendChild(dot);
 
     // 圆点缩放效果（通过CSS hover处理popup显示）
     container.addEventListener('mousedown', (e) => {
@@ -513,7 +504,7 @@ class AnnotationManager {
 
     popup.innerHTML = `
       <div class="annotation-popup-content">
-        <div class="annotation-time" style="color: ${colorConfig.primary};">${timeInfo}</div>
+        <div class="annotation-time">${timeInfo}</div>
         ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
         ${annotation.text ? `<div class="annotation-text">${this.escapeHtml(annotation.text)}</div>` : ''}
         ${!annotation.title && !annotation.text ? `<div class="annotation-empty">空白打点</div>` : ''}
@@ -624,138 +615,7 @@ class AnnotationManager {
     return popup;
   }
 
-  // 显示打点预览popup（已弃用，保留兼容性）
-  showAnnotationPopup(annotation, x, y) {
-    this.hideAnnotationPopup(); // 先隐藏现有popup
 
-    const popup = document.createElement('div');
-    popup.className = 'annotation-popup';
-    popup.innerHTML = `
-            <div class="annotation-popup-content">
-                <div class="annotation-time">${this.formatTime(annotation.time)}</div>
-                ${annotation.title ? `<div class="annotation-popup-title">${this.escapeHtml(annotation.title)}</div>` : ''}
-                ${annotation.text ? `<div class="annotation-text">${this.escapeHtml(annotation.text)}</div>` : ''}
-                ${!annotation.title && !annotation.text ? `<div class="annotation-empty">空白打点</div>` : ''}
-                <div class="annotation-actions">
-                    <button class="popup-btn view-btn" data-id="${annotation.id}">查看详情</button>
-                </div>
-            </div>
-        `;
-
-    // 设置popup样式
-    popup.style.position = 'fixed';
-    popup.style.left = x + 'px';
-    popup.style.top = (y - 10) + 'px';
-    popup.style.transform = 'translate(-50%, -100%)';
-    popup.style.background = 'rgba(0,0,0,0.3)';
-    popup.style.color = 'white';
-    popup.style.padding = '12px';
-    popup.style.borderRadius = '8px';
-    popup.style.fontSize = '12px';
-    popup.style.zIndex = '1000';
-    popup.style.maxWidth = '250px';
-    popup.style.border = '1px solid rgba(255,255,255,0.3)';
-    popup.style.backdropFilter = 'blur(15px)';
-    popup.style.webkitBackdropFilter = 'blur(1px)';
-    popup.style.pointerEvents = 'auto';
-
-    // 获取颜色配置
-    const colorConfig = this.getColorConfig(annotation.color);
-    const textColor = annotation.color === 'yellow' ? '#000' : 'white';
-
-    // 添加样式到popup内容
-    const style = document.createElement('style');
-    style.textContent = `
-            .annotation-popup-content .annotation-time {
-                color: ${colorConfig.primary};
-                font-weight: bold;
-                margin-bottom: 6px;
-            }
-            .annotation-popup-content .annotation-popup-title {
-                color: white;
-                font-weight: 600;
-                margin-bottom: 6px;
-                font-size: 13px;
-            }
-            .annotation-popup-content .annotation-text {
-                margin-bottom: 8px;
-                line-height: 1.4;
-                color: rgba(255,255,255,0.9);
-            }
-            .annotation-popup-content .annotation-empty {
-                margin-bottom: 8px;
-                line-height: 1.4;
-                color: rgba(255,255,255,0.6);
-                font-style: italic;
-                font-size: 12px;
-            }
-            .annotation-popup-content .popup-btn {
-                background: rgba(${colorConfig.rgba},0.8);
-                color: ${textColor};
-                border: none;
-                padding: 4px 8px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 11px;
-                transition: background 0.2s ease;
-            }
-            .annotation-popup-content .popup-btn:hover {
-                background: rgba(${colorConfig.rgba},1);
-            }
-        `;
-    popup.appendChild(style);
-
-    // 绑定查看详情按钮事件
-    const viewBtn = popup.querySelector('.view-btn');
-    if (viewBtn) {
-      viewBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.showAnnotationDetailModal(annotation.id);
-        this.hideAnnotationPopup();
-      });
-    }
-
-    // 添加popup的鼠标事件处理
-    popup.addEventListener('mouseenter', () => {
-      // 鼠标进入popup时，取消隐藏
-      this.cancelHidePopup();
-    });
-
-    popup.addEventListener('mouseleave', () => {
-      // 鼠标离开popup时，安排隐藏
-      this.scheduleHidePopup();
-    });
-
-    document.body.appendChild(popup);
-
-    // 设置自动隐藏（增加时间到8秒，给用户更多时间）
-    setTimeout(() => {
-      if (popup.parentNode) {
-        this.hideAnnotationPopup();
-      }
-    }, 8000);
-  }
-
-  // 安排延迟隐藏popup
-  scheduleHidePopup() {
-    // 清除之前的定时器
-    if (this.hidePopupTimer) {
-      clearTimeout(this.hidePopupTimer);
-    }
-
-    // 设置延迟隐藏（200ms后隐藏，给用户足够时间移动鼠标到popup）
-    this.hidePopupTimer = setTimeout(() => {
-      this.hideAnnotationPopup();
-    }, 200);
-  }
-
-  // 取消隐藏popup
-  cancelHidePopup() {
-    if (this.hidePopupTimer) {
-      clearTimeout(this.hidePopupTimer);
-      this.hidePopupTimer = null;
-    }
-  }
 
   // 隐藏打点popup
   hideAnnotationPopup() {
