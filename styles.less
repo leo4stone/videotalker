@@ -1331,14 +1331,13 @@ body {
     &::before {
       content: "";
       position: absolute;
-      height: 48px;
-      left: -50px;
-      right: -50px;
-      top: 50%;
-      transform: translate(0, -50%);
-      cursor: pointer;
-      border-radius: 999px;
-      // background: rgba(0,0,0,0.4);
+      height: 90px;
+      left: -40px;
+      right: -40px;
+      top: 0%;
+      transform: translate(0, -100%);
+      cursor: default;
+      // background: rgba(255,0,0,0.4);
     }
 
     // 进度条悬停背景
@@ -1459,7 +1458,7 @@ body {
       .progress-handle {
         position: absolute;
         right: -1px;
-        top: 15%;
+        top: 50%;
         width: 2px;
         height: 16px;
         transform: translate(0, -50%);
@@ -1483,7 +1482,7 @@ body {
             font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
-            margin-top: 0px;
+            margin-top: 40px;
           }
 
           // 添加打点
@@ -1492,7 +1491,7 @@ body {
             width: 64px;
             height: 24px;
             left: 50%;
-            top: 50%;
+            top: calc(50% + 20px);
             transform: translate(-50%, -50%);
             opacity: 1;
             background: rgba(0, 0, 0, 0.5);
@@ -1514,7 +1513,7 @@ body {
               width: 0;
               height: 0;
               left: 50%;
-              top: -45%;
+              top: -80%;
               transform: translate(-50%, 0%);
               border-left: 4px solid transparent;
               border-right: 4px solid transparent;
@@ -1599,12 +1598,13 @@ body {
           .add-annotation-btn {
             width: 16px;
             height: 16px;
+            top: calc(50%);
             opacity: 1;
 
             &::before {
-              top: -80%;
-              border-top: 8px solid @primary-text;
-              border-bottom: 0px solid @primary-text;
+              top: -72%;
+              // border-top: 8px solid @primary-text;
+              // border-bottom: 0px solid @primary-text;
             }
 
             &::before,
