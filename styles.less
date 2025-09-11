@@ -280,6 +280,65 @@ body {
       }
     }
 
+    // button.annotation-visibility-toggle-btn
+    .annotation-visibility-toggle-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      padding: 4px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: @transition-fast;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: @primary-text;
+      }
+
+      &:active {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(0.95);
+      }
+
+      // 隐藏状态的样式
+      &[data-state="hidden"] {
+        color: #ff6b6b;
+
+        .visible-icon {
+          display: none;
+        }
+
+        .hidden-icon {
+          display: block !important;
+        }
+
+        &:hover {
+          color: #ff5252;
+        }
+      }
+
+      // 显示状态的样式
+      &[data-state="visible"] {
+        .visible-icon {
+          display: block;
+        }
+
+        .hidden-icon {
+          display: none;
+        }
+      }
+    }
+
     // button.outline-close-btn
     .outline-close-btn {
       background: none;
@@ -1621,6 +1680,25 @@ body {
 // ===============================
 // 视频进度条 - .progress-wrapper > div.progress-container
 // ===============================
+.progress-wrapper {
+  // 隐藏进度条时的样式
+  &.hide-progress {
+    .progress-container{
+
+      display: none !important;
+    }
+    .progress-zoom-control{
+      .pan-section{
+        .custom-pan-slider{
+          .pan-thumb{
+            display: none;
+          }
+        }
+      }
+    }
+  }
+}
+
 .progress-container {
 
 

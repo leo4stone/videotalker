@@ -1877,6 +1877,7 @@ function initializeOutlinePanel() {
   const toggleBtn = document.getElementById('outline-toggle-btn');
   const closeBtn = document.getElementById('outline-close-btn');
   const expandAllBtn = document.getElementById('outline-expand-all-btn');
+  const annotationVisibilityBtn = document.getElementById('annotation-visibility-toggle-btn');
   const toggleHighBtn = document.getElementById('outline-toggle-high-btn');
   const toggleMediumBtn = document.getElementById('outline-toggle-medium-btn');
   const toggleLowBtn = document.getElementById('outline-toggle-low-btn');
@@ -1901,6 +1902,13 @@ function initializeOutlinePanel() {
 
     // 初始化按钮显示状态
     updateExpandAllButtonDisplay(expandAllBtn, 'expand');
+  }
+
+  // 打点显示切换按钮点击事件
+  if (annotationVisibilityBtn) {
+    annotationVisibilityBtn.addEventListener('click', function () {
+      toggleAnnotationVisibility();
+    });
   }
 
   // 级别切换按钮点击事件
@@ -2749,11 +2757,34 @@ function updateAnnotationContainerPlayedStatusImmediate() {
   });
 }
 
+// 切换进度条的显示/隐藏
+function toggleAnnotationVisibility() {
+  const progressWrapper = document.querySelector('.progress-wrapper');
+  const annotationVisibilityBtn = document.getElementById('annotation-visibility-toggle-btn');
+  
+  if (!progressWrapper || !annotationVisibilityBtn) return;
+  
+  const isCurrentlyHidden = progressWrapper.classList.contains('hide-progress');
+  
+  if (isCurrentlyHidden) {
+    // 当前隐藏，切换为显示
+    progressWrapper.classList.remove('hide-progress');
+    annotationVisibilityBtn.setAttribute('data-state', 'visible');
+    annotationVisibilityBtn.title = '显示/隐藏进度条';
+  } else {
+    // 当前显示，切换为隐藏
+    progressWrapper.classList.add('hide-progress');
+    annotationVisibilityBtn.setAttribute('data-state', 'hidden');
+    annotationVisibilityBtn.title = '显示/隐藏进度条（当前隐藏）';
+  }
+}
+
 // 将updateOutlineView函数绑定到window对象，供其他模块调用
 window.updateOutlineView = updateOutlineView;
 window.updateOutlinePlayedStatus = updateOutlinePlayedStatus;
 window.updateElementPlayedStatus = updateElementPlayedStatus;
 window.updateAnnotationContainerPlayedStatus = updateAnnotationContainerPlayedStatus;
+window.toggleAnnotationVisibility = toggleAnnotationVisibility;
 window.updateOutlineCollapseDisplay = updateOutlineCollapseDisplay;
 window.removeCollapseState = removeCollapseState;
 window.toggleAllOutlineItems = toggleAllOutlineItems;
