@@ -653,6 +653,7 @@ function updateFloatingPlayButton() {
 
   const playIcon = document.getElementById('play-icon');
   const pauseIcon = document.getElementById('pause-icon');
+  const videoPlayer = document.getElementById('video-player');
   const isPaused = player.paused();
 
   if (isPaused) {
@@ -661,12 +662,20 @@ function updateFloatingPlayButton() {
     pauseIcon.style.display = 'none';
     showFloatingPlayButton();
     clearTimeout(playButtonTimeout);
+    // 更新视频播放器鼠标样式为播放图标
+    if (videoPlayer) {
+      videoPlayer.classList.add('video-paused');
+    }
   } else {
     // 播放状态：显示暂停图标，2秒后隐藏
     playIcon.style.display = 'none';
     pauseIcon.style.display = 'flex';
     showFloatingPlayButton();
     resetFloatingPlayButtonTimer();
+    // 更新视频播放器鼠标样式为暂停图标
+    if (videoPlayer) {
+      videoPlayer.classList.remove('video-paused');
+    }
   }
 }
 

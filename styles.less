@@ -785,6 +785,14 @@ body {
   #video-player {
     width: 100%;
     height: 100%;
+    
+    // 默认播放状态的鼠标样式（显示暂停图标）
+    cursor: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="2"/><rect x="11" y="9" width="3" height="14" fill="white"/><rect x="18" y="9" width="3" height="14" fill="white"/></svg>') 16 16, pointer;
+    
+    // 暂停状态的鼠标样式（显示播放图标）
+    &.video-paused {
+      cursor: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="2"/><polygon points="12,8 12,24 22,16" fill="white"/></svg>') 16 16, pointer;
+    }
     object-fit: cover;
 
     video {
