@@ -2759,21 +2759,21 @@ function updateAnnotationContainerPlayedStatusImmediate() {
 
 // 切换进度条的显示/隐藏
 function toggleAnnotationVisibility() {
-  const progressWrapper = document.querySelector('.progress-wrapper');
+  const mainContent = document.querySelector('.main-content');
   const annotationVisibilityBtn = document.getElementById('annotation-visibility-toggle-btn');
   
-  if (!progressWrapper || !annotationVisibilityBtn) return;
+  if (!mainContent || !annotationVisibilityBtn) return;
   
-  const isCurrentlyHidden = progressWrapper.classList.contains('hide-progress');
+  const isCurrentlyHidden = mainContent.classList.contains('hide-annotation-progress');
   
   if (isCurrentlyHidden) {
     // 当前隐藏，切换为显示
-    progressWrapper.classList.remove('hide-progress');
+    mainContent.classList.remove('hide-annotation-progress');
     annotationVisibilityBtn.setAttribute('data-state', 'visible');
     annotationVisibilityBtn.title = '显示/隐藏进度条';
   } else {
     // 当前显示，切换为隐藏
-    progressWrapper.classList.add('hide-progress');
+    mainContent.classList.add('hide-annotation-progress');
     annotationVisibilityBtn.setAttribute('data-state', 'hidden');
     annotationVisibilityBtn.title = '显示/隐藏进度条（当前隐藏）';
   }
